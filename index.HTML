@@ -112,7 +112,7 @@ tr:hover td { background: var(--bg); }
 <body>
 
 <script>
-const APP_VERSION = "1.02";
+const APP_VERSION = "1.03";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyKOPutUqZUkR3JeQyWx8C5JasSJ3BlOUbtsvhEDxp0kawqykSv-HJesxsY1q5Ns2iOI/exec";
 </script>
 
@@ -266,7 +266,7 @@ async function api(action) {
 async function apiPost(body) {
   const res = await fetch(GAS_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(body)
   });
   return parseJSON(res);
@@ -324,7 +324,6 @@ function renderTotales() {
   document.getElementById('k-pagos').textContent    = fmt(sum(state.registros.filter(r => r.tipo === 'pago')));
   document.getElementById('k-gastos').textContent   = fmt(sum(state.registros.filter(r => r.tipo === 'gasto')));
   document.getElementById('k-facturas').textContent = fmt(sum(state.registros.filter(r => r.tipo === 'factura')));
-
   if (!regs.length) {
     document.getElementById('tabla-total').innerHTML = '<div class="empty">Sin registros</div>';
     return;
