@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+<!-- ============================================================
+     PAGOS PROVEEDORES  |  Versión 1.09
+     ============================================================ -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -20,7 +23,7 @@
   --mono: 'IBM Plex Mono', monospace;
   --r: 8px;
   --shadow: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
-  --shadow-md: 0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.1), 0 2px 4px rgba(0,0,0,.06);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
@@ -42,17 +45,9 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 .page { display: none; }
 .page.active { display: block; }
 .page-title { font-size: 22px; font-weight: 600; margin-bottom: 1.5rem; }
-.kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 1.5rem; }
-.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow); border-top: 3px solid var(--border); transition: transform .15s; }
-.kpi:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-.kpi-total { border-top-color: #1a1916; }
-.kpi-facturas { border-top-color: #1a3a7a; }
-.kpi-pagos { border-top-color: #1a5c28; }
+.kpi-single { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 24px; box-shadow: var(--shadow); border-top: 3px solid #1a1916; margin-bottom: 1.5rem; display: inline-block; min-width: 260px; }
 .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-faint); margin-bottom: 8px; font-weight: 600; }
-.kpi-value { font-family: var(--mono); font-size: 20px; font-weight: 500; }
-.kpi-total .kpi-value { color: #1a1916; }
-.kpi-facturas .kpi-value { color: #1a3a7a; }
-.kpi-pagos .kpi-value { color: #1a5c28; }
+.kpi-value { font-family: var(--mono); font-size: 24px; font-weight: 500; color: #1a1916; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 1rem; box-shadow: var(--shadow); }
 .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #fafaf8; border-radius: var(--r) var(--r) 0 0; flex-wrap: wrap; gap: 10px; }
 .card-title { font-size: 13px; font-weight: 600; }
@@ -73,7 +68,6 @@ textarea { resize: vertical; min-height: 60px; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .btn-danger { color: var(--red-text); border-color: var(--red-border); }
 .btn-danger:hover { background: var(--red-bg); }
-.btn-active { background: var(--text); color: #f5f4f0; border-color: var(--text); }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); padding: 10px 14px; border-bottom: 2px solid var(--border); text-align: left; white-space: nowrap; background: #fafaf8; }
@@ -83,18 +77,13 @@ tr:hover td { background: #f7f6f2; }
 .badge { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 600; font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; border: 1px solid transparent; }
 .badge-pago { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
 .badge-factura { background: var(--blue-bg); color: var(--blue-text); border-color: var(--blue-border); }
-.badge-gasto { background: #fdf3e3; color: #7a4b00; border-color: #e8c97a; }
-.prov-grid { display: grid; gap: 12px; }
-.prov-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow); border-left: 4px solid var(--text); }
-.prov-card-header { display: flex; justify-content: space-between; align-items: flex-start; }
-.prov-card-name { font-family: var(--mono); font-size: 14px; font-weight: 500; }
-.prov-card-total { font-family: var(--mono); font-size: 18px; font-weight: 500; color: #1a5c28; }
-.prov-card-stats { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; flex-wrap: wrap; }
-.prov-card-stats span { background: var(--bg); padding: 2px 8px; border-radius: 4px; }
-.prov-detail { margin-top: 12px; border-top: 1px solid var(--border); padding-top: 10px; display: none; }
-.prov-detail.open { display: block; }
-.pct-bar-bg { height: 5px; background: var(--border); border-radius: 3px; margin-top: 10px; }
-.pct-bar { height: 5px; background: linear-gradient(90deg, #1a1916, #4a4744); border-radius: 3px; transition: width .4s; }
+.badge-log-add { background: var(--green-bg); color: var(--green-text); border-color: var(--green-border); }
+.badge-log-del { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+.badge-log-prov { background: #fdf3e3; color: #7a4b00; border-color: #e8c97a; }
+.desglose-btn { display: inline-block; padding: 3px 10px; font-size: 11px; font-family: var(--mono); border: 1.5px solid var(--border); border-radius: 4px; cursor: default; color: var(--text-muted); user-select: none; transition: border-color .15s, color .15s; }
+.desglose-btn:hover { border-color: var(--text); color: var(--text); }
+.popup-desglose { position: fixed; z-index: 2000; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-md); min-width: 500px; max-width: 640px; max-height: 420px; overflow: auto; }
+.popup-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: #fafaf8; border-radius: var(--r) var(--r) 0 0; position: sticky; top: 0; }
 .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--text); color: #f5f4f0; padding: 12px 20px; border-radius: var(--r); font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(10px); transition: all .25s; pointer-events: none; z-index: 999; max-width: min(420px, calc(100vw - 2rem)); word-break: break-word; box-shadow: var(--shadow-md); }
 .toast.show { opacity: 1; transform: translateY(0); }
 .toast.error { background: #7a1a1a; }
@@ -108,10 +97,10 @@ tr:hover td { background: #f7f6f2; }
 .empty { text-align: center; padding: 3rem; color: var(--text-faint); font-size: 13px; }
 .amount { font-family: var(--mono); font-weight: 500; }
 .pct-cell { font-family: var(--mono); font-weight: 500; color: var(--text-muted); }
+.log-time { font-family: var(--mono); font-size: 11px; color: var(--text-faint); white-space: nowrap; }
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .kpi-row { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -119,9 +108,10 @@ tr:hover td { background: #f7f6f2; }
 <body>
 
 <script>
-const APP_VERSION = "1.08";
+const APP_VERSION = "1.09";
 const GAS_URL = "https://script.google.com/macros/s/AKfycbyWCWw_VPEDuPwrg_ZRYmPNdSbRin6CWN2AOBm7NojB-TZRzDm5ee4emUsU_hLrn4ye/exec";
 const CACHE_KEY = "pagos_v1_cache";
+const LOGS_KEY  = "pagos_v1_logs";
 </script>
 
 <header class="header">
@@ -138,7 +128,7 @@ const CACHE_KEY = "pagos_v1_cache";
       <div class="nav-label">Menú</div>
       <div class="nav-item active" onclick="navTo('registrar', this)"><span class="nav-icon">＋</span> Registrar</div>
       <div class="nav-item" onclick="navTo('totales', this)"><span class="nav-icon">≡</span> Totales</div>
-      <div class="nav-item" onclick="navTo('proveedores', this)"><span class="nav-icon">◈</span> Por proveedor</div>
+      <div class="nav-item" onclick="navTo('logs', this)"><span class="nav-icon">◎</span> Logs</div>
     </div>
     <div class="nav-section">
       <div class="nav-label">Config</div>
@@ -148,6 +138,7 @@ const CACHE_KEY = "pagos_v1_cache";
 
   <main class="main">
 
+    <!-- REGISTRAR -->
     <div class="page active" id="page-registrar">
       <div class="page-title">Nuevo registro</div>
       <div class="card">
@@ -190,17 +181,17 @@ const CACHE_KEY = "pagos_v1_cache";
       </div>
     </div>
 
+    <!-- TOTALES -->
     <div class="page" id="page-totales">
       <div class="page-title">Totales</div>
-      <div class="kpi-row">
-        <div class="kpi kpi-total"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div></div>
-        <div class="kpi kpi-facturas"><div class="kpi-label">Facturas</div><div class="kpi-value" id="k-facturas">—</div></div>
-        <div class="kpi kpi-pagos"><div class="kpi-label">Pagos</div><div class="kpi-value" id="k-pagos">—</div></div>
+      <div class="kpi-single">
+        <div class="kpi-label">Total general</div>
+        <div class="kpi-value" id="k-total">—</div>
       </div>
       <div class="card">
         <div class="card-header">
           <span class="card-title">Resumen de movimientos</span>
-          <button class="btn btn-sm" id="btn-sort-az" onclick="toggleSortAZ()">A → Z</button>
+          <span style="font-size:11px;color:var(--text-faint)">Mantén el cursor sobre "desglose" 3 seg para ver detalle</span>
         </div>
         <div class="card-body" style="padding:0">
           <div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
@@ -208,11 +199,21 @@ const CACHE_KEY = "pagos_v1_cache";
       </div>
     </div>
 
-    <div class="page" id="page-proveedores">
-      <div class="page-title">Por proveedor</div>
-      <div id="prov-cards"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+    <!-- LOGS -->
+    <div class="page" id="page-logs">
+      <div class="page-title">Logs</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Historial de movimientos</span>
+          <button class="btn btn-sm btn-danger" onclick="clearLogs()">Limpiar logs</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando...</div></div>
+        </div>
+      </div>
     </div>
 
+    <!-- CONFIG -->
     <div class="page" id="page-config">
       <div class="page-title">Gestionar proveedores</div>
       <div class="card">
@@ -233,8 +234,10 @@ const CACHE_KEY = "pagos_v1_cache";
 <div class="toast" id="toast"></div>
 
 <script>
-let state = { registros: [], proveedores: [], filter: "", sortAZ: false };
+let state = { registros: [], proveedores: [] };
 let syncTimer = null;
+let desgloseTimer = null;
+let desgloseOpen = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version').textContent = 'v' + APP_VERSION;
@@ -246,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (cached) {
     try {
       const data = JSON.parse(cached);
-      state.registros = data.registros || [];
+      state.registros   = data.registros   || [];
       state.proveedores = data.proveedores || [];
       renderAll();
       setSyncStatus('Actualizando…', true);
@@ -261,6 +264,51 @@ function esc(s) {
 
 function saveCache() {
   localStorage.setItem(CACHE_KEY, JSON.stringify({ registros: state.registros, proveedores: state.proveedores }));
+}
+
+function getLogs() {
+  try { return JSON.parse(localStorage.getItem(LOGS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function addLog(tipo, descripcion) {
+  const logs = getLogs();
+  const now = new Date();
+  logs.unshift({
+    tipo: tipo,
+    descripcion: descripcion,
+    fecha: now.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+    hora: now.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  });
+  if (logs.length > 500) logs.splice(500);
+  localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+}
+
+function clearLogs() {
+  if (!confirm('¿Limpiar todos los logs?')) return;
+  localStorage.removeItem(LOGS_KEY);
+  renderLogs();
+}
+
+function renderLogs() {
+  const el = document.getElementById('logs-list');
+  const logs = getLogs();
+  if (!logs.length) { el.innerHTML = '<div class="empty">Sin registros en el log</div>'; return; }
+  let rows = '';
+  for (let i = 0; i < logs.length; i++) {
+    const l = logs[i];
+    let badgeCls = 'badge-log-add';
+    if (l.tipo === 'eliminar') badgeCls = 'badge-log-del';
+    if (l.tipo === 'proveedor') badgeCls = 'badge-log-prov';
+    rows += '<tr>' +
+      '<td class="log-time">' + esc(l.fecha) + ' ' + esc(l.hora) + '</td>' +
+      '<td><span class="badge ' + badgeCls + '">' + esc(l.tipo) + '</span></td>' +
+      '<td style="color:var(--text-muted)">' + esc(l.descripcion) + '</td>' +
+      '</tr>';
+  }
+  el.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Fecha y hora</th><th>Tipo</th><th>Descripción</th>' +
+    '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
 function onMontoInput() {
@@ -311,7 +359,7 @@ async function syncQuiet() {
   try {
     const data = await api('getAll');
     if (data.error) return;
-    state.registros = data.registros || [];
+    state.registros   = data.registros   || [];
     state.proveedores = data.proveedores || [];
     saveCache();
     renderAll();
@@ -340,7 +388,7 @@ async function loadAll() {
   try {
     const data = await api('getAll');
     if (data.error) throw new Error(data.error);
-    state.registros = data.registros || [];
+    state.registros   = data.registros   || [];
     state.proveedores = data.proveedores || [];
     saveCache();
     renderAll();
@@ -360,19 +408,19 @@ function setSyncStatus(msg, loading) {
 }
 
 function navTo(page, el) {
+  closeDesglosePopup();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   el.classList.add('active');
   if (page === 'totales') renderTotales();
-  if (page === 'proveedores') renderProveedores();
-  if (page === 'config') renderProvManager();
+  if (page === 'logs')    renderLogs();
+  if (page === 'config')  renderProvManager();
 }
 
 function renderAll() {
   renderProvSelect();
   renderTotales();
-  renderProveedores();
   renderProvManager();
 }
 
@@ -382,38 +430,28 @@ function renderProvSelect() {
     state.proveedores.map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
 }
 
-function sumTipo(t) {
-  return state.registros.reduce((a, r) => a + ((r.tipo === t) ? (parseFloat(r.monto) || 0) : 0), 0);
-}
-
 function badgeClass(t) {
-  return (t === 'pago' || t === 'factura') ? 'badge-' + t : 'badge-gasto';
+  return t === 'pago' ? 'badge-pago' : 'badge-factura';
 }
 
 function pctProveedor(proveedor, totalGlobal) {
   if (!totalGlobal) return '0.0';
-  const totalProv = state.registros.filter(r => r.proveedor === proveedor).reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
+  const totalProv = state.registros.filter(r => r.proveedor === proveedor)
+    .reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
   return ((totalProv / totalGlobal) * 100).toFixed(1);
-}
-
-function toggleSortAZ() {
-  state.sortAZ = !state.sortAZ;
-  const btn = document.getElementById('btn-sort-az');
-  if (btn) btn.className = 'btn btn-sm' + (state.sortAZ ? ' btn-active' : '');
-  renderTotales();
 }
 
 function renderTotales() {
   const sumAll = state.registros.reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
   document.getElementById('k-total').textContent = fmt(sumAll);
-  document.getElementById('k-facturas').textContent = fmt(sumTipo('factura'));
-  document.getElementById('k-pagos').textContent = fmt(sumTipo('pago'));
+
   if (!state.registros.length) {
     document.getElementById('tabla-total').innerHTML = '<div class="empty">Sin registros</div>';
     return;
   }
-  let regs = state.registros.slice();
-  if (state.sortAZ) regs.sort((a, b) => a.proveedor.localeCompare(b.proveedor, 'es'));
+
+  const regs = state.registros.slice().sort((a, b) => (parseFloat(b.monto) || 0) - (parseFloat(a.monto) || 0));
+
   let rows = '';
   for (let i = 0; i < regs.length; i++) {
     const r = regs[i];
@@ -423,61 +461,17 @@ function renderTotales() {
       '<td style="font-family:var(--mono);font-size:12px;font-weight:500">' + esc(r.proveedor) + '</td>' +
       '<td class="amount">' + fmt(r.monto) + '</td>' +
       '<td class="pct-cell">' + pct + '%</td>' +
+      '<td><span class="desglose-btn" ' +
+        'onmouseenter="startDesglose(event,\'' + esc(r.proveedor) + '\')" ' +
+        'onmouseleave="cancelDesglose()">' +
+        'desglose</span></td>' +
       '<td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\'' + esc(r.id) + '\')">✕</button></td>' +
       '</tr>';
   }
   document.getElementById('tabla-total').innerHTML =
     '<div class="table-wrap"><table><thead><tr>' +
-    '<th>Fecha</th><th>Proveedor</th><th>Monto</th><th>% del total</th><th></th>' +
+    '<th>Fecha</th><th>Proveedor</th><th>Monto</th><th>% del total</th><th></th><th></th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table></div>';
-}
-
-function renderProveedores() {
-  const el = document.getElementById('prov-cards');
-  if (!state.proveedores.length) { el.innerHTML = '<div class="empty">Sin proveedores registrados</div>'; return; }
-  const totalGlobal = state.registros.reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
-  let html = '<div class="prov-grid">';
-  for (let pi = 0; pi < state.proveedores.length; pi++) {
-    const p = state.proveedores[pi];
-    const regs = state.registros.filter(r => r.proveedor === p);
-    const total = regs.reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
-    const pct = totalGlobal ? ((total / totalGlobal) * 100).toFixed(1) : '0.0';
-    const nf = regs.filter(r => r.tipo === 'factura').length;
-    const np = regs.filter(r => r.tipo === 'pago').length;
-    const detId = 'det-' + p.replace(/\s/g, '_');
-    html += '<div class="prov-card"><div class="prov-card-header"><div style="flex:1">' +
-      '<div class="prov-card-name">' + esc(p) + '</div>' +
-      '<div class="prov-card-stats" style="margin-top:6px">' +
-      '<span>' + regs.length + ' mov.</span><span>' + nf + ' facturas</span><span>' + np + ' pagos</span><span>' + pct + '% del total</span>' +
-      '</div><div class="pct-bar-bg"><div class="pct-bar" style="width:' + pct + '%"></div></div></div>' +
-      '<div style="text-align:right;margin-left:16px"><div class="prov-card-total">' + fmt(total) + '</div>';
-    if (regs.length) html += '<button class="btn btn-sm" style="margin-top:8px;font-size:11px" onclick="toggleDetail(\'' + esc(p) + '\')">desglose</button>';
-    html += '</div></div>';
-    if (regs.length) {
-      let drows = '';
-      const slice = regs.slice(0, 20);
-      for (let j = 0; j < slice.length; j++) {
-        const r = slice[j];
-        drows += '<tr><td style="color:var(--text-muted);font-size:12px">' + esc(r.fecha) + '</td>' +
-          '<td><span class="badge ' + badgeClass(r.tipo) + '">' + esc(r.tipo) + '</span></td>' +
-          '<td class="amount">' + fmt(r.monto) + '</td>' +
-          '<td style="color:var(--text-muted)">' + esc(r.factura || '—') + '</td>' +
-          '<td style="color:var(--text-muted)">' + esc(r.concepto || '—') + '</td></tr>';
-      }
-      html += '<div class="prov-detail" id="' + detId + '"><div class="table-wrap"><table><thead><tr>' +
-        '<th>Fecha</th><th>Tipo</th><th>Monto</th><th>Factura</th><th>Concepto</th></tr></thead><tbody>' + drows + '</tbody></table></div>';
-      if (regs.length > 20) html += '<p style="font-size:11px;color:var(--text-faint);padding:8px 0">Mostrando 20 de ' + regs.length + '</p>';
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  html += '</div>';
-  el.innerHTML = html;
-}
-
-function toggleDetail(p) {
-  const el = document.getElementById('det-' + p.replace(/\s/g, '_'));
-  if (el) el.classList.toggle('open');
 }
 
 function renderProvManager() {
@@ -489,14 +483,94 @@ function renderProvManager() {
   ).join('');
 }
 
+function startDesglose(e, proveedor) {
+  cancelDesglose();
+  const anchor = e.currentTarget;
+  desgloseTimer = setTimeout(function() {
+    showDesglosePopup(proveedor, anchor);
+    desgloseTimer = null;
+  }, 3000);
+}
+
+function cancelDesglose() {
+  if (desgloseTimer) { clearTimeout(desgloseTimer); desgloseTimer = null; }
+  if (!desgloseOpen) closeDesglosePopup();
+}
+
+function showDesglosePopup(proveedor, anchor) {
+  closeDesglosePopup();
+  desgloseOpen = true;
+
+  const regs = state.registros.filter(function(r) { return r.proveedor === proveedor; });
+  const popup = document.createElement('div');
+  popup.id = 'desglose-popup';
+  popup.className = 'popup-desglose';
+
+  const rect = anchor.getBoundingClientRect();
+  let top  = rect.bottom + 8;
+  let left = rect.left;
+  if (top + 420 > window.innerHeight) top = rect.top - 420 - 8;
+  if (left + 640 > window.innerWidth) left = window.innerWidth - 650;
+  if (left < 8) left = 8;
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+
+  const totalProv = regs.reduce(function(a, r) { return a + (parseFloat(r.monto) || 0); }, 0);
+
+  let drows = '';
+  const sorted = regs.slice().sort(function(a, b) { return (parseFloat(b.monto)||0) - (parseFloat(a.monto)||0); });
+  for (let i = 0; i < sorted.length; i++) {
+    const r = sorted[i];
+    drows += '<tr>' +
+      '<td style="color:var(--text-muted);font-size:12px">' + esc(r.fecha) + '</td>' +
+      '<td><span class="badge ' + badgeClass(r.tipo) + '">' + esc(r.tipo) + '</span></td>' +
+      '<td class="amount">' + fmt(r.monto) + '</td>' +
+      '<td style="color:var(--text-muted);font-size:12px">' + esc(r.factura || '—') + '</td>' +
+      '<td style="color:var(--text-muted);font-size:12px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.concepto || '—') + '</td>' +
+      '</tr>';
+  }
+
+  popup.innerHTML =
+    '<div class="popup-header">' +
+      '<span style="font-family:var(--mono);font-size:13px;font-weight:500">' + esc(proveedor) + '</span>' +
+      '<span style="font-size:12px;color:var(--text-muted)">' + regs.length + ' mov · ' + fmt(totalProv) + '</span>' +
+    '</div>' +
+    '<div class="table-wrap"><table>' +
+    '<thead><tr>' +
+    '<th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th>' +
+    '</tr></thead><tbody>' + drows + '</tbody></table></div>';
+
+  document.body.appendChild(popup);
+  document.addEventListener('mousemove', trackMouseForPopup);
+}
+
+function closeDesglosePopup() {
+  desgloseOpen = false;
+  const popup = document.getElementById('desglose-popup');
+  if (popup) popup.remove();
+  document.removeEventListener('mousemove', trackMouseForPopup);
+}
+
+function trackMouseForPopup(e) {
+  const popup = document.getElementById('desglose-popup');
+  if (!popup) { document.removeEventListener('mousemove', trackMouseForPopup); return; }
+  const rect = popup.getBoundingClientRect();
+  const pad  = 40;
+  if (e.clientX < rect.left - pad || e.clientX > rect.right + pad ||
+      e.clientY < rect.top  - pad || e.clientY > rect.bottom + pad) {
+    closeDesglosePopup();
+  }
+}
+
 async function guardarRegistro() {
-  const prov = document.getElementById('f-proveedor').value;
-  const tipo = document.getElementById('f-tipo').value;
+  const prov     = document.getElementById('f-proveedor').value;
+  const tipo     = document.getElementById('f-tipo').value;
   const montoNum = parseMonto(document.getElementById('f-monto').value);
-  const fecha = document.getElementById('f-fecha').value;
-  const factura = document.getElementById('f-factura').value.trim();
+  const fecha    = document.getElementById('f-fecha').value;
+  const factura  = document.getElementById('f-factura').value.trim();
   const concepto = document.getElementById('f-concepto').value.trim();
   if (!prov || !fecha || isNaN(montoNum)) { toast('Completa proveedor, fecha y monto válido', true); return; }
+
   const btn = document.getElementById('btn-save');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Guardando…';
@@ -505,6 +579,7 @@ async function guardarRegistro() {
     if (res.error) throw new Error(res.error);
     state.registros.push({ id: res.id, fecha, proveedor: prov, tipo, monto: montoNum, factura, concepto });
     saveCache();
+    addLog(tipo, prov + ' · ' + fmt(montoNum) + (factura ? ' · ' + factura : ''));
     renderAll();
     clearForm();
     toast('✓ Guardado', false, true);
@@ -520,13 +595,15 @@ async function guardarRegistro() {
 
 async function eliminarRegistro(id) {
   if (!confirm('¿Eliminar este registro?')) return;
-  const prev = state.registros.slice();
-  state.registros = state.registros.filter(r => r.id !== id);
+  const prev  = state.registros.slice();
+  const found = state.registros.find(function(r) { return r.id === id; });
+  state.registros = state.registros.filter(function(r) { return r.id !== id; });
   saveCache();
   renderAll();
   try {
     const res = await apiPost({ action: 'deleteRegistro', id });
     if (res.error) throw new Error(res.error);
+    if (found) addLog('eliminar', found.proveedor + ' · ' + fmt(found.monto) + ' · ' + found.tipo);
     toast('Eliminado');
     scheduleQuietSync();
   } catch (e) {
@@ -541,9 +618,9 @@ async function agregarProveedor() {
   const nombre = document.getElementById('new-prov').value.trim().toUpperCase();
   if (!nombre) return;
   const prevP = state.proveedores.slice();
-  if (!state.proveedores.some(x => x.toUpperCase() === nombre)) {
+  if (!state.proveedores.some(function(x) { return x.toUpperCase() === nombre; })) {
     state.proveedores.push(nombre);
-    state.proveedores.sort((a, b) => a.localeCompare(b, 'es'));
+    state.proveedores.sort(function(a, b) { return a.localeCompare(b, 'es'); });
   }
   saveCache();
   renderAll();
@@ -551,6 +628,7 @@ async function agregarProveedor() {
   try {
     const res = await apiPost({ action: 'addProveedor', nombre });
     if (res.error) throw new Error(res.error);
+    addLog('proveedor', 'Agregado: ' + nombre);
     toast('✓ Proveedor agregado', false, true);
     scheduleQuietSync();
   } catch (e) {
@@ -565,16 +643,17 @@ async function eliminarProveedor(nombre) {
   if (!confirm('¿Eliminar proveedor "' + nombre + '"?')) return;
   const prevR = state.registros.slice();
   const prevP = state.proveedores.slice();
-  state.proveedores = state.proveedores.filter(p => p !== nombre);
+  state.proveedores = state.proveedores.filter(function(p) { return p !== nombre; });
   saveCache();
   renderAll();
   try {
     const res = await apiPost({ action: 'deleteProveedor', nombre });
     if (res.error) throw new Error(res.error);
+    addLog('proveedor', 'Eliminado: ' + nombre);
     toast('Proveedor eliminado');
     scheduleQuietSync();
   } catch (e) {
-    state.registros = prevR;
+    state.registros   = prevR;
     state.proveedores = prevP;
     saveCache();
     renderAll();
@@ -601,7 +680,7 @@ function fmtTime(d) {
 }
 
 function toast(msg, error, success) {
-  error = error || false;
+  error   = error   || false;
   success = success || false;
   const el = document.getElementById('toast');
   el.textContent = msg;
