@@ -325,13 +325,36 @@ function navTo(page,el) { closeDesglosePopup(); closeMobileMenu(); document.quer
 
 /* ── Sincronización ─────────────────────────────────────────── */
 function scheduleQuietSync() { if(syncTimer)clearTimeout(syncTimer); syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500); }
-async function syncQuiet() { try { const d=await api('getAll'); if(d.error)return; state.registros=d.registros||[]; state.proveedores=d.proveedores||[]; saveAndRender(); setSyncStatus('Sincronizado · '+fmtTime(new Date())); } catch {} }
+function updateStateFromSheetData(d) {
+  state.registros=d.registros||[];
+  state.proveedores=d.proveedores||[];
+  if(Array.isArray(d.logs))saveLogs(d.logs);
+}
+async function syncQuiet() {
+  try {
+    const d=await api('getAll');
+    if(d.error)return;
+    updateStateFromSheetData(d);
+    saveAndRender();
+    setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+  } catch {}
+}
 async function parseJSON(res) { const t=await res.text(); try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));} }
 async function api(action) { const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)); return parseJSON(r); }
 async function apiPost(body) { const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)}); return parseJSON(r); }
+async function loadLogsFromSheets() {
+  try {
+    const d=await api('getLogs');
+    if(d.error)throw new Error(d.error);
+    saveLogs(Array.isArray(d.logs)?d.logs:[]);
+    if(isPageActive('logs'))renderLogs();
+  } catch(e) {
+    console.warn('No se pudieron cargar los logs desde Sheets',e);
+  }
+}
 async function loadAll() {
   setSyncStatus('Sincronizando…',true);
-  try { const d=await api('getAll'); if(d.error)throw new Error(d.error); state.registros=d.registros||[]; state.proveedores=d.proveedores||[]; saveAndRender(); setSyncStatus('Sincronizado · '+fmtTime(new Date())); }
+  try { const d=await api('getAll'); if(d.error)throw new Error(d.error); updateStateFromSheetData(d); saveAndRender(); if(!Array.isArray(d.logs))loadLogsFromSheets(); setSyncStatus('Sincronizado · '+fmtTime(new Date())); }
   catch(e) { if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else setSyncStatus('Caché · sin red'); }
 }
 function setSyncStatus(msg,loading=false) { const el=document.getElementById('sync-status'); el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg; }
@@ -437,14 +460,25 @@ function saveLogs(logs){
   try { localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory)); }
   catch(e) { console.warn('No se pudieron guardar los logs en localStorage',e); }
 }
+function syncLogToSheets(log){
+  apiPost({action:'addLog',data:log}).then(res=>{
+    if(res.error)throw new Error(res.error);
+    if(res.id){
+      const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);
+      if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}
+    }
+  }).catch(e=>console.warn('No se pudo guardar el log en Sheets',e));
+}
 function addLog(tipo,descripcion){
   const logs=getLogs().slice(),now=new Date();
-  logs.unshift({tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+  const log={tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
+  logs.unshift(log);
   if(logs.length>500)logs.splice(500);
   saveLogs(logs);
+  syncLogToSheets(log);
   if(isPageActive('logs'))renderLogs();
 }
-function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;logsMemory=[];try{localStorage.removeItem(LOGS_KEY);}catch(e){console.warn('No se pudieron limpiar los logs en localStorage',e);}renderLogs();}
+function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;logsMemory=[];try{localStorage.removeItem(LOGS_KEY);}catch(e){console.warn('No se pudieron limpiar los logs en localStorage',e);}apiPost({action:'clearLogs'}).catch(e=>console.warn('No se pudieron limpiar los logs en Sheets',e));renderLogs();}
 function renderLogs(){
   const el=document.getElementById('logs-list'),logs=getLogs();
   if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
