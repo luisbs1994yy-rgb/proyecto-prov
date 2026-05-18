@@ -210,9 +210,6 @@ const LOGS_KEY    = "pagos_v1_logs";
 
   <main class="main">
 
-    <!-- ═══════════════════════════════════════════════════════
-         PÁGINA: REGISTRAR
-    ══════════════════════════════════════════════════════════ -->
     <div class="page active" id="page-registrar">
       <div class="page-title">Nuevo registro</div>
       <div class="card">
@@ -234,9 +231,6 @@ const LOGS_KEY    = "pagos_v1_logs";
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         PÁGINA: TOTALES
-    ══════════════════════════════════════════════════════════ -->
     <div class="page" id="page-totales">
       <div class="page-title">Totales</div>
       <div class="kpi-grid">
@@ -251,9 +245,6 @@ const LOGS_KEY    = "pagos_v1_logs";
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         PÁGINA: LOGS
-    ══════════════════════════════════════════════════════════ -->
     <div class="page" id="page-logs">
       <div class="page-title">Logs</div>
       <div class="card">
@@ -262,9 +253,6 @@ const LOGS_KEY    = "pagos_v1_logs";
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════
-         PÁGINA: PROVEEDORES
-    ══════════════════════════════════════════════════════════ -->
     <div class="page" id="page-config">
       <div class="page-title">Gestionar proveedores</div>
       <div class="card">
@@ -283,6 +271,7 @@ const LOGS_KEY    = "pagos_v1_logs";
 <script>
 /* ── Estado global ──────────────────────────────────────────── */
 let state = { registros: [], proveedores: [] };
+let logsMemory = [];
 let syncTimer = null, desgloseTimer = null, desgloseOpen = false;
 
 /* ── Inicialización ─────────────────────────────────────────── */
@@ -305,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ── Utilidades generales ───────────────────────────────────── */
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function saveAndRender() { localStorage.setItem(CACHE_KEY, JSON.stringify({registros:state.registros,proveedores:state.proveedores})); renderAll(); }
+function isPageActive(page) { const el=document.getElementById('page-'+page); return !!el && el.classList.contains('active'); }
 function fmt(n) { const v=parseFloat(n); if(isNaN(v))return'—'; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v); }
 function fmtTime(d) { return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
 function toast(msg, error=false, success=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(error?' error':success?' success':''); setTimeout(()=>{el.className='toast';},3500); }
@@ -333,7 +323,6 @@ async function loadAll() {
   catch(e) { if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else setSyncStatus('Caché · sin red'); }
 }
 function setSyncStatus(msg,loading=false) { const el=document.getElementById('sync-status'); el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg; }
-
 
 /* ════════════════════════════════════════════════════════════
    BLOQUE: REGISTRAR
@@ -368,7 +357,6 @@ async function eliminarRegistro(id) {
 }
 function clearForm(){['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-tipo').value='factura';}
 function renderProvSelect(){const s=document.getElementById('f-proveedor');s.innerHTML='<option value="">Seleccionar proveedor…</option>'+state.proveedores.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('');}
-
 
 /* ════════════════════════════════════════════════════════════
    BLOQUE: TOTALES
@@ -415,13 +403,33 @@ function showDesglosePopup(proveedor,anchor){
 function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById('desglose-popup');if(p)p.remove();document.removeEventListener('mousemove',trackMouseForPopup);}
 function trackMouseForPopup(e){const p=document.getElementById('desglose-popup');if(!p){document.removeEventListener('mousemove',trackMouseForPopup);return;}const r=p.getBoundingClientRect(),pad=50;if(e.clientX<r.left-pad||e.clientX>r.right+pad||e.clientY<r.top-pad||e.clientY>r.bottom+pad)closeDesglosePopup();}
 
-
 /* ════════════════════════════════════════════════════════════
    BLOQUE: LOGS
 ════════════════════════════════════════════════════════════ */
-function getLogs(){try{return JSON.parse(localStorage.getItem(LOGS_KEY)||'[]');}catch{return[];}}
-function addLog(tipo,descripcion){const logs=getLogs(),now=new Date();logs.unshift({tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});if(logs.length>500)logs.splice(500);localStorage.setItem(LOGS_KEY,JSON.stringify(logs));}
-function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;localStorage.removeItem(LOGS_KEY);renderLogs();}
+function getLogs(){
+  try {
+    const raw=localStorage.getItem(LOGS_KEY);
+    if(!raw)return logsMemory;
+    const logs=JSON.parse(raw);
+    logsMemory=Array.isArray(logs)?logs:[];
+    return logsMemory;
+  } catch {
+    return logsMemory;
+  }
+}
+function saveLogs(logs){
+  logsMemory=Array.isArray(logs)?logs:[];
+  try { localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory)); }
+  catch(e) { console.warn('No se pudieron guardar los logs en localStorage',e); }
+}
+function addLog(tipo,descripcion){
+  const logs=getLogs().slice(),now=new Date();
+  logs.unshift({tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+  if(logs.length>500)logs.splice(500);
+  saveLogs(logs);
+  if(isPageActive('logs'))renderLogs();
+}
+function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;logsMemory=[];try{localStorage.removeItem(LOGS_KEY);}catch(e){console.warn('No se pudieron limpiar los logs en localStorage',e);}renderLogs();}
 function renderLogs(){
   const el=document.getElementById('logs-list'),logs=getLogs();
   if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
@@ -430,7 +438,6 @@ function renderLogs(){
   logs.forEach(l=>{const cls=LOG_BADGE[l.tipo]||'badge-log-add';rows+='<tr><td class="log-time">'+esc(l.fecha)+'&nbsp;&nbsp;'+esc(l.hora)+'</td><td><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td><td style="color:var(--text-muted)">'+esc(l.descripcion)+'</td></tr>';});
   el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
-
 
 /* ════════════════════════════════════════════════════════════
    BLOQUE: PROVEEDORES
@@ -456,7 +463,6 @@ function renderProvManager(){
   el.innerHTML=state.proveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
 
-
 /* ════════════════════════════════════════════════════════════
    RENDER GLOBAL
 ════════════════════════════════════════════════════════════ */
@@ -464,7 +470,7 @@ function renderAll(){
   renderProvSelect();   /* REGISTRAR   */
   renderTotales();      /* TOTALES     */
   renderProvManager();  /* PROVEEDORES */
-  /* renderLogs() se llama solo al navegar a esa pestaña */
+  if(isPageActive('logs'))renderLogs();
 }
 </script>
 </body>
