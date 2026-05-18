@@ -283,6 +283,7 @@ const LOGS_KEY    = "pagos_v1_logs";
 <script>
 /* ── Estado global ──────────────────────────────────────────── */
 let state = { registros: [], proveedores: [] };
+let logsMemory = [];
 let syncTimer = null, desgloseTimer = null, desgloseOpen = false;
 
 /* ── Inicialización ─────────────────────────────────────────── */
@@ -305,6 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
 /* ── Utilidades generales ───────────────────────────────────── */
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function saveAndRender() { localStorage.setItem(CACHE_KEY, JSON.stringify({registros:state.registros,proveedores:state.proveedores})); renderAll(); }
+function isPageActive(page) { const el=document.getElementById('page-'+page); return !!el && el.classList.contains('active'); }
 function fmt(n) { const v=parseFloat(n); if(isNaN(v))return'—'; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v); }
 function fmtTime(d) { return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
 function toast(msg, error=false, success=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(error?' error':success?' success':''); setTimeout(()=>{el.className='toast';},3500); }
@@ -419,9 +421,30 @@ function trackMouseForPopup(e){const p=document.getElementById('desglose-popup')
 /* ════════════════════════════════════════════════════════════
    BLOQUE: LOGS
 ════════════════════════════════════════════════════════════ */
-function getLogs(){try{return JSON.parse(localStorage.getItem(LOGS_KEY)||'[]');}catch{return[];}}
-function addLog(tipo,descripcion){const logs=getLogs(),now=new Date();logs.unshift({tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});if(logs.length>500)logs.splice(500);localStorage.setItem(LOGS_KEY,JSON.stringify(logs));}
-function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;localStorage.removeItem(LOGS_KEY);renderLogs();}
+function getLogs(){
+  try {
+    const raw=localStorage.getItem(LOGS_KEY);
+    if(!raw)return logsMemory;
+    const logs=JSON.parse(raw);
+    logsMemory=Array.isArray(logs)?logs:[];
+    return logsMemory;
+  } catch {
+    return logsMemory;
+  }
+}
+function saveLogs(logs){
+  logsMemory=Array.isArray(logs)?logs:[];
+  try { localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory)); }
+  catch(e) { console.warn('No se pudieron guardar los logs en localStorage',e); }
+}
+function addLog(tipo,descripcion){
+  const logs=getLogs().slice(),now=new Date();
+  logs.unshift({tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'})});
+  if(logs.length>500)logs.splice(500);
+  saveLogs(logs);
+  if(isPageActive('logs'))renderLogs();
+}
+function clearLogs(){if(!confirm('¿Limpiar todos los logs?'))return;logsMemory=[];try{localStorage.removeItem(LOGS_KEY);}catch(e){console.warn('No se pudieron limpiar los logs en localStorage',e);}renderLogs();}
 function renderLogs(){
   const el=document.getElementById('logs-list'),logs=getLogs();
   if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
@@ -464,7 +487,7 @@ function renderAll(){
   renderProvSelect();   /* REGISTRAR   */
   renderTotales();      /* TOTALES     */
   renderProvManager();  /* PROVEEDORES */
-  /* renderLogs() se llama solo al navegar a esa pestaña */
+  if(isPageActive('logs'))renderLogs();
 }
 </script>
 </body>
