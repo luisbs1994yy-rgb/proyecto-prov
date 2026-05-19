@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+<!-- ============================================================
+     ESTADO DE CUENTA  |  Versión 2.01
+     ============================================================ -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -32,7 +35,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <body>
 
 <script>
-const APP_VERSION = "1.13";
+const APP_VERSION = "2.01";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -84,10 +87,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-totales">
       <div class="page-title">Totales</div>
       <div class="kpi-grid">
-        <div class="kpi-card total"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
-        <div class="kpi-card fact"><div class="kpi-label">Facturas</div><div class="kpi-value" id="k-fact">—</div><div class="kpi-sub" id="k-fact-n">— registros</div></div>
-        <div class="kpi-card pagos"><div class="kpi-label">Pagos realizados</div><div class="kpi-value" id="k-pagos">—</div><div class="kpi-sub" id="k-pagos-n">— registros</div></div>
-        <div class="kpi-card saldo" id="kpi-saldo"><div class="kpi-label">Saldo pendiente</div><div class="kpi-value" id="k-saldo">—</div><div class="kpi-sub" id="k-saldo-pct">—</div></div>
+        <div class="kpi-card total" style="grid-column: span 4"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Resumen por proveedor</span><span class="hint-text">Mantén el cursor sobre "desglose" 3 seg para ver movimientos</span></div>
@@ -407,14 +407,7 @@ function renderTotales() {
 
   document.getElementById('k-total').textContent=fmt(sumAll);
   document.getElementById('k-mov').textContent=regs.length+' movimientos';
-  document.getElementById('k-fact').textContent=fmt(sumF);
-  document.getElementById('k-fact-n').textContent=nRegistros(facts.length);
-  document.getElementById('k-pagos').textContent=fmt(sumP);
-  document.getElementById('k-pagos-n').textContent=nRegistros(pagos.length);
-  document.getElementById('k-saldo').textContent=fmt(Math.abs(saldo));
-  document.getElementById('k-saldo-pct').textContent=saldo<=0?'✓ Al corriente':(sumF>0?((sumP/sumF)*100).toFixed(1)+'% pagado':'—');
-  document.getElementById('kpi-saldo').classList.toggle('paid', saldo<=0);
-
+  
   if(!regs.length) {
     document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';
     return;
@@ -423,20 +416,16 @@ function renderTotales() {
   let rows='';
   resumenPorProveedor(regs).forEach(r=>{
     const pct=saldo>0?((Math.max(r.saldo,0)/saldo)*100).toFixed(1):'0.0';
-    const saldoLabel=r.saldo<0?'A favor':'Pendiente';
 
     rows += '<tr>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600">'+esc(r.proveedor)+'</td>'+
-      '<td class="amount">'+fmt(r.facturas)+'</td>'+
-      '<td class="amount" style="color:var(--green-text)">'+fmt(r.pagos)+'</td>'+
       '<td class="amount" style="color:'+(r.saldo<0?'var(--green-text)':'var(--text)')+'">'+fmt(Math.abs(r.saldo))+'</td>'+
-      '<td style="color:var(--text-faint);font-size:11px">'+saldoLabel+'</td>'+
       '<td class="pct-cell">'+pct+'%</td>'+
       '<td><span class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onmouseenter="startDesglose(event,this.dataset.proveedor)" onmouseleave="cancelDesglose()">desglose</span></td>'+
       '</tr>';
   });
 
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Facturas</th><th>Pagos</th><th>Saldo</th><th>Estado</th><th>% saldo</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>% total</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 function startDesglose(e, proveedor) {
@@ -552,8 +541,8 @@ function addLog(tipo, descripcion) {
   const log={
     tipo,
     descripcion,
-    fecha:now.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit',year:'numeric'}),
-    hora:now.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+    fecha:now.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),
+    hora:now.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true}),
     createdAt:now.toISOString(),
     localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
   };
