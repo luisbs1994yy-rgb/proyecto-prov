@@ -315,6 +315,19 @@ function badgeClass(t) { return t==='pago'?'badge-pago':'badge-factura'; }
 function sumMonto(arr) { return arr.reduce((acc,r)=>acc+(parseFloat(r.monto)||0),0); }
 function sortByMonto(arr) { return arr.slice().sort((a,b)=>(parseFloat(b.monto)||0)-(parseFloat(a.monto)||0)); }
 function nRegistros(n) { return n+' registro'+(n!==1?'s':''); }
+function resumenPorProveedor(regs) {
+  const map = {};
+  regs.forEach(r => {
+    const proveedor = r.proveedor || 'SIN PROVEEDOR';
+    const monto = parseFloat(r.monto) || 0;
+    if (!map[proveedor]) map[proveedor] = { proveedor, facturas: 0, pagos: 0, saldo: 0, movimientos: 0 };
+    if (r.tipo === 'pago') map[proveedor].pagos += monto;
+    else map[proveedor].facturas += monto;
+    map[proveedor].saldo = map[proveedor].facturas - map[proveedor].pagos;
+    map[proveedor].movimientos += 1;
+  });
+  return Object.values(map).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
+}
 
 /* ── Menú móvil ─────────────────────────────────────────────── */
 function toggleMobileMenu() { const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebar-overlay'),open=sb.classList.toggle('open'); ov.classList.toggle('open',open); }
@@ -409,32 +422,36 @@ function renderTotales() {
   document.getElementById('kpi-saldo').classList.toggle('paid',saldo<=0);
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';return;}
   let rows='';
-  sortByMonto(regs).forEach(r=>{
-    const pct=sumAll>0?(((parseFloat(r.monto)||0)/sumAll)*100).toFixed(1):'0.0';
+  resumenPorProveedor(regs).forEach(r=>{
+    const pct=saldo>0?((Math.max(r.saldo,0)/saldo)*100).toFixed(1):'0.0';
+    const saldoLabel=r.saldo<0?'A favor':'Pendiente';
     rows+='<tr>'+
-      '<td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600">'+esc(r.proveedor)+'</td>'+
-      '<td class="amount">'+fmt(r.monto)+'</td>'+
+      '<td class="amount">'+fmt(r.facturas)+'</td>'+
+      '<td class="amount" style="color:var(--green-text)">'+fmt(r.pagos)+'</td>'+
+      '<td class="amount" style="color:'+(r.saldo<0?'var(--green-text)':'var(--text)')+'">'+fmt(Math.abs(r.saldo))+'</td>'+
+      '<td style="color:var(--text-faint);font-size:11px">'+saldoLabel+'</td>'+
       '<td class="pct-cell">'+pct+'%</td>'+
-      '<td><span class="desglose-btn" onmouseenter="startDesglose(event,\''+esc(r.proveedor)+'\')" onmouseleave="cancelDesglose()">desglose</span></td>'+
-      '<td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\')">✕</button></td>'+
+      '<td><span class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onmouseenter="startDesglose(event,this.dataset.proveedor)" onmouseleave="cancelDesglose()">desglose</span></td>'+
       '</tr>';
   });
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Proveedor</th><th>Monto</th><th>% total</th><th></th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Facturas</th><th>Pagos</th><th>Saldo</th><th>Estado</th><th>% saldo</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
+
 
 function startDesglose(e,proveedor){cancelDesglose();const anchor=e.currentTarget;desgloseTimer=setTimeout(()=>{showDesglosePopup(proveedor,anchor);desgloseTimer=null;},3000);}
 function cancelDesglose(){if(desgloseTimer){clearTimeout(desgloseTimer);desgloseTimer=null;}if(!desgloseOpen)closeDesglosePopup();}
 function showDesglosePopup(proveedor,anchor){
   closeDesglosePopup(); desgloseOpen=true;
   const regs=state.registros.filter(r=>r.proveedor===proveedor), popup=document.createElement('div');
+  const facts=regs.filter(r=>r.tipo==='factura'), pagos=regs.filter(r=>r.tipo==='pago'), saldo=sumMonto(facts)-sumMonto(pagos);
   popup.id='desglose-popup'; popup.className='popup-desglose';
   const rect=anchor.getBoundingClientRect(); let top=rect.bottom+8, left=rect.left;
   if(top+440>window.innerHeight)top=Math.max(8,rect.top-440-8); if(left+660>window.innerWidth)left=Math.max(8,window.innerWidth-670);
   popup.style.top=top+'px'; popup.style.left=left+'px';
   let drows='';
-  sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td></tr>';});
-  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">'+regs.length+' mov · total '+fmt(sumMonto(regs))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th></tr></thead><tbody>'+drows+'</tbody></table></div>';
+  sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td><td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\')">✕</button></td></tr>';});
+  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">'+regs.length+' mov · facturas '+fmt(sumMonto(facts))+' · pagos '+fmt(sumMonto(pagos))+' · saldo '+fmt(Math.abs(saldo))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
   document.body.appendChild(popup); document.addEventListener('mousemove',trackMouseForPopup);
 }
 function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById('desglose-popup');if(p)p.remove();document.removeEventListener('mousemove',trackMouseForPopup);}
