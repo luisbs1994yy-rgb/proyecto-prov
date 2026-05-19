@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.04
+     ESTADO DE CUENTA  |  Versión 2.05
      ============================================================ -->
 <html lang="es">
 <head>
@@ -88,6 +88,8 @@ textarea { resize: vertical; min-height: 60px; }
 .btn-sm     { padding: 4px 10px; font-size: 11px; }
 .btn-danger { color: var(--red-text); border-color: var(--red-border); }
 .btn-danger:hover { background: var(--red-bg); }
+.btn-icon   { padding: 4px 7px; font-size: 13px; line-height: 1; border-radius: 6px; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text-faint); transition: all .14s; }
+.btn-icon:hover { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
 .btn-group  { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-select { padding: 8px 14px; font-size: 13px; font-family: var(--font); border-radius: 8px; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; transition: all .14s; user-select: none; }
 .btn-select:hover  { background: var(--bg); border-color: #cbd5e1; }
@@ -113,17 +115,7 @@ tr:hover td      { background: #f7f5f1; }
 .toast.error   { background: #7a1a1a; }
 .toast.success { background: #14532d; }
 
-/* ═══════════════════════════════════════════════════════════════
-   SYNC OVERLAY — círculo de progreso
-═══════════════════════════════════════════════════════════════ */
-.sync-overlay { display: none; position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,.38); backdrop-filter: blur(2px); align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-.sync-overlay.show { display: flex; }
-.sync-ring-wrap { position: relative; width: 84px; height: 84px; }
-.sync-ring-svg  { width: 84px; height: 84px; transform: rotate(-90deg); }
-.sync-ring-bg   { fill: none; stroke: rgba(255,255,255,.15); stroke-width: 7; }
-.sync-ring-fg   { fill: none; stroke: #4ade80; stroke-width: 7; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset .4s ease; }
-.sync-pct-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 18px; font-weight: 600; color: #fff; }
-.sync-msg-label { font-size: 13px; font-weight: 500; color: #e8e6e2; font-family: var(--mono); letter-spacing: .04em; }
+
 
 /* ═══════════════════════════════════════════════════════════════
    TOTALES — KPIs
@@ -263,22 +255,12 @@ tr:hover td      { background: #f7f5f1; }
 <body>
 
 <script>
-const APP_VERSION = "2.04";
+const APP_VERSION = "2.05";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 </script>
 
-<!-- ═══════════════════════════════════════════
-     OVERLAY DE SINCRONIZACIÓN (círculo %)
-════════════════════════════════════════════ -->
-<div class="sync-overlay" id="sync-overlay">
-  <div class="sync-ring-wrap">
-    <svg class="sync-ring-svg" viewBox="0 0 84 84">
-      <circle class="sync-ring-bg" cx="42" cy="42" r="35"/>
-      <circle class="sync-ring-fg" id="sync-ring-fg" cx="42" cy="42" r="35"/>
-    </svg>
-    <div class="sync-pct-label" id="sync-pct-label">0%</div>
   </div>
   <div class="sync-msg-label" id="sync-msg-label">Sincronizando…</div>
 </div>
@@ -358,7 +340,7 @@ const LOGS_KEY    = "pagos_v1_logs";
         <div class="kpi-card total"><div class="kpi-label">Saldo total</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Resumen por proveedor</span><span class="hint-text">Hover 3 seg en desglose para ver detalle</span></div>
+        <div class="card-header"><span class="card-title">Resumen por proveedor</span></div>
         <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -369,7 +351,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-logs">
       <div class="page-title">Logs</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Historial de movimientos</span><button class="btn btn-sm btn-danger" onclick="clearLogs()">Limpiar</button></div>
+        <div class="card-header"><span class="card-title">Historial de movimientos</span></div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -429,9 +411,7 @@ const LOGS_KEY    = "pagos_v1_logs";
 ═══════════════════════════════════════════════════════════════ */
 let state = { registros: [], proveedores: [] };
 let logsMemory = [];
-let syncTimer = null, desgloseTimer = null, desgloseOpen = false;
-let isSyncing = false, pendingNavPage = null, pendingNavEl = null;
-let syncProgressTimer = null, syncProgressVal = 0;
+let syncTimer = null, desgloseOpen = false;
 
 /* ═══════════════════════════════════════════════════════════════
    INICIALIZACIÓN
@@ -461,6 +441,13 @@ function isPageActive(page) { const el=document.getElementById('page-'+page); re
 function fmt(n) { const v=parseFloat(n); if(isNaN(v))return'—'; return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v); }
 function fmtShort(n) { const v=parseFloat(n); if(isNaN(v))return'—'; if(Math.abs(v)>=1000000)return'$'+(v/1000000).toFixed(1)+'M'; if(Math.abs(v)>=1000)return'$'+(v/1000).toFixed(1)+'k'; return fmt(v); }
 function fmtTime(d) { return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); }
+/* Formato fecha log: "18 may 2026 11:53 a.m." */
+function fmtLogFecha(d) {
+  const fecha=d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+  const hora=d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
+  return fecha+' '+hora;
+}
+
 function toast(msg, error=false, success=false) { const el=document.getElementById('toast'); el.textContent=msg; el.className='toast show'+(error?' error':success?' success':''); setTimeout(()=>{el.className='toast';},3500); }
 function toastError(e) { toast('Error: '+e.message, true); }
 function badgeClass(t) { return t==='pago'?'badge-pago':'badge-factura'; }
@@ -490,59 +477,10 @@ function closeMobileMenu() { document.getElementById('sidebar').classList.remove
 /* ═══════════════════════════════════════════════════════════════
    OVERLAY DE SINCRONIZACIÓN — círculo con %
 ═══════════════════════════════════════════════════════════════ */
-const CIRCUMFERENCE = 2 * Math.PI * 35; /* r=35 → ~220 */
-function showSyncOverlay(msg) {
-  isSyncing = true;
-  syncProgressVal = 0;
-  document.getElementById('sync-overlay').classList.add('show');
-  document.getElementById('sync-msg-label').textContent = msg || 'Sincronizando…';
-  setSyncProgress(0);
-  /* Simulación de progreso hasta 85 % para dar feedback visual */
-  clearInterval(syncProgressTimer);
-  syncProgressTimer = setInterval(() => {
-    if (syncProgressVal < 85) {
-      syncProgressVal += (Math.random() * 12 + 4);
-      if (syncProgressVal > 85) syncProgressVal = 85;
-      setSyncProgress(Math.round(syncProgressVal));
-    }
-  }, 300);
-}
-function hideSyncOverlay(success) {
-  clearInterval(syncProgressTimer);
-  syncProgressTimer = null;
-  setSyncProgress(100);
-  setTimeout(() => {
-    isSyncing = false;
-    document.getElementById('sync-overlay').classList.remove('show');
-    /* Navegar al menú pendiente si hay uno */
-    if (pendingNavPage && pendingNavEl) {
-      const page = pendingNavPage, el = pendingNavEl;
-      pendingNavPage = null; pendingNavEl = null;
-      doNavTo(page, el);
-    }
-  }, 380);
-}
-function setSyncProgress(pct) {
-  const fg = document.getElementById('sync-ring-fg');
-  const offset = CIRCUMFERENCE - (pct / 100) * CIRCUMFERENCE;
-  fg.style.strokeDashoffset = offset;
-  document.getElementById('sync-pct-label').textContent = pct + '%';
-}
-
 /* ═══════════════════════════════════════════════════════════════
    NAVEGACIÓN
 ═══════════════════════════════════════════════════════════════ */
 function navTo(page, el) {
-  if (isSyncing) {
-    /* Guardar destino y mostrar overlay con mensaje de espera */
-    pendingNavPage = page;
-    pendingNavEl   = el;
-    document.getElementById('sync-msg-label').textContent = 'Guardando… ir a ' + page;
-    return;
-  }
-  doNavTo(page, el);
-}
-function doNavTo(page, el) {
   closeDesglosePopup();
   closeMobileMenu();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -585,7 +523,6 @@ async function loadLogsFromSheets() {
   } catch(e) { console.warn('No se pudieron cargar logs desde Sheets', e); }
 }
 async function loadAll() {
-  showSyncOverlay('Cargando datos…');
   setSyncStatus('Sincronizando…', true);
   try {
     const d = await api('getAll');
@@ -594,9 +531,7 @@ async function loadAll() {
     saveAndRender();
     if (!Array.isArray(d.logs)) loadLogsFromSheets();
     setSyncStatus('Sincronizado · ' + fmtTime(new Date()));
-    hideSyncOverlay(true);
   } catch(e) {
-    hideSyncOverlay(false);
     if (!localStorage.getItem(CACHE_KEY)) { setSyncStatus('Sin conexión'); toastError(e); }
     else setSyncStatus('Caché · sin red');
   }
@@ -623,7 +558,6 @@ async function guardarRegistro() {
         factura=document.getElementById('f-factura').value.trim(), concepto=document.getElementById('f-concepto').value.trim();
   if (!prov||!tipo||!fecha||isNaN(montoNum)) { toast('Completa tipo, proveedor, fecha y monto', true); return; }
   const btn=document.getElementById('btn-save'); btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Guardando…';
-  showSyncOverlay('Guardando registro…');
   try {
     const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto}});
     if (res.error) throw new Error(res.error);
@@ -631,8 +565,7 @@ async function guardarRegistro() {
     addLog(tipo, prov+' · '+fmt(montoNum)+(factura?' · '+factura:'')+(concepto?' · '+concepto:''));
     saveAndRender(); clearForm(); toast('✓ Guardado', false, true);
     setSyncStatus('Actualizado · '+fmtTime(new Date())); scheduleQuietSync();
-    hideSyncOverlay(true);
-  } catch(e) { hideSyncOverlay(false); toastError(e); }
+  } catch(e){toastError(e);}
   finally { btn.disabled=false; btn.innerHTML='Guardar registro'; }
 }
 async function eliminarRegistro(id) {
@@ -680,16 +613,21 @@ function renderTotales() {
     const saldoColor = r.saldo <= 0 ? 'color:var(--green-text)' : 'color:var(--amber-text)';
     rows += '<tr>' +
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600">'+esc(r.proveedor)+'</td>' +
-      '<td class="amount" style="'+saldoColor+'">'+fmt(Math.abs(r.saldo))+(r.saldo<=0?' ✓':'')+'</td>' +
+      '<td class="amount" style="'+saldoColor+'">'+fmt(Math.abs(r.saldo))+'</td>' +
       '<td class="pct-cell">'+pct+'%</td>' +
-      '<td><span class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onmouseenter="startDesglose(event,this.dataset.proveedor)" onmouseleave="cancelDesglose()">desglose</span></td>' +
+      '<td><button class="desglose-btn" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\'\,this)">desglose</button></td>' +
       '</tr>';
   });
   document.getElementById('tabla-total').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
-function startDesglose(e, proveedor) { cancelDesglose(); const anchor=e.currentTarget; desgloseTimer=setTimeout(()=>{showDesglosePopup(proveedor,anchor);desgloseTimer=null;},3000); }
-function cancelDesglose() { if(desgloseTimer){clearTimeout(desgloseTimer);desgloseTimer=null;} if(!desgloseOpen)closeDesglosePopup(); }
+/* Desglose: 1 click */
+function toggleDesglose(e, proveedor, btn) {
+  e.stopPropagation();
+  const existente=document.getElementById('desglose-popup');
+  if(existente){const prev=existente.dataset.proveedor;closeDesglosePopup();if(prev===proveedor)return;}
+  showDesglosePopup(proveedor,btn);
+}
 function showDesglosePopup(proveedor, anchor) {
   closeDesglosePopup(); desgloseOpen=true;
   const regs=state.registros.filter(r=>r.proveedor===proveedor), popup=document.createElement('div');
@@ -702,10 +640,11 @@ function showDesglosePopup(proveedor, anchor) {
   let drows='';
   sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td><td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\')">✕</button></td></tr>';});
   popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">Fact '+fmt(sumMonto(facts))+' · Pagos '+fmt(sumMonto(pagos))+' · Saldo '+fmt(Math.abs(saldo))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
-  document.body.appendChild(popup); document.addEventListener('mousemove', trackMouseForPopup);
+  document.body.appendChild(popup);
+  setTimeout(()=>document.addEventListener('click',closeDesgloseOnOutside),10);
 }
-function closeDesglosePopup() { desgloseOpen=false; const p=document.getElementById('desglose-popup'); if(p)p.remove(); document.removeEventListener('mousemove',trackMouseForPopup); }
-function trackMouseForPopup(e) { const p=document.getElementById('desglose-popup'); if(!p){document.removeEventListener('mousemove',trackMouseForPopup);return;} const r=p.getBoundingClientRect(),pad=50; if(e.clientX<r.left-pad||e.clientX>r.right+pad||e.clientY<r.top-pad||e.clientY>r.bottom+pad)closeDesglosePopup(); }
+function closeDesgloseOnOutside(e){const p=document.getElementById('desglose-popup');if(p&&!p.contains(e.target))closeDesglosePopup();}
+function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById('desglose-popup');if(p)p.remove();document.removeEventListener('click',closeDesgloseOnOutside);}
 
 /* ═══════════════════════════════════════════════════════════════
    BLOQUE: LOGS
@@ -726,7 +665,7 @@ function syncLogToSheets(log) {
 }
 function addLog(tipo, descripcion) {
   const logs=getLogs().slice(), now=new Date();
-  const log={tipo,descripcion,fecha:now.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}),hora:now.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true}),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
+  const log={tipo,descripcion,fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
   logs.unshift(log);
   if(logs.length>500)logs.splice(500);
   saveLogs(logs);
@@ -738,19 +677,40 @@ function clearLogs() {
   logsMemory=[]; try{localStorage.removeItem(LOGS_KEY);}catch(e){console.warn(e);}
   apiPost({action:'clearLogs'}).catch(e=>console.warn(e)); renderLogs();
 }
+function eliminarLog(localId) {
+  if(!confirm('¿Eliminar este registro del log?'))return;
+  const logs=getLogs().filter(l=>(l.localId||l.id||'')!==localId);
+  saveLogs(logs);
+  apiPost({action:'deleteLog',localId}).catch(e=>console.warn(e));
+  renderLogs();
+}
 function renderLogs() {
   const el=document.getElementById('logs-list'), logs=getLogs();
   if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
   const LOG_BADGE={eliminar:'badge-log-del',proveedor:'badge-log-prov'};
-  /* Tabla normal (desktop) + filas compactas (móvil) en el mismo contenedor */
   let tableRows='', compactRows='';
   logs.forEach(l=>{
     const cls=LOG_BADGE[l.tipo]||'badge-log-add';
-    tableRows+='<tr><td class="log-time">'+esc(l.fecha)+'&nbsp;&nbsp;'+esc(l.hora)+'</td><td><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td><td style="color:var(--text-muted)">'+esc(l.descripcion)+'</td></tr>';
-    compactRows+='<div class="log-row-compact"><div style="flex:1"><div class="log-compact-top"><span class="badge '+cls+'">'+esc(l.tipo)+'</span><span class="log-time">'+esc(l.fecha)+' '+esc(l.hora)+'</span></div><div class="log-compact-desc">'+esc(l.descripcion)+'</div></div></div>';
+    const dt=esc(l.fechaHora||(l.fecha+(l.hora?' '+l.hora:'')));
+    const lid=esc(l.localId||l.id||'');
+    tableRows+=
+      '<tr>'+
+      '<td class="log-time" style="font-size:11px;white-space:nowrap">'+dt+'</td>'+
+      '<td><span class="badge '+cls+'" style="font-size:9px;padding:1px 6px">'+esc(l.tipo)+'</span></td>'+
+      '<td style="color:var(--text-muted);font-size:12px">'+esc(l.descripcion)+'</td>'+
+      '<td style="width:32px;padding:4px 6px"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(''+lid+'')">🗑</button></td>'+
+      '</tr>';
+    compactRows+=
+      '<div class="log-row-compact">'+
+      '<div style="flex:1">'+
+        '<div class="log-compact-top"><span class="badge '+cls+'" style="font-size:9px;padding:1px 5px">'+esc(l.tipo)+'</span><span class="log-time">'+dt+'</span></div>'+
+        '<div class="log-compact-desc">'+esc(l.descripcion)+'</div>'+
+      '</div>'+
+      '<button class="btn-icon" title="Eliminar" onclick="eliminarLog(''+lid+'')">🗑</button>'+
+      '</div>';
   });
   el.innerHTML=
-    '<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'+
+    '<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th><th></th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'+
     '<div id="logs-compact">'+compactRows+'</div>';
 }
 
