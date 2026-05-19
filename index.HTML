@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.06
+     ESTADO DE CUENTA  |  Versión 2.07
      ============================================================ -->
 <html lang="es">
 <head>
@@ -73,9 +73,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 .card-title  { font-size: 13px; font-weight: 600; }
 .card-body   { padding: 18px; }
 .form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.form-group  { display: flex; flex-direction: column; gap: 5px; }
+.form-group  { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.label-long  { font-size: inherit; }
 label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
-input, select, textarea { width: 100%; padding: 9px 12px; font-size: 13px; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 8px; background: #faf9f7; color: var(--text); transition: all .14s; }
+input, select, textarea { width: 100%; min-width: 0; padding: 9px 12px; font-size: 13px; font-family: var(--font); border: 1.5px solid var(--border); border-radius: 8px; background: #faf9f7; color: var(--text); transition: all .14s; }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(37,99,235,.09); }
 input#f-monto { font-family: var(--mono); font-size: 14px; }
 textarea { resize: vertical; min-height: 60px; }
@@ -90,6 +91,9 @@ textarea { resize: vertical; min-height: 60px; }
 .btn-danger:hover { background: var(--red-bg); }
 .btn-icon   { padding: 4px 7px; font-size: 13px; line-height: 1; border-radius: 6px; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text-faint); transition: all .14s; }
 .btn-icon:hover { background: var(--red-bg); color: var(--red-text); border-color: var(--red-border); }
+.btn-refresh { display:flex; align-items:center; justify-content:center; width:26px; height:26px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); border-radius:50%; cursor:pointer; color:#a0ede8; font-size:15px; transition:all .2s; padding:0; line-height:1; flex-shrink:0; }
+.btn-refresh:hover { background:rgba(255,255,255,.22); color:#fff; }
+.btn-refresh.spinning { animation:spin .7s linear infinite; }
 .btn-group  { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-select { padding: 8px 14px; font-size: 13px; font-family: var(--font); border-radius: 8px; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; transition: all .14s; user-select: none; }
 .btn-select:hover  { background: var(--bg); border-color: #cbd5e1; }
@@ -221,7 +225,10 @@ tr:hover td      { background: #f7f5f1; }
   label       { font-size: 10px; }
   input, select, textarea { padding: 7px 10px; font-size: 13px; }
   .form-actions { margin-top: 12px; }
-  .btn-group  { gap: 6px; }
+  .btn-refresh { display:flex; align-items:center; justify-content:center; width:26px; height:26px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.15); border-radius:50%; cursor:pointer; color:#a0ede8; font-size:15px; transition:all .2s; padding:0; line-height:1; flex-shrink:0; }
+.btn-refresh:hover { background:rgba(255,255,255,.22); color:#fff; }
+.btn-refresh.spinning { animation:spin .7s linear infinite; }
+.btn-group  { gap: 6px; }
   .btn-select { padding: 7px 12px; font-size: 12px; }
 
   /* KPIs compactos */
@@ -257,7 +264,7 @@ tr:hover td      { background: #f7f5f1; }
 <body>
 
 <script>
-const APP_VERSION = "2.06";
+const APP_VERSION = "2.07";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -269,6 +276,7 @@ const LOGS_KEY    = "pagos_v1_logs";
   </div>
   <div class="header-right">
     <span class="header-version" id="app-version"></span>
+    <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Actualizar datos">↻</button>
     <span class="header-sync"    id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
   </div>
@@ -315,7 +323,7 @@ const LOGS_KEY    = "pagos_v1_logs";
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
-            <div class="form-group"><label>Monto ($) * — coma miles · punto decimales</label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+            <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
             <div class="form-group"><label>Número de factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
             <div class="form-group"><label>Concepto / Referencia</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
@@ -510,6 +518,23 @@ function navTo(page, el) {
 /* ═══════════════════════════════════════════════════════════════
    SINCRONIZACIÓN
 ═══════════════════════════════════════════════════════════════ */
+
+async function manualSync() {
+  const btn=document.getElementById('btn-refresh');
+  if(btn){btn.classList.add('spinning');btn.disabled=true;}
+  setSyncStatus('Sincronizando…',true);
+  try {
+    const d=await api('getAll');if(d.error)throw new Error(d.error);
+    updateStateFromSheetData(d);saveAndRender();
+    if(!Array.isArray(d.logs))loadLogsFromSheets();
+    setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+    toast('✓ Datos actualizados',false,true);
+  } catch(e) {
+    toastError(e);setSyncStatus('Error de red');
+  } finally {
+    if(btn){btn.classList.remove('spinning');btn.disabled=false;}
+  }
+}
 function scheduleQuietSync() { if(syncTimer)clearTimeout(syncTimer); syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500); }
 function updateStateFromSheetData(d) {
   state.registros   = d.registros   || [];
@@ -582,12 +607,13 @@ async function guardarRegistro() {
   } catch(e){toastError(e);}
   finally { btn.disabled=false; btn.innerHTML='Guardar registro'; }
 }
-async function eliminarRegistro(id) {
+async function eliminarRegistro(id, btn) {
   if (!confirm('¿Eliminar este registro?')) return;
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spinner" style="border-color:#fff;border-right-color:transparent;width:10px;height:10px;margin:0"></span>'; }
   const prev=state.registros.slice(), found=state.registros.find(r=>r.id===id);
   state.registros=state.registros.filter(r=>r.id!==id); saveAndRender();
   try { const res=await apiPost({action:'deleteRegistro',id}); if(res.error)throw new Error(res.error); if(found)addLog('eliminar',found.proveedor+' · '+fmt(found.monto)+' · '+found.tipo); toast('Eliminado'); scheduleQuietSync(); }
-  catch(e) { state.registros=prev; saveAndRender(); toastError(e); }
+  catch(e) { state.registros=prev; saveAndRender(); toastError(e); if(btn){btn.disabled=false;btn.innerHTML='✕';} }
 }
 function clearForm() {
   ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
@@ -652,7 +678,7 @@ function showDesglosePopup(proveedor, anchor) {
   if(left+660>window.innerWidth)left=Math.max(8,window.innerWidth-670);
   popup.style.top=top+'px'; popup.style.left=left+'px';
   let drows='';
-  sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td><td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\')">✕</button></td></tr>';});
+  sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td><td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\',this)">✕</button></td></tr>';});
   popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">Fact '+fmt(sumMonto(facts))+' · Pagos '+fmt(sumMonto(pagos))+' · Saldo '+fmt(Math.abs(saldo))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
   document.body.appendChild(popup);
   setTimeout(()=>document.addEventListener('click',closeDesgloseOnOutside),10);
