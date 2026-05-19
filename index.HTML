@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.02
+     ESTADO DE CUENTA  |  Versión 2.03
      ============================================================ -->
 <html lang="es">
 <head>
@@ -181,7 +181,7 @@ tr:hover td      { background: #f7f5f1; }
 <body>
 
 <script>
-const APP_VERSION = "2.02";
+const APP_VERSION = "2.03";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -225,8 +225,8 @@ const LOGS_KEY    = "pagos_v1_logs";
       <div class="card">
         <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
         <div class="card-body">
-          <div class="form-grid"><div class="form-group" style="grid-column: 1 / -1;"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select active" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value="factura"></div></div>
-            <div class="form-group" style="grid-column: 1 / -1;"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
+          <div class="form-grid"><div class="form-group"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value=""></div></div>
+            <div class="form-group"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
             
             <div class="form-group"><label>Monto ($) * — coma miles · punto decimales</label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
@@ -235,7 +235,7 @@ const LOGS_KEY    = "pagos_v1_logs";
           </div>
           <div class="form-actions">
             <button class="btn" onclick="clearForm()">Limpiar</button>
-            <button class="btn btn-primary" id="btn-save" onclick="guardarRegistro()">Guardar registro</button>
+            <button class="btn btn-primary" id="btn-save" style="background:#16a34a;border-color:#16a34a;" onclick="guardarRegistro()">Guardar registro</button>
           </div>
         </div>
       </div>
@@ -372,7 +372,8 @@ async function loadLogsFromSheets() {
 async function loadAll() {
   setSyncStatus('Sincronizando…',true);
   try { const d=await api('getAll'); if(d.error)throw new Error(d.error); updateStateFromSheetData(d); saveAndRender(); if(!Array.isArray(d.logs))loadLogsFromSheets(); setSyncStatus('Sincronizado · '+fmtTime(new Date())); }
-  catch(e) { if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else setSyncStatus('Caché · sin red'); }
+  catch(e) { if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else isSyncing = false;
+      setSyncStatus('Caché · sin red'); }
 }
 function setSyncStatus(msg,loading=false) { const el=document.getElementById('sync-status'); el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg; }
 
@@ -416,7 +417,7 @@ async function eliminarRegistro(id) {
   try { const res=await apiPost({action:'deleteRegistro',id}); if(res.error)throw new Error(res.error); if(found)addLog('eliminar',found.proveedor+' · '+fmt(found.monto)+' · '+found.tipo); toast('Eliminado'); scheduleQuietSync(); }
   catch(e){state.registros=prev;saveAndRender();toastError(e);}
 }
-function clearForm(){['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-tipo').value='factura';}
+function clearForm(){['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-tipo').value='';}
 function renderProvSelect(){const s=document.getElementById('f-proveedor');s.innerHTML='<option value="">Seleccionar proveedor…</option>'+state.proveedores.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('');}
 
 
@@ -425,12 +426,14 @@ function renderProvSelect(){const s=document.getElementById('f-proveedor');s.inn
 ════════════════════════════════════════════════════════════ */
 function renderTotales() {
   const regs=state.registros, facts=regs.filter(r=>r.tipo==='factura'), pagos=regs.filter(r=>r.tipo==='pago');
-  const sumAll=sumMonto(regs), sumF=sumMonto(facts), sumP=sumMonto(pagos), saldo=sumF-sumP;
-  document.getElementById('k-total').textContent=fmt(sumAll); document.getElementById('k-mov').textContent=regs.length+' movimientos';   document.getElementById('k-fact-n').textContent=nRegistros(facts.length);  document.getElementById('k-pagos-n').textContent=nRegistros(pagos.length);
+  const sumF=sumMonto(facts), sumP=sumMonto(pagos), saldo=sumF-sumP;
+  const resumen = resumenPorProveedor(regs);
+  const sumSaldos = resumen.reduce((acc, r) => acc + r.saldo, 0);
+  document.getElementById('k-total').textContent=fmt(sumSaldos); document.getElementById('k-mov').textContent=regs.length+' movimientos';   document.getElementById('k-fact-n').textContent=nRegistros(facts.length);  document.getElementById('k-pagos-n').textContent=nRegistros(pagos.length);
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';return;}
   let rows='';
-  resumenPorProveedor(regs).forEach(r=>{
-    const pct=saldo>0?((Math.max(r.saldo,0)/saldo)*100).toFixed(1):'0.0';
+  resumen.forEach(r=>{
+    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
     rows+='<tr>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600">'+esc(r.proveedor)+'</td>'+
       '<td class="amount" style="color:'+(r.saldo<0?'var(--green-text)':'var(--text)')+'">'+fmt(Math.abs(r.saldo))+'</td>'+
