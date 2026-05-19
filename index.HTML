@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.02
+     ESTADO DE CUENTA  |  Versión 2.03
      ============================================================ -->
 <html lang="es">
 <head>
@@ -29,11 +29,14 @@ label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppe
 input,select,textarea{width:100%;padding:9px 12px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);transition:all .14s}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.09)}input#f-monto{font-family:var(--mono);font-size:14px}textarea{resize:vertical;min-height:60px}.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .btn{padding:8px 18px;font-size:13px;font-family:var(--font);border-radius:8px;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-weight:500;transition:all .14s}.btn:hover{background:var(--bg);box-shadow:var(--shadow-sm)}.btn:active{transform:scale(.97)}.btn-primary{background:var(--text);color:#f0ede8;border-color:var(--text)}.btn-primary:hover{opacity:.86;background:var(--text)}.btn-sm{padding:4px 10px;font-size:11px}.btn-danger{color:var(--red-text);border-color:var(--red-border)}.btn-danger:hover{background:var(--red-bg)}
-.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);padding:10px 14px;border-bottom:2px solid var(--border);text-align:left;white-space:nowrap;background:#faf9f7}td{padding:10px 14px;border-bottom:1px solid #f0ede8;vertical-align:middle}tr:last-child td{border-bottom:none}tr:hover td{background:#f7f5f1}
+.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:13px}th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-faint);padding:14px 16px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;background:#faf9f7}td{padding:14px 16px;border-bottom:1px solid #f5f4ef;vertical-align:middle;transition:background .15s}tr:last-child td{border-bottom:none}tr:hover td{background:#f7f5f1}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent}.badge-pago{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border)}.badge-factura{background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue-border)}.badge-log-add{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border)}.badge-log-del{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border)}.badge-log-prov{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border)}
 .amount{font-family:var(--mono);font-weight:500}.pct-cell{font-family:var(--mono);font-size:12px;color:var(--text-muted)}.hint-text{font-size:11px;color:var(--text-faint)}.empty{text-align:center;padding:3rem;color:var(--text-faint);font-size:13px}.loading{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--text-muted);gap:8px;font-size:13px}.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .6s linear infinite;vertical-align:-2px;margin-right:5px}@keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#111110;color:#f0ede8;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .22s;pointer-events:none;z-index:999;max-width:min(400px,calc(100vw - 2rem));word-break:break-word;box-shadow:var(--shadow-md)}.toast.show{opacity:1;transform:translateY(0)}.toast.error{background:#7a1a1a}.toast.success{background:#14532d}
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem}.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-sm);border-top:3px solid var(--kpi-color,#cbd5e1);transition:box-shadow .15s}.kpi-card:hover{box-shadow:var(--shadow)}.kpi-card.total{--kpi-color:#111110}.kpi-card.fact{--kpi-color:#2563eb}.kpi-card.pagos{--kpi-color:#16a34a}.kpi-card.saldo{--kpi-color:#d97706}.kpi-card.saldo.paid{--kpi-color:#16a34a}.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-faint);margin-bottom:8px}.kpi-value{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--text);line-height:1}.kpi-sub{font-size:11px;color:var(--text-faint);margin-top:5px;font-family:var(--mono)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem}.kpi-card{background:linear-gradient(145deg, var(--surface) 0%, #fcfbf9 100%);border:none;border-radius:12px;padding:24px 28px;box-shadow:0 4px 15px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.8);border-left:4px solid var(--kpi-color,#cbd5e1);transition:transform .2s, box-shadow .2s; position:relative; overflow:hidden}
+.kpi-card::after{content:'';position:absolute;top:0;right:0;width:100px;height:100px;background:radial-gradient(circle, var(--kpi-color) 0%, transparent 70%);opacity:0.05;border-radius:50%;transform:translate(30%, -30%)}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,1)}
+.kpi-value{font-size:28px;letter-spacing:-0.02em;margin-top:4px;}.kpi-card.total{--kpi-color:#111110}.kpi-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-faint);margin-bottom:8px}.kpi-sub{font-size:11px;color:var(--text-faint);margin-top:5px;font-family:var(--mono)}
 .desglose-btn{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;font-size:10px;font-family:var(--mono);border:1.5px solid var(--border);border-radius:5px;cursor:default;color:var(--text-faint);user-select:none;transition:all .14s;letter-spacing:.04em;font-weight:500}.desglose-btn::before{content:'⊕';font-size:11px;opacity:.6}.desglose-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--blue-bg)}.popup-desglose{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-md);min-width:520px;max-width:660px;max-height:440px;overflow:auto}.popup-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#faf9f7;border-radius:var(--r) var(--r) 0 0;position:sticky;top:0;z-index:1}.popup-header-close{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:var(--bg);border:1px solid var(--border);font-size:14px;color:var(--text-muted)}.popup-header-close:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border)}
 .log-time{font-family:var(--mono);font-size:11px;color:var(--text-faint);white-space:nowrap}.prov-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}.prov-item:last-child{border-bottom:none}.add-prov-row{display:flex;gap:8px;margin-bottom:14px}
 @media(max-width:860px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:640px){.btn-mobile{display:flex}.layout{grid-template-columns:1fr}.sidebar{display:none;position:fixed;top:58px;left:0;height:calc(100vh - 58px);width:230px;z-index:40;box-shadow:var(--shadow-md);overflow-y:auto}.sidebar.open{display:block}.main{padding:1.25rem}.form-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}.kpi-value{font-size:16px}.popup-desglose{min-width:calc(100vw - 20px);max-width:calc(100vw - 20px)}.header-sync{display:none}}@media(min-width:641px){.sidebar-overlay{display:none!important}}.sidebar-overlay{display:none;position:fixed;inset:0;top:58px;background:rgba(0,0,0,.35);z-index:39}.sidebar-overlay.open{display:block}
@@ -42,7 +45,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <body>
 
 <script>
-const APP_VERSION = "2.02";
+const APP_VERSION = "2.03";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -75,8 +78,8 @@ const LOGS_KEY    = "pagos_v1_logs";
       <div class="card">
         <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
         <div class="card-body">
-          <div class="form-grid"><div class="form-group" style="grid-column: 1 / -1;"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select active" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value="factura"></div></div>
-            <div class="form-group" style="grid-column: 1 / -1;"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
+          <div class="form-grid"><div class="form-group"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value=""></div></div>
+            <div class="form-group"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
             
             <div class="form-group"><label>Monto ($) * — coma miles · punto decimales</label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
@@ -85,7 +88,7 @@ const LOGS_KEY    = "pagos_v1_logs";
           </div>
           <div class="form-actions">
             <button class="btn" onclick="clearForm()">Limpiar</button>
-            <button class="btn btn-primary" id="btn-save" onclick="guardarRegistro()">Guardar registro</button>
+            <button class="btn btn-primary" id="btn-save" style="background:#16a34a;border-color:#16a34a;" onclick="guardarRegistro()">Guardar registro</button>
           </div>
         </div>
       </div>
@@ -196,7 +199,12 @@ function closeMobileMenu() {
   document.getElementById('sidebar-overlay').classList.remove('open');
 }
 
+let isSyncing = false;
 function navTo(page, el) {
+  if (isSyncing) {
+    toast('Espera a que termine la sincronización', true);
+    return;
+  }
   closeDesglosePopup();
   closeMobileMenu();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -268,6 +276,7 @@ async function loadLogsFromSheets() {
 }
 
 async function loadAll() {
+  isSyncing = true;
   setSyncStatus('Sincronizando…', true);
 
   try {
@@ -276,12 +285,14 @@ async function loadAll() {
     updateStateFromSheetData(d);
     saveAndRender();
     if (!Array.isArray(d.logs)) loadLogsFromSheets();
-    setSyncStatus('Sincronizado · ' + fmtTime(new Date()));
+    isSyncing = false;
+      setSyncStatus('Actualizado · ' + fmtTime(new Date()));
   } catch(e) {
     if (!localStorage.getItem(CACHE_KEY)) {
       setSyncStatus('Sin conexión');
       toastError(e);
     } else {
+      isSyncing = false;
       setSyncStatus('Caché · sin red');
     }
   }
@@ -350,8 +361,8 @@ async function guardarRegistro() {
         factura=document.getElementById('f-factura').value.trim(),
         concepto=document.getElementById('f-concepto').value.trim();
 
-  if(!prov || !fecha || isNaN(montoNum)) {
-    toast('Completa proveedor, fecha y monto', true);
+  if(!tipo || !prov || !fecha || isNaN(montoNum)) {
+    toast('Selecciona tipo, proveedor, fecha y monto', true);
     return;
   }
 
@@ -362,11 +373,13 @@ async function guardarRegistro() {
   try {
     const localId = 'temp_' + Date.now();
     state.registros.push({ id: localId, fecha, proveedor:prov, tipo, monto:montoNum, factura, concepto });
-    addLog(tipo, prov + ' · ' + fmt(montoNum) + (factura ? ' · ' + factura : ''));
+    const logDesc = prov + ' · ' + fmt(montoNum) + (factura ? ' · Factura: ' + factura : '') + (concepto ? ' · Concepto: ' + concepto : '');
+    addLog(tipo, logDesc);
     saveAndRender();
     clearForm();
     toast('✓ Guardado', false, true);
-    setSyncStatus('Actualizando...', true);
+    isSyncing = true;
+  setSyncStatus('Actualizando...', true);
 
     apiPost({
       action:'addRegistro',
@@ -375,9 +388,11 @@ async function guardarRegistro() {
       if(res.error) throw new Error(res.error);
       const found = state.registros.find(r => r.id === localId);
       if (found) { found.id = res.id; saveAndRender(); }
+      isSyncing = false;
       setSyncStatus('Actualizado · ' + fmtTime(new Date()));
     }).catch(e => {
       console.warn('Sync error', e);
+      isSyncing = false;
       setSyncStatus('Pendiente de red');
     });
 
@@ -400,14 +415,17 @@ async function eliminarRegistro(id) {
   saveAndRender();
   if(found) addLog('eliminar', found.proveedor + ' · ' + fmt(found.monto) + ' · ' + found.tipo);
   toast('Eliminado');
+  isSyncing = true;
   setSyncStatus('Actualizando...', true);
 
   apiPost({ action:'deleteRegistro', id }).then(res => {
     if(res.error) throw new Error(res.error);
-    setSyncStatus('Actualizado · ' + fmtTime(new Date()));
+    isSyncing = false;
+      setSyncStatus('Actualizado · ' + fmtTime(new Date()));
   }).catch(e => {
     console.warn('Sync error', e);
-    setSyncStatus('Pendiente de red');
+    isSyncing = false;
+      setSyncStatus('Pendiente de red');
   });
 
   try {
@@ -421,8 +439,8 @@ async function eliminarRegistro(id) {
 
 function clearForm() {
   ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-tipo').value='factura';
-  document.querySelectorAll('#f-tipo-group .btn-select').forEach(b => b.classList.toggle('active', b.dataset.val==='factura'));
+  document.getElementById('f-tipo').value='';
+  document.querySelectorAll('#f-tipo-group .btn-select').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('#f-proveedor-group .btn-select').forEach(b => b.classList.remove('active'));
 }
 
@@ -447,9 +465,11 @@ function renderTotales() {
   const regs=state.registros;
   const facts=regs.filter(r=>r.tipo==='factura');
   const pagos=regs.filter(r=>r.tipo==='pago');
-  const sumAll=sumMonto(regs), sumF=sumMonto(facts), sumP=sumMonto(pagos), saldo=sumF-sumP;
+  const sumF=sumMonto(facts), sumP=sumMonto(pagos), saldo=sumF-sumP;
+  const resumen = resumenPorProveedor(regs);
+  const sumSaldos = resumen.reduce((acc, r) => acc + r.saldo, 0);
 
-  document.getElementById('k-total').textContent=fmt(sumAll);
+  document.getElementById('k-total').textContent=fmt(sumSaldos);
   document.getElementById('k-mov').textContent=regs.length+' movimientos';
   
   if(!regs.length) {
@@ -458,8 +478,8 @@ function renderTotales() {
   }
 
   let rows='';
-  resumenPorProveedor(regs).forEach(r=>{
-    const pct=saldo>0?((Math.max(r.saldo,0)/saldo)*100).toFixed(1):'0.0';
+  resumen.forEach(r=>{
+    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
 
     rows += '<tr>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600">'+esc(r.proveedor)+'</td>'+
@@ -490,7 +510,6 @@ function showDesglosePopup(proveedor, anchor) {
   const regs=state.registros.filter(r=>r.proveedor===proveedor);
   const facts=regs.filter(r=>r.tipo==='factura');
   const pagos=regs.filter(r=>r.tipo==='pago');
-  const saldo=sumMonto(facts)-sumMonto(pagos);
   const popup=document.createElement('div');
 
   popup.id='desglose-popup';
@@ -607,6 +626,18 @@ function eliminarLog(localId) {
   saveLogs(logs);
   renderLogs();
   apiPost({ action: 'deleteLog', localId }).catch(e=>console.warn('Error deleting log on sheet', e));
+}
+
+function clearLogs() {
+  if(!confirm('¿Limpiar todos los logs?')) return;
+
+  logsMemory=[];
+
+  try { localStorage.removeItem(LOGS_KEY); }
+  catch(e) { console.warn('No se pudieron limpiar los logs en localStorage', e); }
+
+  apiPost({ action:'clearLogs' }).catch(e=>console.warn('No se pudieron limpiar los logs en Sheets', e));
+  renderLogs();
 }
 
 function renderLogs() {
