@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.01
+     ESTADO DE CUENTA  |  Versión 2.02
      ============================================================ -->
 <html lang="es">
 <head>
@@ -67,6 +67,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); font
 
 /* ═══════════════════════════════════════════════════════════════
    COMPONENTES COMPARTIDOS
+═══════════════════════════════════════════════════════════════ */
+
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-select { padding: 8px 14px; font-size: 13px; font-family: var(--font); border-radius: 8px; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; transition: all .14s; user-select: none; }
+.btn-select:hover { background: var(--bg); border-color: #cbd5e1; }
+.btn-select.active { background: var(--text); color: #f0ede8; border-color: var(--text); }
+
 ═══════════════════════════════════════════════════════════════ */
 .card        { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); margin-bottom: 1rem; box-shadow: var(--shadow-sm); }
 .card-header { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: #faf9f7; border-radius: var(--r) var(--r) 0 0; flex-wrap: wrap; gap: 8px; }
@@ -174,7 +181,7 @@ tr:hover td      { background: #f7f5f1; }
 <body>
 
 <script>
-const APP_VERSION = "2.01";
+const APP_VERSION = "2.02";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -218,9 +225,9 @@ const LOGS_KEY    = "pagos_v1_logs";
       <div class="card">
         <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
         <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group"><label>Proveedor *</label><select id="f-proveedor"><option value="">Cargando…</option></select></div>
-            <div class="form-group"><label>Tipo *</label><select id="f-tipo"><option value="factura">Factura</option><option value="pago">Pago</option></select></div>
+          <div class="form-grid"><div class="form-group" style="grid-column: 1 / -1;"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select active" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value="factura"></div></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
+            
             <div class="form-group"><label>Monto ($) * — coma miles · punto decimales</label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
             <div class="form-group"><label>Número de factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
@@ -240,7 +247,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-totales">
       <div class="page-title">Totales</div>
       <div class="kpi-grid">
-        <div class="kpi-card total" style="grid-column: span 4"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
+        <div class="kpi-card total" ><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Resumen de movimientos</span><span class="hint-text">Mantén el cursor sobre "desglose" 3 seg para ver detalle</span></div>
@@ -254,7 +261,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-logs">
       <div class="page-title">Logs</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Historial de movimientos</span><button class="btn btn-sm btn-danger" onclick="clearLogs()">Limpiar logs</button></div>
+        <div class="card-header"><span class="card-title">Historial de movimientos</span></div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -373,6 +380,14 @@ function setSyncStatus(msg,loading=false) { const el=document.getElementById('sy
 /* ════════════════════════════════════════════════════════════
    BLOQUE: REGISTRAR
 ════════════════════════════════════════════════════════════ */
+
+function setSelectBtn(btn, inputId) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.btn-select').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(inputId).value = btn.dataset.val;
+}
+
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);}
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
@@ -439,7 +454,7 @@ function showDesglosePopup(proveedor,anchor){
   popup.style.top=top+'px'; popup.style.left=left+'px';
   let drows='';
   sortByMonto(regs).forEach(r=>{drows+='<tr><td style="color:var(--text-faint);font-size:11px;white-space:nowrap">'+esc(r.fecha)+'</td><td><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span></td><td class="amount">'+fmt(r.monto)+'</td><td style="color:var(--text-muted);font-size:11px">'+esc(r.factura||'—')+'</td><td style="color:var(--text-muted);font-size:11px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.concepto||'—')+'</td><td><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\')">✕</button></td></tr>';});
-  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">'+regs.length+' mov · facturas '+fmt(sumMonto(facts))+' · pagos '+fmt(sumMonto(pagos))+' · saldo '+fmt(Math.abs(saldo))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
+  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
   document.body.appendChild(popup); document.addEventListener('mousemove',trackMouseForPopup);
 }
 function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById('desglose-popup');if(p)p.remove();document.removeEventListener('mousemove',trackMouseForPopup);}
@@ -490,7 +505,7 @@ function renderLogs(){
   const LOG_BADGE={eliminar:'badge-log-del',proveedor:'badge-log-prov'};
   let rows='';
   logs.forEach(l=>{const cls=LOG_BADGE[l.tipo]||'badge-log-add';rows+='<tr><td class="log-time">'+esc(l.fecha)+'&nbsp;&nbsp;'+esc(l.hora)+'</td><td><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td><td style="color:var(--text-muted)">'+esc(l.descripcion)+'</td></tr>';});
-  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 
