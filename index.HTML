@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.01
+     ESTADO DE CUENTA  |  Versión 2.02
      ============================================================ -->
 <html lang="es">
 <head>
@@ -17,6 +17,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .btn-mobile{display:none;align-items:center;justify-content:center;width:34px;height:34px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);border-radius:7px;cursor:pointer;color:#d0cec9;font-size:18px}.btn-mobile:hover{background:rgba(255,255,255,.18)}
 .layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 58px)}.main{padding:1.75rem 2rem;overflow-y:auto}.page{display:none}.page.active{display:block}.page-title{font-size:20px;font-weight:700;margin-bottom:1.25rem;letter-spacing:-.01em}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:1.25rem 0;box-shadow:2px 0 10px rgba(0,0,0,.05)}.nav-section{padding:0 .875rem;margin-bottom:1.5rem}.nav-label{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-faint);padding:0 .625rem;margin-bottom:.5rem}.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-muted);transition:all .14s;user-select:none}.nav-item:hover{background:var(--bg);color:var(--text)}.nav-item.active{background:var(--text);color:#f0ede8;font-weight:600;box-shadow:var(--shadow-sm)}.nav-icon{font-size:14px;width:18px;text-align:center;opacity:.8}.nav-item.active .nav-icon{opacity:1}
+/* ═══════════════════════════════════════════════════════════════
+   COMPONENTES COMPARTIDOS
+═══════════════════════════════════════════════════════════════ */
+.btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-select { padding: 8px 14px; font-size: 13px; font-family: var(--font); border-radius: 8px; cursor: pointer; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font-weight: 500; transition: all .14s; user-select: none; }
+.btn-select:hover { background: var(--bg); border-color: #cbd5e1; }
+.btn-select.active { background: var(--text); color: #f0ede8; border-color: var(--text); }
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:1rem;box-shadow:var(--shadow-sm)}.card-header{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:#faf9f7;border-radius:var(--r) var(--r) 0 0;flex-wrap:wrap;gap:8px}.card-title{font-size:13px;font-weight:600}.card-body{padding:18px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-group{display:flex;flex-direction:column;gap:5px}
 label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
 input,select,textarea{width:100%;padding:9px 12px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);transition:all .14s}
@@ -35,7 +42,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 <body>
 
 <script>
-const APP_VERSION = "2.01";
+const APP_VERSION = "2.02";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -68,9 +75,9 @@ const LOGS_KEY    = "pagos_v1_logs";
       <div class="card">
         <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
         <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group"><label>Proveedor *</label><select id="f-proveedor"><option value="">Cargando…</option></select></div>
-            <div class="form-group"><label>Tipo *</label><select id="f-tipo"><option value="factura">Factura</option><option value="pago">Pago</option></select></div>
+          <div class="form-grid"><div class="form-group" style="grid-column: 1 / -1;"><label>Tipo *</label><div class="btn-group" id="f-tipo-group"><button class="btn-select active" data-val="factura" onclick="setSelectBtn(this, 'f-tipo')">Factura</button><button class="btn-select" data-val="pago" onclick="setSelectBtn(this, 'f-tipo')">Pago</button><input type="hidden" id="f-tipo" value="factura"></div></div>
+            <div class="form-group" style="grid-column: 1 / -1;"><label>Proveedor *</label><div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando...</div></div><input type="hidden" id="f-proveedor" value=""></div>
+            
             <div class="form-group"><label>Monto ($) * — coma miles · punto decimales</label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
             <div class="form-group"><label>Número de factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
@@ -87,7 +94,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-totales">
       <div class="page-title">Totales</div>
       <div class="kpi-grid">
-        <div class="kpi-card total" style="grid-column: span 4"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
+        <div class="kpi-card total"><div class="kpi-label">Total general</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-mov">— movimientos</div></div>
       </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Resumen por proveedor</span><span class="hint-text">Mantén el cursor sobre "desglose" 3 seg para ver movimientos</span></div>
@@ -98,7 +105,7 @@ const LOGS_KEY    = "pagos_v1_logs";
     <div class="page" id="page-logs">
       <div class="page-title">Logs</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Historial de movimientos</span><button class="btn btn-sm btn-danger" onclick="clearLogs()">Limpiar logs</button></div>
+        <div class="card-header"><span class="card-title">Historial de movimientos</span></div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -285,6 +292,14 @@ function setSyncStatus(msg, loading=false) {
   el.innerHTML = loading ? '<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>' + msg : msg;
 }
 
+
+function setSelectBtn(btn, inputId) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.btn-select').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(inputId).value = btn.dataset.val;
+}
+
 function onMontoInput() {
   const el=document.getElementById('f-monto');
   el.value=sanitizeMontoTyping(el.value);
@@ -345,25 +360,33 @@ async function guardarRegistro() {
   btn.innerHTML='<span class="spinner"></span>Guardando…';
 
   try {
-    const res=await apiPost({
-      action:'addRegistro',
-      data:{ fecha, proveedor:prov, tipo, monto:montoNum, factura, concepto }
-    });
-
-    if(res.error) throw new Error(res.error);
-
-    state.registros.push({ id:res.id, fecha, proveedor:prov, tipo, monto:montoNum, factura, concepto });
+    const localId = 'temp_' + Date.now();
+    state.registros.push({ id: localId, fecha, proveedor:prov, tipo, monto:montoNum, factura, concepto });
     addLog(tipo, prov + ' · ' + fmt(montoNum) + (factura ? ' · ' + factura : ''));
     saveAndRender();
     clearForm();
     toast('✓ Guardado', false, true);
-    setSyncStatus('Actualizado · ' + fmtTime(new Date()));
-    scheduleQuietSync();
+    setSyncStatus('Actualizando...', true);
+
+    apiPost({
+      action:'addRegistro',
+      data:{ fecha, proveedor:prov, tipo, monto:montoNum, factura, concepto }
+    }).then(res => {
+      if(res.error) throw new Error(res.error);
+      const found = state.registros.find(r => r.id === localId);
+      if (found) { found.id = res.id; saveAndRender(); }
+      setSyncStatus('Actualizado · ' + fmtTime(new Date()));
+    }).catch(e => {
+      console.warn('Sync error', e);
+      setSyncStatus('Pendiente de red');
+    });
+
   } catch(e) {
     toastError(e);
   } finally {
     btn.disabled=false;
     btn.textContent='Guardar registro';
+    document.getElementById('f-monto').focus();
   }
 }
 
@@ -375,12 +398,19 @@ async function eliminarRegistro(id) {
 
   state.registros=state.registros.filter(r=>r.id!==id);
   saveAndRender();
+  if(found) addLog('eliminar', found.proveedor + ' · ' + fmt(found.monto) + ' · ' + found.tipo);
+  toast('Eliminado');
+  setSyncStatus('Actualizando...', true);
+
+  apiPost({ action:'deleteRegistro', id }).then(res => {
+    if(res.error) throw new Error(res.error);
+    setSyncStatus('Actualizado · ' + fmtTime(new Date()));
+  }).catch(e => {
+    console.warn('Sync error', e);
+    setSyncStatus('Pendiente de red');
+  });
 
   try {
-    const res=await apiPost({ action:'deleteRegistro', id });
-    if(res.error) throw new Error(res.error);
-    if(found) addLog('eliminar', found.proveedor + ' · ' + fmt(found.monto) + ' · ' + found.tipo);
-    toast('Eliminado');
     scheduleQuietSync();
   } catch(e) {
     state.registros=prev;
@@ -392,11 +422,25 @@ async function eliminarRegistro(id) {
 function clearForm() {
   ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='factura';
+  document.querySelectorAll('#f-tipo-group .btn-select').forEach(b => b.classList.toggle('active', b.dataset.val==='factura'));
+  document.querySelectorAll('#f-proveedor-group .btn-select').forEach(b => b.classList.remove('active'));
 }
 
 function renderProvSelect() {
-  const s=document.getElementById('f-proveedor');
-  s.innerHTML='<option value="">Seleccionar proveedor…</option>' + state.proveedores.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('');
+  const group=document.getElementById('f-proveedor-group');
+  if(!group) return;
+  if(!state.proveedores.length) {
+    group.innerHTML='<div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Sin proveedores</div>';
+    return;
+  }
+  const currentVal = document.getElementById('f-proveedor').value;
+  let hasActive = false;
+  group.innerHTML = state.proveedores.map(p=>{
+    const isActive = p === currentVal;
+    if(isActive) hasActive = true;
+    return '<button class="btn-select '+(isActive?'active':'')+'" data-val="'+esc(p)+'" onclick="setSelectBtn(this, \'f-proveedor\')">'+esc(p)+'</button>';
+  }).join('');
+  if(!hasActive) document.getElementById('f-proveedor').value = '';
 }
 
 function renderTotales() {
@@ -473,7 +517,7 @@ function showDesglosePopup(proveedor, anchor) {
       '</tr>';
   });
 
-  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span><span style="font-size:11px;color:var(--text-faint)">'+regs.length+' mov · facturas '+fmt(sumMonto(facts))+' · pagos '+fmt(sumMonto(pagos))+' · saldo '+fmt(Math.abs(saldo))+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
+  popup.innerHTML='<div class="popup-header"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(proveedor)+'</span></div><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div><div class="table-wrap"><table><thead><tr><th style="padding:8px 12px">Fecha</th><th style="padding:8px 12px">Tipo</th><th style="padding:8px 12px">Monto</th><th style="padding:8px 12px">Factura</th><th style="padding:8px 12px">Concepto</th><th style="padding:8px 12px"></th></tr></thead><tbody>'+drows+'</tbody></table></div>';
 
   document.body.appendChild(popup);
   document.addEventListener('mousemove', trackMouseForPopup);
@@ -557,16 +601,12 @@ function addLog(tipo, descripcion) {
   if(isPageActive('logs')) renderLogs();
 }
 
-function clearLogs() {
-  if(!confirm('¿Limpiar todos los logs?')) return;
-
-  logsMemory=[];
-
-  try { localStorage.removeItem(LOGS_KEY); }
-  catch(e) { console.warn('No se pudieron limpiar los logs en localStorage', e); }
-
-  apiPost({ action:'clearLogs' }).catch(e=>console.warn('No se pudieron limpiar los logs en Sheets', e));
+function eliminarLog(localId) {
+  if(!confirm('¿Eliminar este log?')) return;
+  const logs = getLogs().filter(l => l.localId !== localId);
+  saveLogs(logs);
   renderLogs();
+  apiPost({ action: 'deleteLog', localId }).catch(e=>console.warn('Error deleting log on sheet', e));
 }
 
 function renderLogs() {
@@ -587,10 +627,11 @@ function renderLogs() {
       '<td class="log-time">'+esc(l.fecha)+'&nbsp;&nbsp;'+esc(l.hora)+'</td>'+
       '<td><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
       '<td style="color:var(--text-muted)">'+esc(l.descripcion)+'</td>'+
+      '<td><button class="btn btn-sm btn-danger" data-id="'+esc(l.localId)+'" onclick="eliminarLog(this.dataset.id)">🗑</button></td>'+
       '</tr>';
   });
 
-  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  el.innerHTML='<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
 }
 
 async function agregarProveedor() {
