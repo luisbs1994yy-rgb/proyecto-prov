@@ -193,7 +193,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#f7f5f1;}
 <body>
 
 <script>
-const APP_VERSION = "2.15";
+const APP_VERSION = "2.16";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -330,6 +330,7 @@ function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.Nu
 function fmt3(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:3,maximumFractionDigits:3}).format(v);}
 function fmtShort(n){const v=parseFloat(n);if(isNaN(v))return'—';if(Math.abs(v)>=1000000)return'$'+(v/1000000).toFixed(1)+'M';if(Math.abs(v)>=1000)return'$'+(v/1000).toFixed(1)+'k';return fmt(v);}
 function fmtTime(d){return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
+const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function fmtFechaRegistro(fecha){
   if(fecha==null||fecha==='')return'—';
   const raw=String(fecha).trim();
@@ -338,7 +339,7 @@ function fmtFechaRegistro(fecha){
   if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
   else d=new Date(raw);
   if(isNaN(d.getTime()))return raw;
-  return d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  return d.getDate()+' '+MESES_ES[d.getMonth()]+' '+d.getFullYear();
 }
 function fmtLogFecha(d){
   const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
