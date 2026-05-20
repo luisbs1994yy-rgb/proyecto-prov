@@ -36,7 +36,8 @@ const LOG_COL = {
   descripcion: 6,
   localId: 7,
   factura: 8,
-  concepto: 9
+  concepto: 9,
+  registroId: 10
 };
 
 const LOG_HEADERS = [
@@ -48,7 +49,8 @@ const LOG_HEADERS = [
   'descripcion',
   'localId',
   'factura',
-  'concepto'
+  'concepto',
+  'registroId'
 ];
 
 function doGet(e) {
@@ -237,7 +239,8 @@ function getLogs_() {
       descripcion: descripcion,
       localId: str_(row[LOG_COL.localId - 1]),
       factura: parsed.factura,
-      concepto: parsed.concepto
+      concepto: parsed.concepto,
+      registroId: str_(row[LOG_COL.registroId - 1])
     };
 
     if (item.id || item.localId || item.descripcion || item.tipo) logs.push(item);
@@ -277,6 +280,7 @@ function addLog_(data) {
   row[LOG_COL.localId - 1] = localId;
   row[LOG_COL.factura - 1] = parsed.factura;
   row[LOG_COL.concepto - 1] = parsed.concepto;
+  row[LOG_COL.registroId - 1] = str_(data.registroId);
 
   sh.appendRow(row);
   return { ok: true, id: id };
@@ -317,6 +321,7 @@ function ensureLogsLayout_(sh) {
   } else {
     sh.getRange(1, LOG_COL.factura).setValue('factura');
     sh.getRange(1, LOG_COL.concepto).setValue('concepto');
+    sh.getRange(1, LOG_COL.registroId).setValue('registroId');
     sh.getRange(1, LOG_COL.localId).setValue('localId');
     sh.getRange(1, LOG_COL.createdAt).setValue('createdAt');
     sh.getRange(1, LOG_COL.descripcion).setValue('descripcion');

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.11
+    ESTADO DE CUENTA  |  Versión 2.12
      ============================================================ -->
 <html lang="es">
 <head>
@@ -202,7 +202,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#f7f5f1;}
 <body>
 
 <script>
-const APP_VERSION = "2.11";
+const APP_VERSION = "2.12";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -416,7 +416,7 @@ async function guardarRegistro(){
     const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto}});
     if(res.error)throw new Error(res.error);
     state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto});
-    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto);
+    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
     saveAndRender();clearForm();toast('✓ Guardado',false,true);setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
   finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
@@ -424,11 +424,19 @@ async function guardarRegistro(){
 async function eliminarRegistro(id,btn){
   if(!confirm('¿Eliminar este registro?'))return;
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner" style="border-color:#fff;border-right-color:transparent;width:10px;height:10px;margin:0"></span>';}
-  const prev=state.registros.slice(),found=state.registros.find(r=>r.id===id);
+  const found=state.registros.find(r=>r.id===id);
+  const logsToRemove=found?findLogsForRegistro(found):[];
+  const prevRegs=state.registros.slice(),prevLogs=getLogs().slice();
   state.registros=state.registros.filter(r=>r.id!==id);
+  removeLogsLocal_(logsToRemove);
   saveAndRender();refreshDesglosePopup();
-  try{const res=await apiPost({action:'deleteRegistro',id});if(res.error)throw new Error(res.error);if(found)addLog('eliminar',found.proveedor+' · '+fmt(found.monto)+' · '+found.tipo);toast('Eliminado');scheduleQuietSync();}
-  catch(e){state.registros=prev;saveAndRender();refreshDesglosePopup();toastError(e);if(btn){btn.disabled=false;btn.innerHTML='✕';}}
+  try{
+    const res=await apiPost({action:'deleteRegistro',id});
+    if(res.error)throw new Error(res.error);
+    await deleteLogsRemote_(logsToRemove);
+    toast('Eliminado');scheduleQuietSync();
+  }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
 function clearForm(){['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-tipo').value='';document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));}
 function renderProvSelect(){
@@ -561,13 +569,60 @@ function cleanLogDescripcion(descripcion){
     .replace(/\s*·\s*Concepto:\s*.+$/i,'')
     .trim();
 }
+function parseDescBasics(descripcion){
+  const clean=cleanLogDescripcion(descripcion);
+  const parts=clean.split(' · ').map(p=>p.trim()).filter(Boolean);
+  if(!parts.length)return null;
+  const proveedor=parts[0];
+  let monto=NaN;
+  if(parts[1])monto=parseFloat(parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,''));
+  return{proveedor,monto};
+}
+function montoCerca(a,b){return Math.abs((parseFloat(a)||0)-(parseFloat(b)||0))<0.02;}
+function findLogsForRegistro(reg){
+  if(!reg)return[];
+  return getLogs().filter(l=>{
+    if(l.registroId&&reg.id&&l.registroId===reg.id)return true;
+    if(l.tipo==='eliminar'||l.tipo==='proveedor'||l.tipo!==reg.tipo)return false;
+    const b=parseDescBasics(l.descripcion);
+    if(!b||b.proveedor!==reg.proveedor||!montoCerca(b.monto,reg.monto))return false;
+    const ex=parseLogExtraFields(l);
+    if(reg.factura&&ex.factura&&ex.factura!==reg.factura)return false;
+    if(reg.concepto&&ex.concepto&&ex.concepto!==reg.concepto)return false;
+    return true;
+  });
+}
+function findRegistrosForLog(log){
+  if(!log||log.tipo==='eliminar'||log.tipo==='proveedor')return[];
+  if(log.registroId){const r=state.registros.find(x=>x.id===log.registroId);return r?[r]:[];}
+  const b=parseDescBasics(log.descripcion);
+  if(!b)return[];
+  const ex=parseLogExtraFields(log);
+  return state.registros.filter(r=>{
+    if(r.tipo!==log.tipo||r.proveedor!==b.proveedor||!montoCerca(r.monto,b.monto))return false;
+    if(ex.factura&&r.factura&&ex.factura!==r.factura)return false;
+    if(ex.concepto&&r.concepto&&ex.concepto!==r.concepto)return false;
+    return true;
+  });
+}
+function removeLogsLocal_(logsToRemove){
+  const keys=new Set(logsToRemove.map(l=>(l.localId||l.id||'')).filter(Boolean));
+  if(!keys.size)return;
+  saveLogs(getLogs().filter(l=>!keys.has(l.localId||l.id||'')));
+}
+async function deleteLogsRemote_(logsToRemove){
+  for(const log of logsToRemove){
+    try{await apiPost({action:'deleteLog',localId:log.localId||'',id:log.id||''});}catch(e){console.warn(e);}
+  }
+}
 function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];return logsMemory;}catch{return logsMemory;}}
 function saveLogs(logs){logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
 function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
-function addLog(tipo,descripcion,factura='',concepto=''){
+function addLog(tipo,descripcion,factura='',concepto='',registroId=''){
   const logs=getLogs().slice(),now=new Date();
   const facturaSafe=String(factura||'').trim();
   const conceptoSafe=String(concepto||'').trim();
+  const regIdSafe=String(registroId||'').trim();
   const descWithMeta=String(descripcion||'').trim()+
     (facturaSafe?' · Factura: '+facturaSafe:'')+
     (conceptoSafe?' · Concepto: '+conceptoSafe:'');
@@ -576,16 +631,32 @@ function addLog(tipo,descripcion,factura='',concepto=''){
     descripcion:descWithMeta,
     factura:facturaSafe,
     concepto:conceptoSafe,
+    registroId:regIdSafe,
     fechaHora:fmtLogFecha(now),
     createdAt:now.toISOString(),
     localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
   };
   logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);syncLogToSheets(log);if(isPageActive('logs'))renderLogs();
 }
-function eliminarLog(localId){
+async function eliminarLog(localId){
   if(!confirm('¿Eliminar este registro del log?'))return;
-  const logs=getLogs().filter(l=>(l.localId||l.id||'')!==localId);
-  saveLogs(logs);apiPost({action:'deleteLog',localId}).catch(e=>console.warn(e));renderLogs();
+  const all=getLogs(),target=all.find(l=>(l.localId||l.id||'')===localId);
+  if(!target)return;
+  const linked=findRegistrosForLog(target);
+  const prevRegs=state.registros.slice(),prevLogs=all.slice();
+  saveLogs(all.filter(l=>(l.localId||l.id||'')!==localId));
+  if(linked.length){
+    const ids=new Set(linked.map(r=>r.id));
+    state.registros=state.registros.filter(r=>!ids.has(r.id));
+  }
+  saveAndRender();renderLogs();refreshDesglosePopup();
+  try{
+    await apiPost({action:'deleteLog',localId:target.localId||'',id:target.id||''});
+    for(const reg of linked){
+      try{await apiPost({action:'deleteRegistro',id:reg.id});}catch(e){console.warn(e);}
+    }
+    toast('Eliminado');scheduleQuietSync();
+  }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();renderLogs();refreshDesglosePopup();toastError(e);}
 }
 function renderLogs(){
   const el=document.getElementById('logs-list'),logs=getLogs();
