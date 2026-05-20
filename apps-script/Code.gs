@@ -266,24 +266,28 @@ function addLog_(data) {
 
   const descripcion = str_(data.descripcion);
   const parsed = parseLogExtra_(descripcion, data);
+  const facturaVal = parsed.factura;
+  const conceptoVal = parsed.concepto;
 
   const fecha = str_(data.fecha);
   const hora = str_(data.hora) || formatHora_(new Date(createdAt));
+  const tipo = str_(data.tipo);
+  const registroId = str_(data.registroId);
 
-  const row = new Array(LOG_HEADERS.length).fill('');
-  row[LOG_COL.id - 1] = id;
-  row[LOG_COL.createdAt - 1] = createdAt;
-  row[LOG_COL.fecha - 1] = fecha;
-  row[LOG_COL.hora - 1] = hora;
-  row[LOG_COL.tipo - 1] = str_(data.tipo);
-  row[LOG_COL.descripcion - 1] = descripcion;
-  row[LOG_COL.localId - 1] = localId;
-  row[LOG_COL.factura - 1] = parsed.factura;
-  row[LOG_COL.concepto - 1] = parsed.concepto;
-  row[LOG_COL.registroId - 1] = str_(data.registroId);
+  // Escritura celda por celda (evita que factura/concepto queden vacíos en H/I)
+  const nextRow = sh.getLastRow() + 1;
+  sh.getRange(nextRow, LOG_COL.id).setValue(id);
+  sh.getRange(nextRow, LOG_COL.createdAt).setValue(createdAt);
+  sh.getRange(nextRow, LOG_COL.fecha).setValue(fecha);
+  sh.getRange(nextRow, LOG_COL.hora).setValue(hora);
+  sh.getRange(nextRow, LOG_COL.tipo).setValue(tipo);
+  sh.getRange(nextRow, LOG_COL.descripcion).setValue(descripcion);
+  sh.getRange(nextRow, LOG_COL.localId).setValue(localId);
+  sh.getRange(nextRow, LOG_COL.factura).setValue(facturaVal);
+  sh.getRange(nextRow, LOG_COL.concepto).setValue(conceptoVal);
+  sh.getRange(nextRow, LOG_COL.registroId).setValue(registroId);
 
-  sh.appendRow(row);
-  return { ok: true, id: id };
+  return { ok: true, id: id, factura: facturaVal, concepto: conceptoVal };
 }
 
 function deleteLog_(localId, id) {
@@ -487,9 +491,41 @@ function json_(obj) {
   );
 }
 
+/**
+ * Ejecutar una vez para rellenar columnas H (factura) e I (concepto)
+ * desde la descripción en filas viejas.
+ */
+function repairLogsFacturaConcepto() {
+  const sh = sheet_(SHEET_LOGS);
+  ensureLogsLayout_(sh);
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { ok: true, updated: 0 };
+
+  let updated = 0;
+  for (let r = 2; r <= lastRow; r++) {
+    const desc = str_(sh.getRange(r, LOG_COL.descripcion).getValue());
+    const currentFact = str_(sh.getRange(r, LOG_COL.factura).getValue());
+    const currentCon = str_(sh.getRange(r, LOG_COL.concepto).getValue());
+    const parsed = parseLogExtra_(desc, { factura: currentFact, concepto: currentCon });
+
+    if (parsed.factura && parsed.factura !== currentFact) {
+      sh.getRange(r, LOG_COL.factura).setValue(parsed.factura);
+      updated++;
+    }
+    if (parsed.concepto && parsed.concepto !== currentCon) {
+      sh.getRange(r, LOG_COL.concepto).setValue(parsed.concepto);
+      updated++;
+    }
+  }
+
+  return { ok: true, updated: updated };
+}
+
 /** Ejecutar una vez */
 function setupSheets() {
   ensureHeaders_(sheet_(SHEET_REGISTROS), REG_HEADERS);
   ensureHeaders_(sheet_(SHEET_PROVEEDORES), PROV_HEADERS);
   ensureLogsLayout_(sheet_(SHEET_LOGS));
+  return repairLogsFacturaConcepto();
 }
