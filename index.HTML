@@ -193,7 +193,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#f7f5f1;}
 <body>
 
 <script>
-const APP_VERSION = "2.14";
+const APP_VERSION = "2.15";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -330,6 +330,16 @@ function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.Nu
 function fmt3(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:3,maximumFractionDigits:3}).format(v);}
 function fmtShort(n){const v=parseFloat(n);if(isNaN(v))return'—';if(Math.abs(v)>=1000000)return'$'+(v/1000000).toFixed(1)+'M';if(Math.abs(v)>=1000)return'$'+(v/1000).toFixed(1)+'k';return fmt(v);}
 function fmtTime(d){return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
+function fmtFechaRegistro(fecha){
+  if(fecha==null||fecha==='')return'—';
+  const raw=String(fecha).trim();
+  if(!raw)return'—';
+  let d;
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
+  else d=new Date(raw);
+  if(isNaN(d.getTime()))return raw;
+  return d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
 function fmtLogFecha(d){
   const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   return d.getDate()+' / '+MESES[d.getMonth()]+' / '+d.getFullYear()+'  '+d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
@@ -467,7 +477,7 @@ function buildDesgloseRows(regs){
   sortByMonto(regs).forEach(r=>{
     const sub=(r.factura?'#'+esc(r.factura)+' ':'')+esc(r.concepto||'');
     drows+='<tr>'+
-      '<td style="font-size:11px"><div style="color:var(--text-faint);white-space:nowrap">'+esc(r.fecha)+'</div>'+(sub?'<div style="font-size:10px;color:var(--text-faint);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub+'</div>':'')+'</td>'+
+      '<td style="font-size:12px"><div style="white-space:nowrap;font-weight:500">'+esc(fmtFechaRegistro(r.fecha))+'</div>'+(sub?'<div style="font-size:10px;color:var(--text-faint);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px">'+sub+'</div>':'')+'</td>'+
       '<td><span class="badge '+badgeClass(r.tipo)+'" style="font-size:9px">'+esc(r.tipo)+'</span></td>'+
       '<td class="amount" style="font-size:12px;white-space:nowrap">'+fmt(r.monto)+'</td>'+
       '<td style="padding:6px 4px"><button class="btn btn-sm btn-danger" onclick="eliminarRegistro(\''+esc(r.id)+'\',this)">✕</button></td>'+
@@ -718,7 +728,7 @@ function renderAnalisis(){
     trendContainer.querySelector('.card-header').after(lg);
   }
   const trendEl=document.getElementById('chart-trend'),meses={};
-  regs.forEach(r=>{const d=new Date(r.fecha+'T00:00:00');if(isNaN(d))return;const key=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');if(!meses[key])meses[key]={label:'',fact:0,pago:0};meses[key].label=d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'});if(r.tipo==='factura')meses[key].fact+=parseFloat(r.monto)||0;else meses[key].pago+=parseFloat(r.monto)||0;});
+  regs.forEach(r=>{const d=new Date(/^\d{4}-\d{2}-\d{2}/.test(String(r.fecha))?r.fecha+'T12:00:00':r.fecha);if(isNaN(d))return;const key=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');if(!meses[key])meses[key]={label:'',fact:0,pago:0};meses[key].label=d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'});if(r.tipo==='factura')meses[key].fact+=parseFloat(r.monto)||0;else meses[key].pago+=parseFloat(r.monto)||0;});
   const mesKeys=Object.keys(meses).sort().slice(-12);
   if(!mesKeys.length){trendEl.innerHTML='<div class="empty" style="padding:2rem">Sin datos</div>';}
   else{
