@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-     ESTADO DE CUENTA  |  Versión 2.09
+    ESTADO DE CUENTA  |  Versión 2.10
      ============================================================ -->
 <html lang="es">
 <head>
@@ -202,7 +202,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#f7f5f1;}
 <body>
 
 <script>
-const APP_VERSION = "2.09";
+const APP_VERSION = "2.10";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -416,7 +416,7 @@ async function guardarRegistro(){
     const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto}});
     if(res.error)throw new Error(res.error);
     state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto});
-    addLog(tipo,prov+' · '+fmt(montoNum)+(factura?' · '+factura:'')+(concepto?' · '+concepto:''));
+    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto);
     saveAndRender();clearForm();toast('✓ Guardado',false,true);setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
   finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
@@ -519,9 +519,17 @@ function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById
 function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs:[];return logsMemory;}catch{return logsMemory;}}
 function saveLogs(logs){logsMemory=Array.isArray(logs)?logs:[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
 function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
-function addLog(tipo,descripcion){
+function addLog(tipo,descripcion,factura='',concepto=''){
   const logs=getLogs().slice(),now=new Date();
-  const log={tipo,descripcion,fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
+  const log={
+    tipo,
+    descripcion,
+    factura:String(factura||'').trim(),
+    concepto:String(concepto||'').trim(),
+    fechaHora:fmtLogFecha(now),
+    createdAt:now.toISOString(),
+    localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
+  };
   logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);syncLogToSheets(log);if(isPageActive('logs'))renderLogs();
 }
 function eliminarLog(localId){
@@ -538,22 +546,27 @@ function renderLogs(){
     const cls=LOG_BADGE[l.tipo]||'badge-log-add';
     const dt=esc(getFechaDisplay(l));
     const lid=esc(l.localId||l.id||'');
+    const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
+    const concepto=esc(String(l.concepto||l.detalle||'').trim());
     tableRows+='<tr>'+
       '<td class="log-time" style="font-size:11px;white-space:nowrap">'+dt+'</td>'+
       '<td><span class="badge '+cls+'" style="font-size:9px;padding:1px 6px">'+esc(l.tipo)+'</span></td>'+
+      '<td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">'+(factura||'—')+'</td>'+
+      '<td style="font-size:12px;color:var(--text-muted)">'+(concepto||'—')+'</td>'+
       '<td style="color:var(--text-muted);font-size:12px">'+esc(l.descripcion)+'</td>'+
       '<td style="width:32px;padding:4px 6px"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
     compactRows+='<div class="log-row-compact">'+
       '<div class="log-compact-inner">'+
         '<div class="log-compact-top"><span class="badge '+cls+'" style="font-size:9px;padding:1px 5px;flex-shrink:0">'+esc(l.tipo)+'</span><span class="log-time">'+dt+'</span></div>'+
+        '<div class="log-compact-desc">Factura: '+(factura||'—')+' · Concepto: '+(concepto||'—')+'</div>'+
         '<div class="log-compact-desc">'+esc(l.descripcion)+'</div>'+
       '</div>'+
       '<button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button>'+
       '</div>';
   });
   el.innerHTML=
-    '<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Descripción</th><th></th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'+
+    '<div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Tipo</th><th>Núm. factura</th><th>Concepto</th><th>Descripción</th><th></th></tr></thead><tbody>'+tableRows+'</tbody></table></div>'+
     '<div id="logs-compact">'+compactRows+'</div>';
 }
 
@@ -577,31 +590,45 @@ function renderAnalisis(){
   if(!resumen.length){barEl.innerHTML='<div class="empty">Sin datos</div>';}
   else{const maxS=Math.max(...resumen.map(r=>Math.abs(r.saldo)),1);barEl.innerHTML=resumen.slice(0,10).map(r=>{const pct=(Math.abs(r.saldo)/maxS*100).toFixed(1);const cls=r.saldo<=0?'bar-fill-saldo paid':'bar-fill-saldo';return'<div class="bar-row"><div class="bar-label">'+esc(r.proveedor)+'</div><div class="bar-track"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div><div class="bar-val">'+fmtShort(Math.abs(r.saldo))+'</div></div>';}).join('');}
 
-  /* Donut: azul translúcido = facturas (fondo/100%), verde = pagos sobre el fondo */
+  /* Donut: distribución global (Facturas + Pagos + Saldo pendiente = 100%) */
   const donutEl=document.getElementById('chart-donut');
   if(!regs.length){donutEl.innerHTML='<div class="empty">Sin datos</div>';}
   else{
-    const base=sumF||1;
-    const pctPaidNum=(sumF>0?Math.min(sumP/sumF,1)*100:0).toFixed(1);
-    const pctPendNum=(sumF>0?Math.max(0,saldo)/sumF*100:0).toFixed(1);
+    const factValue=Math.max(sumF,0);
+    const pagoValue=Math.max(sumP,0);
+    const saldoValue=Math.max(Math.abs(saldo),0);
+    const totalGlobal=factValue+pagoValue+saldoValue;
+    const pctFactNum=totalGlobal>0?Number(((factValue/totalGlobal)*100).toFixed(1)):0;
+    const pctPagoNum=totalGlobal>0?Number(((pagoValue/totalGlobal)*100).toFixed(1)):0;
+    const pctPendNum=totalGlobal>0?Math.max(0,Number((100-pctFactNum-pctPagoNum).toFixed(1))):0;
     const rd=50,ci=2*Math.PI*rd;
-    const pctPaid=Math.min(sumP/base,1);
-    const dPaid=(pctPaid*ci).toFixed(2),gPaid=(ci-pctPaid*ci).toFixed(2);
+    const segFact=totalGlobal>0?(factValue/totalGlobal)*ci:0;
+    const segPago=totalGlobal>0?(pagoValue/totalGlobal)*ci:0;
+    const segPend=Math.max(0,ci-segFact-segPago);
+    const offBase=-ci*0.25;
     donutEl.innerHTML=
       '<svg class="donut-svg" viewBox="0 0 120 120">'+
-        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#3b82f6" stroke-width="18" opacity="0.35"/>'+
+        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#e2dfd8" stroke-width="18"/>'+
+        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#3b82f6" stroke-width="18" '+
+          'stroke-dasharray="'+segFact.toFixed(2)+' '+(ci-segFact).toFixed(2)+'" '+
+          'stroke-dashoffset="'+offBase.toFixed(2)+'" '+
+          'transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
         '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#16a34a" stroke-width="18" '+
-          'stroke-dasharray="'+dPaid+' '+gPaid+'" '+
-          'stroke-dashoffset="'+(-ci*0.25)+'" '+
+          'stroke-dasharray="'+segPago.toFixed(2)+' '+(ci-segPago).toFixed(2)+'" '+
+          'stroke-dashoffset="'+(offBase-segFact).toFixed(2)+'" '+
+          'transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
+        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#d97706" stroke-width="18" '+
+          'stroke-dasharray="'+segPend.toFixed(2)+' '+(ci-segPend).toFixed(2)+'" '+
+          'stroke-dashoffset="'+(offBase-segFact-segPago).toFixed(2)+'" '+
           'transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
       '</svg>'+
       '<div class="donut-legend">'+
         '<div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div>'+
-          '<span>Facturas: '+fmt3(sumF)+' (100%)</span></div>'+
+          '<span>Facturas: '+fmt3(sumF)+' ('+pctFactNum.toFixed(1)+'%)</span></div>'+
         '<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div>'+
-          '<span>Pagos: '+fmt3(sumP)+' ('+pctPaidNum+'%)</span></div>'+
+          '<span>Pagos: '+fmt3(sumP)+' ('+pctPagoNum.toFixed(1)+'%)</span></div>'+
         '<div class="legend-row"><div class="legend-dot" style="background:#d97706"></div>'+
-          '<span>Saldo pend.: '+fmt3(Math.abs(saldo))+' ('+pctPendNum+'%)</span></div>'+
+          '<span>Saldo pend.: '+fmt3(Math.abs(saldo))+' ('+pctPendNum.toFixed(1)+'%)</span></div>'+
       '</div>';
   }
 
@@ -629,7 +656,7 @@ function renderAnalisis(){
         '</div>'+
         '<div style="font-size:9px;color:#3b82f6;margin-top:2px">F: '+fmtShort(m.fact)+'</div>'+
         '<div style="font-size:9px;color:#16a34a">P: '+fmtShort(m.pago)+'</div>'+
-        '<div class="trend-month-total">∑ '+fmtShort(m.fact+m.pago)+'</div>'+
+        '<div class="trend-month-total">'+fmtShort(m.fact+m.pago)+'</div>'+
         '</div>';
     }).join('');
   }
