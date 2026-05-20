@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.10
+    ESTADO DE CUENTA  |  Versión 2.11
      ============================================================ -->
 <html lang="es">
 <head>
@@ -202,7 +202,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#f7f5f1;}
 <body>
 
 <script>
-const APP_VERSION = "2.10";
+const APP_VERSION = "2.11";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzU1uQzcdg6RoKXpLMb-iygr3dIIu34s2c2VC8W1n9ExiivxukKS15TGjrtMe2w_T0E/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -386,12 +386,12 @@ async function manualSync(){
   finally{if(btn){btn.classList.remove('spinning');btn.disabled=false;}}
 }
 function scheduleQuietSync(){if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500);}
-function updateStateFromSheetData(d){state.registros=d.registros||[];state.proveedores=d.proveedores||[];if(Array.isArray(d.logs))saveLogs(d.logs);}
+function updateStateFromSheetData(d){state.registros=d.registros||[];state.proveedores=d.proveedores||[];if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));}
 async function syncQuiet(){try{const d=await api('getAll');if(d.error)return;updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch{}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
 async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action));return parseJSON(r);}
 async function apiPost(body){const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});return parseJSON(r);}
-async function loadLogsFromSheets(){try{const d=await api('getLogs');if(d.error)throw new Error(d.error);saveLogs(Array.isArray(d.logs)?d.logs:[]);if(isPageActive('logs'))renderLogs();}catch(e){console.warn(e);}}
+async function loadLogsFromSheets(){try{const d=await api('getLogs');if(d.error)throw new Error(d.error);saveLogs(mergeLogsPreservingDetails(Array.isArray(d.logs)?d.logs:[]));if(isPageActive('logs'))renderLogs();}catch(e){console.warn(e);}}
 async function loadAll(){
   setSyncStatus('Sincronizando…',true);
   try{const d=await api('getAll');if(d.error)throw new Error(d.error);updateStateFromSheetData(d);saveAndRender();if(!Array.isArray(d.logs))loadLogsFromSheets();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
@@ -516,16 +516,66 @@ function refreshDesglosePopup(){
 function closeDesgloseOnOutside(e){const p=document.getElementById('desglose-popup');if(p&&!p.contains(e.target))closeDesglosePopup();}
 function closeDesglosePopup(){desgloseOpen=false;const p=document.getElementById('desglose-popup');if(p)p.remove();document.removeEventListener('click',closeDesgloseOnOutside);}
 
-function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs:[];return logsMemory;}catch{return logsMemory;}}
-function saveLogs(logs){logsMemory=Array.isArray(logs)?logs:[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
+function parseLogExtraFields(log){
+  const facturaRaw=String(log.factura||log.numFactura||log.numeroFactura||'').trim();
+  const conceptoRaw=String(log.concepto||log.detalle||'').trim();
+  if(facturaRaw||conceptoRaw)return{factura:facturaRaw,concepto:conceptoRaw};
+  const desc=String(log.descripcion||'').trim();
+  if(!desc)return{factura:'',concepto:''};
+  let factura='',concepto='';
+  const mf=desc.match(/(?:^|·)\s*Factura:\s*([^·]+)(?:\s*·|$)/i);
+  const mc=desc.match(/(?:^|·)\s*Concepto:\s*(.+)$/i);
+  if(mf)factura=mf[1].trim();
+  if(mc)concepto=mc[1].trim();
+  if(!factura||!concepto){
+    const parts=desc.split(' · ').map(x=>x.trim()).filter(Boolean);
+    const tail=parts.slice(2);
+    const isReserved=v=>/^(pago|factura|eliminar|proveedor)$/i.test(v);
+    if(!factura&&tail[0]&&!isReserved(tail[0])&&!/^concepto\s*:/i.test(tail[0]))factura=tail[0];
+    if(!concepto&&tail.length>1){
+      const c=tail.slice(1).join(' · ').replace(/^concepto\s*:/i,'').trim();
+      if(c&&!isReserved(c))concepto=c;
+    }
+  }
+  return{factura,concepto};
+}
+function normalizeLog(log,prev={}){
+  const parsed=parseLogExtraFields(log);
+  return{
+    ...log,
+    factura:String(parsed.factura||prev.factura||'').trim(),
+    concepto:String(parsed.concepto||prev.concepto||'').trim()
+  };
+}
+function mergeLogsPreservingDetails(incomingLogs){
+  const prevMap={};
+  getLogs().forEach(l=>{const key=l.localId||l.id||'';if(key)prevMap[key]=l;});
+  return (incomingLogs||[]).map(raw=>{
+    const key=raw.localId||raw.id||'';
+    return normalizeLog(raw,key?prevMap[key]:undefined);
+  });
+}
+function cleanLogDescripcion(descripcion){
+  return String(descripcion||'')
+    .replace(/\s*·\s*Factura:\s*[^·]+/i,'')
+    .replace(/\s*·\s*Concepto:\s*.+$/i,'')
+    .trim();
+}
+function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];return logsMemory;}catch{return logsMemory;}}
+function saveLogs(logs){logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
 function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
 function addLog(tipo,descripcion,factura='',concepto=''){
   const logs=getLogs().slice(),now=new Date();
+  const facturaSafe=String(factura||'').trim();
+  const conceptoSafe=String(concepto||'').trim();
+  const descWithMeta=String(descripcion||'').trim()+
+    (facturaSafe?' · Factura: '+facturaSafe:'')+
+    (conceptoSafe?' · Concepto: '+conceptoSafe:'');
   const log={
     tipo,
-    descripcion,
-    factura:String(factura||'').trim(),
-    concepto:String(concepto||'').trim(),
+    descripcion:descWithMeta,
+    factura:facturaSafe,
+    concepto:conceptoSafe,
     fechaHora:fmtLogFecha(now),
     createdAt:now.toISOString(),
     localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
@@ -548,19 +598,20 @@ function renderLogs(){
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concepto=esc(String(l.concepto||l.detalle||'').trim());
+    const descripcion=esc(cleanLogDescripcion(l.descripcion));
     tableRows+='<tr>'+
       '<td class="log-time" style="font-size:11px;white-space:nowrap">'+dt+'</td>'+
       '<td><span class="badge '+cls+'" style="font-size:9px;padding:1px 6px">'+esc(l.tipo)+'</span></td>'+
       '<td style="font-family:var(--mono);font-size:11px;color:var(--text-muted)">'+(factura||'—')+'</td>'+
       '<td style="font-size:12px;color:var(--text-muted)">'+(concepto||'—')+'</td>'+
-      '<td style="color:var(--text-muted);font-size:12px">'+esc(l.descripcion)+'</td>'+
+      '<td style="color:var(--text-muted);font-size:12px">'+(descripcion||'—')+'</td>'+
       '<td style="width:32px;padding:4px 6px"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
     compactRows+='<div class="log-row-compact">'+
       '<div class="log-compact-inner">'+
         '<div class="log-compact-top"><span class="badge '+cls+'" style="font-size:9px;padding:1px 5px;flex-shrink:0">'+esc(l.tipo)+'</span><span class="log-time">'+dt+'</span></div>'+
         '<div class="log-compact-desc">Factura: '+(factura||'—')+' · Concepto: '+(concepto||'—')+'</div>'+
-        '<div class="log-compact-desc">'+esc(l.descripcion)+'</div>'+
+        '<div class="log-compact-desc">'+(descripcion||'—')+'</div>'+
       '</div>'+
       '<button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button>'+
       '</div>';
