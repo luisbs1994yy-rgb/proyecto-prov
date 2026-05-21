@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.26
+    ESTADO DE CUENTA  |  Versión 2.27
      ============================================================ -->
 <html lang="es">
 <head>
@@ -97,8 +97,11 @@ textarea{resize:vertical;min-height:60px;}
 .btn-icon:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
 .form-row-duo{display:contents;}
-#page-registrar #f-proveedor-group.prov-btn-grid{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
-#page-registrar #f-proveedor-group.prov-btn-grid .btn-select{flex:0 1 auto;margin:0;}
+#page-registrar #f-proveedor-group.prov-btn-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;width:100%;}
+#page-registrar #f-proveedor-group.prov-btn-grid .btn-select{
+  flex:0 0 calc((100% - 18px) / 7);max-width:calc((100% - 18px) / 7);min-width:0;margin:0;
+  padding:4px 2px;font-size:9px;line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
 .btn-select.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
@@ -134,7 +137,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:10px;font-family:var(--mono);border:1px solid rgba(58,134,255,.35);border-radius:20px;cursor:pointer;color:var(--blue);background:var(--blue-soft);user-select:none;transition:all .18s;letter-spacing:.04em;font-weight:600;}
 .desglose-btn::before{content:'⊕';font-size:11px;}
 .desglose-btn:hover{border-color:var(--blue);color:#fff;background:linear-gradient(135deg,#3a86ff,#00b4d8);box-shadow:0 4px 10px rgba(58,134,255,.3);}
-.popup-desglose{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-md);min-width:min(320px,calc(100vw - 16px));max-width:min(420px,calc(100vw - 16px));max-height:min(420px,58vh);display:flex;flex-direction:column;overflow:hidden;}
+.desglose-overlay{display:none;position:fixed;inset:0;z-index:1998;background:rgba(26,28,44,.5);padding:48px 10px 10px;box-sizing:border-box;align-items:center;justify-content:center;}
+.desglose-overlay.open{display:flex;}
+.desglose-overlay .popup-desglose{position:relative;z-index:1999;flex:0 1 auto;width:100%;max-width:100%;min-width:0;max-height:100%;margin:0;}
+.popup-desglose{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 16px 40px rgba(26,28,44,.28);min-width:0;max-width:calc(100vw - 20px);max-height:min(380px,62vh);display:flex;flex-direction:column;overflow:hidden;}
 .popup-header{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:flex-start;gap:6px;background:linear-gradient(135deg,#1a1c2c,#2d3250);color:#fff;border-radius:12px 12px 0 0;flex-shrink:0;}
 .popup-header-title{font-family:var(--mono);font-size:11px;font-weight:600;line-height:1.2;word-break:break-word;}
 .popup-header .popup-sub{font-size:9px;color:rgba(255,255,255,.7)!important;line-height:1.25;margin-top:2px;display:block;}
@@ -143,8 +149,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-body{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
 .popup-desglose table{width:100%;border-collapse:collapse;table-layout:fixed;}
 .popup-desglose table thead th{background:linear-gradient(135deg,#3a86ff,#2563eb);font-size:8px;padding:4px 6px;letter-spacing:.05em;}
-.popup-desglose .desglose-row td{padding:4px 6px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
+.popup-desglose .desglose-row td{padding:3px 5px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
 .popup-desglose .desglose-row:last-child td{border-bottom:none;}
+.desglose-row-factura td{background:#e8f4ff;}
+.desglose-row-pago td{background:#e8faf0;}
+.desglose-row-factura .desglose-cell-amt{color:#1d4ed8;}
+.desglose-row-pago .desglose-cell-amt{color:#047857;}
+.desglose-sum-f{color:#60a5fa!important;font-weight:600;}
+.desglose-sum-p{color:#34d399!important;font-weight:600;}
+.desglose-sum-s{color:#f87171!important;font-weight:600;}
+.popup-sub-totals{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:2px;}
 .desglose-cell-main{font-size:11px;line-height:1.2;}
 .desglose-fecha{font-weight:600;white-space:nowrap;margin-right:4px;}
 .desglose-badge{font-size:8px!important;padding:1px 5px!important;vertical-align:middle;}
@@ -205,9 +219,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-summary-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);white-space:nowrap;}
 .totales-summary-value{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
 .totales-panel .card-header{padding:10px 14px;}
-.desglose-inline-wrap{display:none;border-bottom:1px solid var(--border);background:#f8fafc;}
-.desglose-inline-wrap.open{display:block;}
-.desglose-inline-wrap .popup-desglose{position:static;min-width:0;max-width:none;width:100%;max-height:min(220px,38vh);border:none;border-radius:0;box-shadow:none;}
 .desglose-btn.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;}
 .totales-panel .card-title{font-size:13px;}
 @media (max-width: 860px) {
@@ -245,16 +256,14 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-registrar .form-grid { gap: 6px; }
   #page-registrar .form-group { gap: 3px; }
   #page-registrar #f-tipo-group .btn-select { flex: 1 1 calc(50% - 3px); padding: 6px 8px; font-size: 11px; }
-  #page-registrar #f-proveedor-group.prov-btn-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-  }
+  #page-registrar #f-proveedor-group.prov-btn-grid { gap: 2px; }
   #page-registrar #f-proveedor-group.prov-btn-grid .btn-select {
-    padding: 5px 4px;
-    font-size: 10px;
-    border-radius: 6px;
-    line-height: 1.15;
-    min-height: 28px;
+    flex: 0 0 calc((100% - 12px) / 7);
+    max-width: calc((100% - 12px) / 7);
+    padding: 3px 1px;
+    font-size: 8px;
+    border-radius: 5px;
+    min-height: 24px;
   }
   #page-registrar .form-row-duo {
     display: grid;
@@ -294,7 +303,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
-  #page-totales .desglose-inline-wrap .popup-desglose { max-height: min(200px, 36vh); }
+  .desglose-overlay { padding: 46px 8px 8px; }
+  .desglose-overlay .popup-desglose { max-height: min(480px, 78vh); border-radius: 8px; }
   #page-totales .totales-panel .card-header { padding: 6px 10px; }
   #page-totales .totales-panel .card-title { font-size: 11px; }
   #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
@@ -358,14 +368,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   th, td { font-size: 11px; }
   #logs-list table, #logs-list thead, #logs-list tbody, #logs-list tr, #logs-list th, #logs-list td { display: none !important; }
   .log-row-compact { display: flex !important; }
-  .popup-desglose {
-    left: 6px !important; right: 6px !important;
-    top: auto !important; bottom: 6px !important;
-    min-width: calc(100vw - 12px) !important;
-    max-width: calc(100vw - 12px) !important;
-    max-height: min(520px, 72vh);
-    border-radius: 10px 10px 8px 8px;
-  }
+  .desglose-overlay .popup-desglose { width: calc(100vw - 16px); max-width: calc(100vw - 16px); }
   .popup-desglose .popup-header { padding: 6px 8px; }
   .popup-desglose .popup-header-title { font-size: 10px; }
   .popup-desglose .popup-sub { font-size: 8px; }
@@ -435,7 +438,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.26";
+const APP_VERSION = "2.27";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -510,7 +513,6 @@ const LOGS_KEY    = "pagos_v1_logs";
             <span class="totales-summary-value" id="k-total">—</span>
           </div>
         </div>
-        <div id="desglose-slot" class="desglose-inline-wrap"></div>
         <div class="card-header"><span class="card-title">Por proveedor</span></div>
         <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
@@ -765,27 +767,31 @@ function renderTotales(){
       '</tr>';
   });
   document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  const slot=document.getElementById('desglose-slot');
-  if(slot&&slot.classList.contains('open')&&slot.dataset.proveedor){
+  const ov=document.getElementById('desglose-overlay');
+  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor){
     refreshDesglosePopup();
     document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.proveedor===slot.dataset.proveedor);
+      b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor);
     });
   }
 }
 function toggleDesglose(e,proveedor,btn){
   e.stopPropagation();
-  const slot=document.getElementById('desglose-slot');
-  if(slot&&slot.classList.contains('open')&&slot.dataset.proveedor===proveedor){closeDesglosePopup();return;}
+  const ov=document.getElementById('desglose-overlay');
+  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor===proveedor){closeDesglosePopup();return;}
   showDesglosePopup(proveedor,btn);
 }
 function buildDesglosePanelHtml(proveedor,regs){
   const facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago'),saldo=sumMonto(facts)-sumMonto(pagos);
-  return '<div id="desglose-popup" class="popup-desglose popup-desglose-inline" data-proveedor="'+esc(proveedor)+'">'+
+  return '<div id="desglose-popup" class="popup-desglose" data-proveedor="'+esc(proveedor)+'">'+
     '<div class="popup-header">'+
       '<div style="min-width:0;flex:1">'+
         '<span class="popup-header-title">'+esc(proveedor)+'</span>'+
-        '<span class="popup-sub">F '+fmt(sumMonto(facts))+' · P '+fmt(sumMonto(pagos))+' · S '+fmt(Math.abs(saldo))+'</span>'+
+        '<span class="popup-sub popup-sub-totals">'+
+          '<span class="desglose-sum-f">Fact '+fmt(sumMonto(facts))+'</span>'+
+          '<span class="desglose-sum-p">Pag '+fmt(sumMonto(pagos))+'</span>'+
+          '<span class="desglose-sum-s">Sal '+fmt(Math.abs(saldo))+'</span>'+
+        '</span>'+
       '</div>'+
       '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div>'+
     '</div>'+
@@ -798,7 +804,8 @@ function buildDesgloseRows(regs){
   let drows='';
   sortByMonto(regs).forEach(r=>{
     const sub=(r.factura?'#'+esc(r.factura):'')+(r.concepto?(r.factura?' · ':'')+esc(r.concepto):'');
-    drows+='<tr class="desglose-row">'+
+    const rowCls=r.tipo==='pago'?'desglose-row-pago':'desglose-row-factura';
+    drows+='<tr class="desglose-row '+rowCls+'">'+
       '<td class="desglose-cell-main">'+
         '<span class="desglose-fecha">'+esc(fmtFechaCorta(r.fecha))+'</span>'+
         '<span class="badge '+badgeClass(r.tipo)+' desglose-badge">'+esc(r.tipo)+'</span>'+
@@ -810,56 +817,42 @@ function buildDesgloseRows(regs){
   });
   return drows;
 }
+function getDesgloseOverlay(){
+  let ov=document.getElementById('desglose-overlay');
+  if(!ov){
+    ov=document.createElement('div');
+    ov.id='desglose-overlay';
+    ov.className='desglose-overlay';
+    ov.addEventListener('click',e=>{if(e.target===ov)closeDesglosePopup();});
+    document.body.appendChild(ov);
+  }
+  return ov;
+}
 function showDesglosePopup(proveedor,anchor){
   closeDesglosePopup();desgloseOpen=true;
   const regs=state.registros.filter(r=>r.proveedor===proveedor);
-  const slot=document.getElementById('desglose-slot');
-  if(slot){
-    slot.innerHTML=buildDesglosePanelHtml(proveedor,regs);
-    slot.classList.add('open');
-    slot.dataset.proveedor=proveedor;
-    document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>b.classList.remove('active'));
-    if(anchor)anchor.classList.add('active');
-    setTimeout(()=>document.addEventListener('click',closeDesgloseOnOutside),10);
-    return;
-  }
-  const wrap=document.createElement('div');
-  wrap.innerHTML=buildDesglosePanelHtml(proveedor,regs);
-  const popup=wrap.firstElementChild;
-  if(anchor){
-    const rect=anchor.getBoundingClientRect();let top=rect.bottom+8,left=rect.left;
-    if(top+320>window.innerHeight)top=Math.max(8,rect.top-320-8);
-    if(left+420>window.innerWidth)left=Math.max(8,window.innerWidth-430);
-    popup.style.top=top+'px';popup.style.left=left+'px';
-  }
-  document.body.appendChild(popup);
-  setTimeout(()=>document.addEventListener('click',closeDesgloseOnOutside),10);
+  const ov=getDesgloseOverlay();
+  ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);
+  ov.classList.add('open');
+  ov.dataset.proveedor=proveedor;
+  document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>b.classList.remove('active'));
+  if(anchor)anchor.classList.add('active');
+  document.body.style.overflow='hidden';
 }
 function refreshDesglosePopup(){
-  const slot=document.getElementById('desglose-slot');
-  const proveedor=(slot&&slot.dataset.proveedor)||(document.getElementById('desglose-popup')||{}).dataset?.proveedor;
+  const ov=document.getElementById('desglose-overlay');
+  const proveedor=ov&&ov.dataset.proveedor;
   if(!proveedor)return;
   const regs=state.registros.filter(r=>r.proveedor===proveedor);
   if(!regs.length){closeDesglosePopup();return;}
-  if(slot&&slot.classList.contains('open')){slot.innerHTML=buildDesglosePanelHtml(proveedor,regs);slot.dataset.proveedor=proveedor;return;}
-  const popup=document.getElementById('desglose-popup');if(!popup)return;
-  const sub=popup.querySelector('.popup-sub');
-  const facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago'),saldo=sumMonto(facts)-sumMonto(pagos);
-  if(sub)sub.textContent='F '+fmt(sumMonto(facts))+' · P '+fmt(sumMonto(pagos))+' · S '+fmt(Math.abs(saldo));
-  const tbody=popup.querySelector('tbody');if(tbody)tbody.innerHTML=buildDesgloseRows(regs);
-}
-function closeDesgloseOnOutside(e){
-  if(e.target.closest('.desglose-btn')||e.target.closest('#desglose-slot')||e.target.closest('.popup-desglose'))return;
-  closeDesglosePopup();
+  if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;}
 }
 function closeDesglosePopup(){
   desgloseOpen=false;
-  const slot=document.getElementById('desglose-slot');
-  if(slot){slot.innerHTML='';slot.classList.remove('open');delete slot.dataset.proveedor;}
-  const p=document.getElementById('desglose-popup');
-  if(p)p.remove();
+  const ov=document.getElementById('desglose-overlay');
+  if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;}
+  document.body.style.overflow='';
   document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
-  document.removeEventListener('click',closeDesgloseOnOutside);
 }
 
 function parseLogExtraFields(log){
