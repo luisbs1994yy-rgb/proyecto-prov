@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.21
+    ESTADO DE CUENTA  |  Versión 2.22
      ============================================================ -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Estado de Cuenta</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -347,7 +350,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.21";
+const APP_VERSION = "2.22";
+const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -357,7 +361,7 @@ const LOGS_KEY    = "pagos_v1_logs";
   <div class="header-brand"><span class="header-dot"></span><span class="header-title">Estado de Cuenta</span></div>
   <div class="header-right">
     <span class="header-version" id="app-version"></span>
-    <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Actualizar datos">↻</button>
+    <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
   </div>
@@ -478,6 +482,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
+  if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
+    sessionStorage.removeItem(REFRESH_FLAG_KEY);
+    toast('✓ App v' + APP_VERSION + ' · datos y pantalla actualizados', false, true);
+  }
 });
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
@@ -530,12 +538,34 @@ function navTo(page,el){
   if(page==='config')renderProvManager();if(page==='analisis')renderAnalisis();
 }
 
+function cacheBustParam(){return '_='+Date.now();}
+async function hardReloadApp(){
+  try{
+    if('caches' in window){const names=await caches.keys();await Promise.all(names.map(n=>caches.delete(n)));}
+    if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()));}
+  }catch(e){console.warn('cache clear',e);}
+  const u=new URL(window.location.href);
+  u.searchParams.delete('_');
+  u.searchParams.set('_',String(Date.now()));
+  window.location.replace(u.toString());
+}
 async function manualSync(){
   const btn=document.getElementById('btn-refresh');
   if(btn){btn.classList.add('spinning');btn.disabled=true;}
   setSyncStatus('Sincronizando…',true);
-  try{const d=await api('getAll');if(d.error)throw new Error(d.error);updateStateFromSheetData(d);saveAndRender();if(!Array.isArray(d.logs))loadLogsFromSheets();setSyncStatus('Sincronizado · '+fmtTime(new Date()));toast('✓ Datos actualizados',false,true);}
-  catch(e){toastError(e);setSyncStatus('Error de red');}
+  try{
+    const d=await api('getAll');
+    if(d.error)throw new Error(d.error);
+    updateStateFromSheetData(d);
+    saveAndRender();
+    if(!Array.isArray(d.logs))await loadLogsFromSheets();
+    sessionStorage.setItem(REFRESH_FLAG_KEY,'1');
+    setSyncStatus('Recargando v'+APP_VERSION+'…');
+    toast('Descargando versión nueva…',false,true);
+    await new Promise(r=>setTimeout(r,350));
+    await hardReloadApp();
+    return;
+  }catch(e){toastError(e);setSyncStatus('Error de red');}
   finally{if(btn){btn.classList.remove('spinning');btn.disabled=false;}}
 }
 function scheduleQuietSync(){if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500);}
@@ -552,8 +582,8 @@ function updateStateFromSheetData(d){
 }
 async function syncQuiet(){try{const d=await api('getAll');if(d.error)return;updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch{}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
-async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action));return parseJSON(r);}
-async function apiPost(body){const r=await fetch(GAS_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});return parseJSON(r);}
+async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store'});return parseJSON(r);}
+async function apiPost(body){const r=await fetch(GAS_URL+'?'+cacheBustParam(),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),cache:'no-store'});return parseJSON(r);}
 async function loadLogsFromSheets(){try{const d=await api('getLogs');if(d.error)throw new Error(d.error);saveLogs(mergeLogsPreservingDetails(Array.isArray(d.logs)?d.logs:[]));if(isPageActive('logs'))renderLogs();}catch(e){console.warn(e);}}
 async function loadAll(){
   setSyncStatus('Sincronizando…',true);
