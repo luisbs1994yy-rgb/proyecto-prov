@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.22
+    ESTADO DE CUENTA  |  Versión 2.23
      ============================================================ -->
 <html lang="es">
 <head>
@@ -85,6 +85,8 @@ textarea{resize:vertical;min-height:60px;}
 .btn-icon{padding:5px 8px;font-size:13px;line-height:1;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .14s;}
 .btn-icon:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+.prov-select-compact{width:100%;max-width:100%;min-width:0;padding:8px 10px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);}
+.form-row-duo{display:contents;}
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
 .btn-select.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
@@ -210,7 +212,52 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .form-actions .btn, .form-actions .btn-primary { width: 100%; justify-content: center; }
   .btn-group { gap: 6px; justify-content: flex-start; width: 100%; }
   .btn-select { padding: 8px 10px; font-size: 12px; flex: 1 1 calc(50% - 4px); min-width: 0; text-align: center; }
-  #f-proveedor-group .btn-select { flex: 1 1 100%; }
+  #page-registrar .page-title { font-size: 14px; margin-bottom: .35rem; }
+  #page-registrar .card-body { padding: 8px; }
+  #page-registrar .form-grid { gap: 6px; }
+  #page-registrar .form-group { gap: 3px; }
+  #page-registrar #f-tipo-group .btn-select { flex: 1 1 calc(50% - 3px); padding: 6px 8px; font-size: 11px; }
+  #page-registrar #f-proveedor-group {
+    display: block;
+    max-height: none;
+    overflow: visible;
+  }
+  #page-registrar #f-proveedor-group .btn-select {
+    flex: 1 1 calc(50% - 3px);
+    padding: 5px 6px;
+    font-size: 10px;
+    border-radius: 6px;
+    line-height: 1.2;
+  }
+  #page-registrar .prov-select-compact {
+    padding: 7px 8px;
+    font-size: 14px;
+    height: 36px;
+    line-height: 1.2;
+  }
+  #page-registrar .form-row-duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 6px;
+    grid-column: 1 / -1;
+  }
+  #page-registrar input#f-fecha {
+    font-size: 14px;
+    padding: 6px 8px;
+    height: 36px;
+    min-height: 36px;
+    max-width: 100%;
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  #page-registrar input#f-fecha::-webkit-date-and-time-value {
+    text-align: left;
+    min-width: 0;
+    padding: 0;
+  }
+  #page-registrar input#f-monto { font-size: 14px; padding: 6px 8px; height: 36px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
   .kpi-card { padding: 12px 14px; text-align: center; }
   .kpi-card::after { display: none; }
@@ -350,7 +397,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.22";
+const APP_VERSION = "2.23";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -402,8 +449,10 @@ const LOGS_KEY    = "pagos_v1_logs";
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
-            <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
-            <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
+            <div class="form-row-duo">
+              <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
+              <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+            </div>
             <div class="form-group"><label>Núm. factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
             <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
           </div>
@@ -482,6 +531,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
+  let provResizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(provResizeTimer);
+    provResizeTimer = setTimeout(() => { if (isPageActive('registrar')) renderProvSelect(); }, 200);
+  });
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
     toast('✓ App v' + APP_VERSION + ' · datos y pantalla actualizados', false, true);
@@ -631,12 +685,27 @@ async function eliminarRegistro(id,btn){
   }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);}
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
-function clearForm(){['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');document.getElementById('f-tipo').value='';document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));}
+function clearForm(){
+  ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-tipo').value='';
+  document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
+  const ps=document.getElementById('f-proveedor-select');if(ps)ps.value='';
+}
+function setProveedorSelect(sel){document.getElementById('f-proveedor').value=sel.value||'';}
 function renderProvSelect(){
   const group=document.getElementById('f-proveedor-group');
-  if(!state.proveedores.length){group.innerHTML='<div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Sin proveedores</div>';return;}
-  group.innerHTML=state.proveedores.map(p=>'<button class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   const cur=document.getElementById('f-proveedor').value;
+  if(!state.proveedores.length){group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
+  const mobile=window.matchMedia('(max-width:640px)').matches;
+  if(mobile){
+    group.innerHTML='<select class="prov-select-compact" id="f-proveedor-select" onchange="setProveedorSelect(this)">'+
+      '<option value="">— Proveedor —</option>'+
+      state.proveedores.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('')+
+      '</select>';
+    if(cur){const sel=document.getElementById('f-proveedor-select');if(sel)sel.value=cur;}
+    return;
+  }
+  group.innerHTML=state.proveedores.map(p=>'<button class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
 }
 
