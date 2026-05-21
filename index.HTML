@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.23
+    ESTADO DE CUENTA  |  Versión 2.24
      ============================================================ -->
 <html lang="es">
 <head>
@@ -46,9 +46,20 @@ body{
 .header-sync{font-size:11px;color:rgba(255,255,255,.65);font-family:var(--mono);}
 .btn-mobile{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;cursor:pointer;color:#e2e8f0;font-size:18px;}
 .btn-mobile:hover{background:rgba(255,255,255,.2);}
-.btn-refresh{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;cursor:pointer;color:var(--cyan);font-size:16px;transition:all .2s;padding:0;line-height:1;flex-shrink:0;}
-.btn-refresh:hover{background:rgba(0,180,216,.25);color:#fff;transform:scale(1.05);}
-.btn-refresh.spinning{animation:spin .7s linear infinite;}
+.btn-refresh{display:flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:10px;cursor:pointer;color:var(--cyan);font-size:16px;transition:background .25s,border-color .25s,color .25s,box-shadow .25s,transform .2s;padding:0;line-height:1;flex-shrink:0;}
+.btn-refresh:hover:not(.syncing){background:rgba(0,180,216,.25);color:#fff;transform:scale(1.05);}
+.btn-refresh.syncing{
+  animation:refresh-spin .65s linear infinite,refresh-glow 1.1s ease-in-out infinite;
+  background:linear-gradient(135deg,#f59e0b 0%,#ea580c 100%);
+  border-color:#fbbf24;
+  color:#fff;
+  box-shadow:0 0 14px rgba(245,158,11,.55);
+  cursor:wait;
+  pointer-events:none;
+  transform:none;
+}
+@keyframes refresh-spin{to{transform:rotate(360deg);}}
+@keyframes refresh-glow{0%,100%{box-shadow:0 0 10px rgba(245,158,11,.4);}50%{box-shadow:0 0 18px rgba(251,191,36,.75);}}
 .layout{display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 60px);}
 .main{padding:1.5rem 2rem 2.5rem;overflow-y:auto;}
 .page{display:none;} .page.active{display:block;animation:fadeIn .25s ease;}
@@ -85,8 +96,9 @@ textarea{resize:vertical;min-height:60px;}
 .btn-icon{padding:5px 8px;font-size:13px;line-height:1;border-radius:8px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .14s;}
 .btn-icon:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
-.prov-select-compact{width:100%;max-width:100%;min-width:0;padding:8px 10px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);}
 .form-row-duo{display:contents;}
+#page-registrar #f-proveedor-group.prov-btn-grid{display:flex;flex-wrap:wrap;gap:8px;width:100%;}
+#page-registrar #f-proveedor-group.prov-btn-grid .btn-select{flex:0 1 auto;margin:0;}
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
 .btn-select.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
@@ -217,23 +229,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-registrar .form-grid { gap: 6px; }
   #page-registrar .form-group { gap: 3px; }
   #page-registrar #f-tipo-group .btn-select { flex: 1 1 calc(50% - 3px); padding: 6px 8px; font-size: 11px; }
-  #page-registrar #f-proveedor-group {
-    display: block;
-    max-height: none;
-    overflow: visible;
+  #page-registrar #f-proveedor-group.prov-btn-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
   }
-  #page-registrar #f-proveedor-group .btn-select {
-    flex: 1 1 calc(50% - 3px);
-    padding: 5px 6px;
+  #page-registrar #f-proveedor-group.prov-btn-grid .btn-select {
+    padding: 5px 4px;
     font-size: 10px;
     border-radius: 6px;
-    line-height: 1.2;
-  }
-  #page-registrar .prov-select-compact {
-    padding: 7px 8px;
-    font-size: 14px;
-    height: 36px;
-    line-height: 1.2;
+    line-height: 1.15;
+    min-height: 28px;
   }
   #page-registrar .form-row-duo {
     display: grid;
@@ -397,7 +402,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.23";
+const APP_VERSION = "2.24";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -531,11 +536,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
-  let provResizeTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(provResizeTimer);
-    provResizeTimer = setTimeout(() => { if (isPageActive('registrar')) renderProvSelect(); }, 200);
-  });
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
     toast('✓ App v' + APP_VERSION + ' · datos y pantalla actualizados', false, true);
@@ -603,9 +603,15 @@ async function hardReloadApp(){
   u.searchParams.set('_',String(Date.now()));
   window.location.replace(u.toString());
 }
-async function manualSync(){
+function setRefreshSyncing(on){
   const btn=document.getElementById('btn-refresh');
-  if(btn){btn.classList.add('spinning');btn.disabled=true;}
+  if(!btn)return;
+  btn.classList.toggle('syncing',on);
+  btn.disabled=on;
+  btn.setAttribute('aria-busy',on?'true':'false');
+}
+async function manualSync(){
+  setRefreshSyncing(true);
   setSyncStatus('Sincronizando…',true);
   try{
     const d=await api('getAll');
@@ -619,8 +625,7 @@ async function manualSync(){
     await new Promise(r=>setTimeout(r,350));
     await hardReloadApp();
     return;
-  }catch(e){toastError(e);setSyncStatus('Error de red');}
-  finally{if(btn){btn.classList.remove('spinning');btn.disabled=false;}}
+  }catch(e){toastError(e);setSyncStatus('Error de red');setRefreshSyncing(false);}
 }
 function scheduleQuietSync(){if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500);}
 function proveedoresFromRegistros(regs){return[...new Set((regs||[]).map(r=>String(r.proveedor||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
@@ -689,23 +694,13 @@ function clearForm(){
   ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
   document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
-  const ps=document.getElementById('f-proveedor-select');if(ps)ps.value='';
 }
-function setProveedorSelect(sel){document.getElementById('f-proveedor').value=sel.value||'';}
 function renderProvSelect(){
   const group=document.getElementById('f-proveedor-group');
   const cur=document.getElementById('f-proveedor').value;
-  if(!state.proveedores.length){group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
-  const mobile=window.matchMedia('(max-width:640px)').matches;
-  if(mobile){
-    group.innerHTML='<select class="prov-select-compact" id="f-proveedor-select" onchange="setProveedorSelect(this)">'+
-      '<option value="">— Proveedor —</option>'+
-      state.proveedores.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('')+
-      '</select>';
-    if(cur){const sel=document.getElementById('f-proveedor-select');if(sel)sel.value=cur;}
-    return;
-  }
-  group.innerHTML=state.proveedores.map(p=>'<button class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
+  group.classList.add('prov-btn-grid');
+  if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
+  group.innerHTML=state.proveedores.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
 }
 
