@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.29
+    ESTADO DE CUENTA  |  Versión 2.30
      ============================================================ -->
 <html lang="es">
 <head>
@@ -1002,10 +1002,9 @@ async function eliminarLog(localId){
 function renderLogs(){
   const el=document.getElementById('logs-list'),logs=getLogs();
   if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
-  const LOG_BADGE={eliminar:'badge-log-del',proveedor:'badge-log-prov'};
   let tableRows='',compactRows='';
   logs.forEach(l=>{
-    const cls=LOG_BADGE[l.tipo]||'badge-log-add';
+    const cls=logBadgeClass(l.tipo);
     const dt=esc(getFechaDisplay(l));
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
