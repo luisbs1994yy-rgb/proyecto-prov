@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.27
+    ESTADO DE CUENTA  |  Versión 2.28
      ============================================================ -->
 <html lang="es">
 <head>
@@ -111,8 +111,8 @@ th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
 td{padding:11px 14px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
 tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent;}
-.badge-pago{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border);}
-.badge-factura{background:var(--blue-bg);color:var(--blue-text);border-color:var(--blue-border);}
+.badge-pago{background:var(--green-bg)!important;color:var(--green-text)!important;border-color:var(--green-border)!important;}
+.badge-factura{background:var(--blue-bg)!important;color:#1e40af!important;border-color:var(--blue-border)!important;}
 .amount{font-family:var(--mono);font-weight:500;}
 .pct-cell{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
 .hint-text{font-size:11px;color:var(--text-faint);}
@@ -147,24 +147,35 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-header-close{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:12px;color:#fff;flex-shrink:0;}
 .popup-header-close:hover{background:rgba(255,255,255,.22);}
 .popup-body{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
-.popup-desglose table{width:100%;border-collapse:collapse;table-layout:fixed;}
-.popup-desglose table thead th{background:linear-gradient(135deg,#3a86ff,#2563eb);font-size:8px;padding:4px 6px;letter-spacing:.05em;}
-.popup-desglose .desglose-row td{padding:3px 5px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
+.popup-desglose table.desglose-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.popup-desglose table thead th{background:linear-gradient(135deg,#3a86ff,#2563eb);font-size:8px;padding:5px 6px;letter-spacing:.05em;vertical-align:middle;}
+.popup-desglose .desglose-th-sort{cursor:pointer;user-select:none;white-space:nowrap;}
+.popup-desglose .desglose-th-sort:hover{background:rgba(255,255,255,.15);}
+.popup-desglose .desglose-col-fecha{width:24%;text-align:left;}
+.popup-desglose .desglose-col-tipo{width:30%;text-align:center;}
+.popup-desglose .desglose-col-monto{width:32%;text-align:right;}
+.popup-desglose .desglose-col-del{width:14%;text-align:center;}
+.popup-desglose .desglose-row td{padding:4px 6px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
 .popup-desglose .desglose-row:last-child td{border-bottom:none;}
-.desglose-row-factura td{background:#e8f4ff;}
-.desglose-row-pago td{background:#e8faf0;}
-.desglose-row-factura .desglose-cell-amt{color:#1d4ed8;}
-.desglose-row-pago .desglose-cell-amt{color:#047857;}
+.desglose-row-factura td{background:#e8f4ff!important;}
+.desglose-row-pago td{background:#e8faf0!important;}
+.desglose-row-factura .desglose-cell-amt{color:#1d4ed8!important;}
+.desglose-row-pago .desglose-cell-amt{color:#047857!important;}
 .desglose-sum-f{color:#60a5fa!important;font-weight:600;}
 .desglose-sum-p{color:#34d399!important;font-weight:600;}
 .desglose-sum-s{color:#f87171!important;font-weight:600;}
 .popup-sub-totals{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:2px;}
-.desglose-cell-main{font-size:11px;line-height:1.2;}
-.desglose-fecha{font-weight:600;white-space:nowrap;margin-right:4px;}
-.desglose-badge{font-size:8px!important;padding:1px 5px!important;vertical-align:middle;}
-.desglose-detail{font-size:9px;color:var(--text-faint);display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:42%;vertical-align:middle;}
-.desglose-cell-amt{font-family:var(--mono);font-size:11px;font-weight:600;white-space:nowrap;text-align:right;width:28%;}
-.desglose-cell-del{width:32px;text-align:center;padding:2px!important;}
+.desglose-cell-fecha{font-size:10px;font-weight:600;white-space:nowrap;text-align:left;}
+.desglose-cell-tipo{text-align:center;}
+.desglose-cell-tipo .badge{font-size:8px!important;padding:2px 6px!important;display:inline-block;}
+.desglose-detail{font-size:8px;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+.desglose-cell-amt{font-family:var(--mono);font-size:10px;font-weight:600;white-space:nowrap;text-align:right;}
+.desglose-cell-del{text-align:center;padding:2px 4px!important;}
+.trend-week-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:10px 8px 12px;}
+.trend-week-row{display:flex;flex-wrap:nowrap;gap:6px;min-width:min-content;}
+.trend-week{flex:0 0 68px;background:#fff;border:1px solid var(--border);border-radius:8px;padding:6px 4px;text-align:center;box-shadow:var(--shadow-sm);}
+.trend-week-label{font-size:8px;font-weight:700;color:var(--navy);line-height:1.2;margin-bottom:4px;}
+.trend-week-bars{height:40px;display:flex;align-items:flex-end;justify-content:center;gap:3px;}
 .btn-del-compact{width:22px;height:22px;padding:0;font-size:11px;line-height:1;border-radius:5px;cursor:pointer;border:1px solid var(--red-border);background:var(--red-bg);color:var(--red-text);}
 .btn-del-compact:hover{background:#fee2e2;}
 .badge-log-add{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border);}
@@ -373,40 +384,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .popup-desglose .popup-header-title { font-size: 10px; }
   .popup-desglose .popup-sub { font-size: 8px; }
   .popup-desglose .popup-header-close { width: 22px; height: 22px; font-size: 11px; }
-  .popup-desglose thead { display: none; }
-  .popup-desglose .popup-body table { display: block; width: 100%; }
-  .popup-desglose .popup-body tbody { display: block; }
-  .popup-desglose .desglose-row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 6px;
-    border-bottom: 1px solid #eef2f7;
-  }
-  .popup-desglose .desglose-row td {
-    display: block;
-    border: none;
-    padding: 0;
-  }
-  .popup-desglose .desglose-cell-main {
-    flex: 1 1 0;
-    min-width: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 3px 5px;
-    font-size: 10px;
-  }
-  .popup-desglose .desglose-fecha { font-size: 10px; }
-  .popup-desglose .desglose-detail { max-width: 100%; flex: 1 1 100%; font-size: 8px; line-height: 1.1; }
-  .popup-desglose .desglose-cell-amt {
-    flex: 0 0 auto;
-    font-size: 10px;
-    width: auto;
-    text-align: right;
-  }
-  .popup-desglose .desglose-cell-del { flex: 0 0 24px; width: 24px; }
+  .popup-desglose .desglose-cell-fecha { font-size: 9px; }
+  .popup-desglose .desglose-cell-amt { font-size: 9px; }
   .popup-desglose .btn-del-compact { width: 20px; height: 20px; font-size: 10px; }
   .card, .chart-section { max-width: 100%; }
   .layout { width: 100%; max-width: 100vw; }
@@ -438,7 +417,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.27";
+const APP_VERSION = "2.28";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -537,7 +516,7 @@ const LOGS_KEY    = "pagos_v1_logs";
       </div>
       <div class="card chart-section"><div class="card-header"><span class="card-title">Saldo por proveedor</span></div><div id="chart-barras" class="bar-chart"></div></div>
       <div class="card chart-section"><div class="card-header"><span class="card-title">Distribución general</span></div><div class="donut-wrap" id="chart-donut"></div></div>
-      <div class="card chart-section"><div class="card-header"><span class="card-title">Tendencia mensual</span></div><div id="chart-trend"></div></div>
+      <div class="card chart-section"><div class="card-header"><span class="card-title">Tendencia</span><span class="hint-text" style="font-weight:400">Semanas lun–dom desde 4 may 2026</span></div><div id="chart-trend"></div></div>
     </div>
 
     <div class="page" id="page-config">
@@ -559,6 +538,7 @@ const LOGS_KEY    = "pagos_v1_logs";
 let state = { registros:[], proveedores:[] };
 let logsMemory = [];
 let syncTimer = null, desgloseOpen = false;
+let desgloseSort = { col: 'fecha', dir: 'desc' };
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version').textContent = 'v' + APP_VERSION;
@@ -618,9 +598,52 @@ function getFechaDisplay(l){
 }
 function toast(msg,error=false,success=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(error?' error':success?' success':'');setTimeout(()=>{el.className='toast';},3500);}
 function toastError(e){toast('Error: '+e.message,true);}
-function badgeClass(t){return t==='pago'?'badge-pago':'badge-factura';}
+function badgeClass(t){const x=String(t||'').toLowerCase();return(x==='pago'||x.includes('pago'))?'badge-pago':'badge-factura';}
 function sumMonto(arr){return arr.reduce((acc,r)=>acc+(parseFloat(r.monto)||0),0);}
 function sortByMonto(arr){return arr.slice().sort((a,b)=>(parseFloat(b.monto)||0)-(parseFloat(a.monto)||0));}
+function parseRegistroDate(fecha){
+  if(fecha==null||fecha==='')return null;
+  const raw=String(fecha).trim();
+  if(!raw)return null;
+  let d;
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
+  else d=new Date(raw);
+  return isNaN(d.getTime())?null:d;
+}
+function parseRegistroDateMs(fecha){const d=parseRegistroDate(fecha);return d?d.getTime():0;}
+function sortDesgloseRegs(regs,col,dir){
+  const arr=regs.slice(),mul=dir==='asc'?1:-1;
+  if(col==='monto')arr.sort((a,b)=>((parseFloat(a.monto)||0)-(parseFloat(b.monto)||0))*mul);
+  else arr.sort((a,b)=>(parseRegistroDateMs(a.fecha)-parseRegistroDateMs(b.fecha))*mul);
+  return arr;
+}
+function desgloseSortMark(col){return desgloseSort.col===col?(desgloseSort.dir==='asc'?' ▲':' ▼'):'';}
+function sortDesgloseCol(col){
+  if(desgloseSort.col===col)desgloseSort.dir=desgloseSort.dir==='asc'?'desc':'asc';
+  else{desgloseSort.col=col;desgloseSort.dir=col==='fecha'?'desc':'desc';}
+  refreshDesglosePopup();
+}
+const MESES_CORTOS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function getTrendWeeks(){
+  const weeks=[],start=new Date('2026-05-04T12:00:00'),endLimit=new Date('2026-12-31T12:00:00');
+  const cur=new Date(start);
+  while(cur<=endLimit){
+    const wStart=new Date(cur),wEnd=new Date(cur);
+    wEnd.setDate(wEnd.getDate()+6);
+    weeks.push({start:wStart,end:wEnd,key:wStart.toISOString().slice(0,10)});
+    cur.setDate(cur.getDate()+7);
+  }
+  return weeks;
+}
+function fmtWeekLabel(start,end){
+  if(start.getMonth()===end.getMonth())return start.getDate()+'-'+end.getDate()+' '+MESES_CORTOS[start.getMonth()];
+  return start.getDate()+' '+MESES_CORTOS[start.getMonth()]+'-'+end.getDate()+' '+MESES_CORTOS[end.getMonth()];
+}
+function registroEnSemana(r,weekStart,weekEnd){
+  const d=parseRegistroDate(r.fecha);if(!d)return false;
+  const t=d.getTime(),s=weekStart.getTime(),e=weekEnd.getTime()+86400000-1;
+  return t>=s&&t<=e;
+}
 function nRegistros(n){return n+' registro'+(n!==1?'s':'');}
 function resumenPorProveedor(regs){
   const map={};
@@ -796,21 +819,23 @@ function buildDesglosePanelHtml(proveedor,regs){
       '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div>'+
     '</div>'+
     '<div class="popup-body">'+
-      '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto</th><th></th></tr></thead>'+
+      '<table class="desglose-table"><thead><tr>'+
+        '<th class="desglose-th-sort desglose-col-fecha" onclick="sortDesgloseCol(\'fecha\')">Fecha'+desgloseSortMark('fecha')+'</th>'+
+        '<th class="desglose-col-tipo">Tipo</th>'+
+        '<th class="desglose-th-sort desglose-col-monto" onclick="sortDesgloseCol(\'monto\')">Monto'+desgloseSortMark('monto')+'</th>'+
+        '<th class="desglose-col-del"></th>'+
+      '</tr></thead>'+
       '<tbody>'+buildDesgloseRows(regs)+'</tbody></table>'+
     '</div></div>';
 }
 function buildDesgloseRows(regs){
   let drows='';
-  sortByMonto(regs).forEach(r=>{
+  sortDesgloseRegs(regs,desgloseSort.col,desgloseSort.dir).forEach(r=>{
     const sub=(r.factura?'#'+esc(r.factura):'')+(r.concepto?(r.factura?' · ':'')+esc(r.concepto):'');
-    const rowCls=r.tipo==='pago'?'desglose-row-pago':'desglose-row-factura';
+    const rowCls=badgeClass(r.tipo)==='badge-pago'?'desglose-row-pago':'desglose-row-factura';
     drows+='<tr class="desglose-row '+rowCls+'">'+
-      '<td class="desglose-cell-main">'+
-        '<span class="desglose-fecha">'+esc(fmtFechaCorta(r.fecha))+'</span>'+
-        '<span class="badge '+badgeClass(r.tipo)+' desglose-badge">'+esc(r.tipo)+'</span>'+
-        (sub?'<span class="desglose-detail">'+sub+'</span>':'')+
-      '</td>'+
+      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(r.fecha))+'</td>'+
+      '<td class="desglose-cell-tipo"><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span>'+(sub?'<div class="desglose-detail">'+sub+'</div>':'')+'</td>'+
       '<td class="amount desglose-cell-amt">'+fmt(r.monto)+'</td>'+
       '<td class="desglose-cell-del"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(r.id)+'\',this)">✕</button></td>'+
       '</tr>';
@@ -830,6 +855,7 @@ function getDesgloseOverlay(){
 }
 function showDesglosePopup(proveedor,anchor){
   closeDesglosePopup();desgloseOpen=true;
+  desgloseSort={col:'fecha',dir:'desc'};
   const regs=state.registros.filter(r=>r.proveedor===proveedor);
   const ov=getDesgloseOverlay();
   ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);
@@ -838,7 +864,6 @@ function showDesglosePopup(proveedor,anchor){
   document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>b.classList.remove('active'));
   if(anchor)anchor.classList.add('active');
   document.body.style.overflow='hidden';
-  setTimeout(()=>document.addEventListener('click',closeDesgloseOnOutside),10);
 }
 function refreshDesglosePopup(){
   const ov=document.getElementById('desglose-overlay');
@@ -848,17 +873,12 @@ function refreshDesglosePopup(){
   if(!regs.length){closeDesglosePopup();return;}
   if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;}
 }
-function closeDesgloseOnOutside(e){
-  if(e.target.closest('.desglose-btn')||e.target.closest('#desglose-overlay')||e.target.closest('.popup-desglose'))return;
-  closeDesglosePopup();
-}
 function closeDesglosePopup(){
   desgloseOpen=false;
   const ov=document.getElementById('desglose-overlay');
   if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;}
   document.body.style.overflow='';
   document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
-  document.removeEventListener('click',closeDesgloseOnOutside);
 }
 
 function parseLogExtraFields(log){
@@ -1056,30 +1076,34 @@ function renderAnalisis(){
   const trendContainer=document.getElementById('chart-trend').parentElement;
   if(trendContainer&&!trendContainer.querySelector('.trend-legend')){
     const lg=document.createElement('div');lg.className='trend-legend';
-    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Azul</b> = Facturas emitidas</span></div><div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Verde</b> = Pagos realizados</span></div>';
+    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Azul</b> = Facturas</span></div><div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Verde</b> = Pagos</span></div>';
     trendContainer.querySelector('.card-header').after(lg);
   }
-  const trendEl=document.getElementById('chart-trend'),meses={};
-  regs.forEach(r=>{const d=new Date(/^\d{4}-\d{2}-\d{2}/.test(String(r.fecha))?r.fecha+'T12:00:00':r.fecha);if(isNaN(d))return;const key=d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0');if(!meses[key])meses[key]={label:'',fact:0,pago:0};meses[key].label=d.toLocaleDateString('es-MX',{month:'short',year:'2-digit'});if(r.tipo==='factura')meses[key].fact+=parseFloat(r.monto)||0;else meses[key].pago+=parseFloat(r.monto)||0;});
-  const mesKeys=Object.keys(meses).sort().slice(-12);
-  if(!mesKeys.length){trendEl.innerHTML='<div class="empty" style="padding:2rem">Sin datos</div>';}
-  else{
-    const maxVal=Math.max(...mesKeys.map(k=>Math.max(meses[k].fact,meses[k].pago)),1);
-    trendEl.className='trend-grid';
-    trendEl.innerHTML=mesKeys.map(k=>{
-      const m=meses[k],hF=Math.round((m.fact/maxVal)*50),hP=Math.round((m.pago/maxVal)*50);
-      return '<div class="trend-month">'+
-        '<div class="trend-month-label">'+esc(m.label)+'</div>'+
-        '<div class="trend-month-bar-wrap">'+
-          '<div class="trend-bar-f" style="height:'+hF+'px"></div>'+
-          '<div class="trend-bar-p" style="height:'+hP+'px"></div>'+
-        '</div>'+
-        '<div style="font-size:9px;color:#3b82f6;margin-top:2px">F: '+fmtShort(m.fact)+'</div>'+
-        '<div style="font-size:9px;color:#16a34a">P: '+fmtShort(m.pago)+'</div>'+
-        '<div class="trend-month-total">'+fmtShort(m.fact+m.pago)+'</div>'+
-        '</div>';
-    }).join('');
-  }
+  const trendEl=document.getElementById('chart-trend');
+  const weeks=getTrendWeeks();
+  const weekData=weeks.map(w=>{
+    let fact=0,pago=0;
+    regs.forEach(r=>{
+      if(!registroEnSemana(r,w.start,w.end))return;
+      const m=parseFloat(r.monto)||0;
+      if(String(r.tipo||'').toLowerCase().includes('pago'))pago+=m;else fact+=m;
+    });
+    return{...w,label:fmtWeekLabel(w.start,w.end),fact,pago};
+  });
+  const maxVal=Math.max(...weekData.map(w=>Math.max(w.fact,w.pago)),1);
+  trendEl.className='trend-week-scroll';
+  trendEl.innerHTML='<div class="trend-week-row">'+weekData.map(w=>{
+    const hF=Math.round((w.fact/maxVal)*36),hP=Math.round((w.pago/maxVal)*36);
+    return '<div class="trend-week">'+
+      '<div class="trend-week-label">'+esc(w.label)+'</div>'+
+      '<div class="trend-week-bars">'+
+        '<div class="trend-bar-f" style="height:'+hF+'px" title="Facturas"></div>'+
+        '<div class="trend-bar-p" style="height:'+hP+'px" title="Pagos"></div>'+
+      '</div>'+
+      '<div style="font-size:7px;color:#3b82f6">F '+fmtShort(w.fact)+'</div>'+
+      '<div style="font-size:7px;color:#16a34a">P '+fmtShort(w.pago)+'</div>'+
+      '</div>';
+  }).join('')+'</div>';
 }
 
 async function agregarProveedor(){
