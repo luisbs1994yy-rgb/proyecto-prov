@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.28
+    ESTADO DE CUENTA  |  Versión 2.29
      ============================================================ -->
 <html lang="es">
 <head>
@@ -417,7 +417,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.28";
+const APP_VERSION = "2.29";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -599,6 +599,14 @@ function getFechaDisplay(l){
 function toast(msg,error=false,success=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(error?' error':success?' success':'');setTimeout(()=>{el.className='toast';},3500);}
 function toastError(e){toast('Error: '+e.message,true);}
 function badgeClass(t){const x=String(t||'').toLowerCase();return(x==='pago'||x.includes('pago'))?'badge-pago':'badge-factura';}
+function logBadgeClass(tipo){
+  const x=String(tipo||'').toLowerCase();
+  if(x==='eliminar')return'badge-log-del';
+  if(x==='proveedor')return'badge-log-prov';
+  if(x==='pago'||x.includes('pago'))return'badge-pago';
+  if(x==='factura'||x.includes('factura'))return'badge-factura';
+  return'badge-log-add';
+}
 function sumMonto(arr){return arr.reduce((acc,r)=>acc+(parseFloat(r.monto)||0),0);}
 function sortByMonto(arr){return arr.slice().sort((a,b)=>(parseFloat(b.monto)||0)-(parseFloat(a.monto)||0));}
 function parseRegistroDate(fecha){
