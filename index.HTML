@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.31
+    ESTADO DE CUENTA  |  Versión 2.32
      ============================================================ -->
 <html lang="es">
 <head>
@@ -183,8 +183,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge-log-prov{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border);}
 .log-time{font-family:var(--mono);font-size:9px;color:var(--text-muted);white-space:normal;line-height:1.25;text-align:left;}
 .log-hora{display:block;font-size:8px;color:var(--text-faint);margin-top:1px;}
-#logs-list .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-#logs-list table.logs-table{width:100%;table-layout:fixed;border-collapse:collapse;min-width:520px;}
+#logs-list .table-wrap{overflow-x:hidden;}
+#logs-list table.logs-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;min-width:0;}
+.log-desc-stack{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.log-desc-prov{font-weight:600;font-size:9px;color:var(--navy);line-height:1.2;word-break:break-word;}
+.log-desc-monto{font-family:var(--mono);font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
+.log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
 #logs-list .log-col-fecha{width:17%;text-align:left;}
@@ -389,13 +393,20 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   th, td { font-size: 11px; }
   #page-logs .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-logs .card-body { padding: 0; }
-  #logs-list table.logs-table { min-width: 100%; font-size: 9px; }
-  #logs-list .logs-table th { font-size: 8px; padding: 4px 3px; }
-  #logs-list .logs-table td { padding: 5px 3px; font-size: 9px; min-height: 32px; line-height: 1.28; }
+  #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
+  #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
+  #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
+  #logs-list .log-col-fecha { width: 14%; }
+  #logs-list .log-col-tipo { width: 11%; }
+  #logs-list .log-col-fact, #logs-list .log-col-conc { display: none; }
+  #logs-list .log-col-desc { width: 69%; }
+  #logs-list .log-col-act { width: 6%; }
   #logs-list .log-time { font-size: 8px; line-height: 1.2; }
   #logs-list .log-hora { font-size: 7px; }
-  #logs-list .badge { font-size: 7px !important; padding: 1px 4px !important; }
-  #logs-list .btn-icon { padding: 3px 5px; font-size: 11px; }
+  #logs-list .badge { font-size: 6px !important; padding: 1px 3px !important; max-width: 100%; }
+  #logs-list .log-desc-prov { font-size: 8px; }
+  #logs-list .log-desc-monto { font-size: 7px; }
+  #logs-list .btn-icon { padding: 2px 4px; font-size: 10px; }
   .desglose-overlay .popup-desglose { width: calc(100vw - 16px); max-width: calc(100vw - 16px); }
   .popup-desglose .popup-header { padding: 6px 8px; }
   .popup-desglose .popup-header-title { font-size: 10px; }
@@ -434,7 +445,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.31";
+const APP_VERSION = "2.32";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -970,8 +981,26 @@ function parseDescBasics(descripcion){
   if(!parts.length)return null;
   const proveedor=parts[0];
   let monto=NaN;
-  if(parts[1])monto=parseFloat(parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,''));
+  if(parts[1]){const s=parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,'');monto=parseFloat(s);}
   return{proveedor,monto};
+}
+function formatLogDescCell(l){
+  const tipo=String(l.tipo||'').toLowerCase();
+  const concepto=String(l.concepto||l.detalle||'').trim();
+  if(tipo==='proveedor'||tipo==='eliminar'){
+    const c=esc(cleanLogDescripcion(l.descripcion));
+    return c?'<div class="log-desc-stack"><span class="log-desc-prov">'+c+'</span></div>':'—';
+  }
+  const b=parseDescBasics(l.descripcion);
+  if(b&&b.proveedor){
+    let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
+    if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
+    html+='</div>';
+    if(concepto)html+='<div class="log-desc-conc">'+esc(concepto)+'</div>';
+    return html;
+  }
+  const clean=esc(cleanLogDescripcion(l.descripcion));
+  return clean?'<div class="log-desc-stack"><span class="log-desc-prov">'+clean+'</span></div>':'—';
 }
 function montoCerca(a,b){return Math.abs((parseFloat(a)||0)-(parseFloat(b)||0))<0.02;}
 function findLogsForRegistro(reg){
@@ -1052,20 +1081,20 @@ function renderLogs(){
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concepto=esc(String(l.concepto||l.detalle||'').trim());
-    const descripcion=esc(cleanLogDescripcion(l.descripcion));
+    const descCell=formatLogDescCell(l);
     tableRows+='<tr class="'+dayCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
-      '<td class="log-col-desc">'+descripcion+'</td>'+
+      '<td class="log-col-desc">'+descCell+'</td>'+
       '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
   });
   el.innerHTML=
     '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
       '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
-      '<th class="log-col-conc">Concepto</th><th class="log-col-desc">Descripción</th><th class="log-col-act"></th>'+
+      '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
 }
 
