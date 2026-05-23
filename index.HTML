@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.31
+    ESTADO DE CUENTA  |  Versión 2.33
      ============================================================ -->
 <html lang="es">
 <head>
@@ -183,8 +183,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge-log-prov{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border);}
 .log-time{font-family:var(--mono);font-size:9px;color:var(--text-muted);white-space:normal;line-height:1.25;text-align:left;}
 .log-hora{display:block;font-size:8px;color:var(--text-faint);margin-top:1px;}
-#logs-list .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-#logs-list table.logs-table{width:100%;table-layout:fixed;border-collapse:collapse;min-width:520px;}
+#logs-list .table-wrap{overflow-x:hidden;}
+#logs-list table.logs-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;min-width:0;}
+.log-desc-stack{display:flex;flex-direction:column;gap:1px;min-width:0;}
+.log-desc-prov{font-weight:600;font-size:9px;color:var(--navy);line-height:1.2;word-break:break-word;}
+.log-desc-monto{font-family:var(--mono);font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
+.log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
 #logs-list .log-col-fecha{width:17%;text-align:left;}
@@ -198,6 +202,20 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-day-a td{background:#e8f4fc;}
 #logs-list .log-day-b td{background:#fff4e8;}
 #logs-list tbody tr:hover td{filter:brightness(.98);}
+.prov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;background:#f8fafc;border-bottom:1px solid var(--border);}
+.prov-kpi{ border-radius:8px;padding:8px 6px;text-align:center;border-top:3px solid var(--kpi-c,#3a86ff);background:#fff; }
+.prov-kpi-lbl{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--text-faint);letter-spacing:.06em;}
+.prov-kpi-val{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:3px;color:var(--navy);}
+.prov-kpi.saldo{--kpi-c:#7c3aed;} .prov-kpi.fact{--kpi-c:#3a86ff;} .prov-kpi.pend{--kpi-c:#f59e0b;}
+.prov-tabs{display:flex;gap:4px;padding:6px 8px;background:#eef2f7;border-bottom:1px solid var(--border);}
+.prov-tab{flex:1;padding:7px 4px;font-size:10px;font-weight:600;border:none;border-radius:8px;background:transparent;color:var(--text-muted);cursor:pointer;}
+.prov-tab.active{background:#fff;color:var(--navy);box-shadow:var(--shadow-sm);}
+.prov-tab-body{padding:0;}
+.prov-abonar-box{padding:8px;background:#fff8e6;border-bottom:1px solid var(--amber-border);font-size:10px;}
+.prov-abonar-box .btn-sm{margin-top:6px;margin-right:4px;}
+.prov-fact-table .col-total,.prov-fact-table .col-abon,.prov-fact-table .col-pend{text-align:right;font-family:var(--mono);font-size:9px;}
+.prov-fact-table .col-abon{color:#047857;} .prov-fact-table .col-pend{color:#b91c1c;font-weight:600;}
+.prov-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:1.5rem;}
 .chart-section{margin-bottom:1.25rem;}
 .bar-chart{display:flex;flex-direction:column;gap:12px;padding:20px;}
@@ -325,7 +343,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
-  .desglose-overlay .popup-desglose { max-height: min(480px, 78vh); border-radius: 8px; }
+  .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
+  .prov-kpi-row { grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px; }
+  .prov-kpi-val { font-size: 9px; }
+  .prov-tab { font-size: 9px; padding: 6px 2px; }
+  .prov-fact-table th, .prov-fact-table td { font-size: 8px; padding: 3px 2px; }
   #page-totales .totales-panel .card-header { padding: 6px 10px; }
   #page-totales .totales-panel .card-title { font-size: 11px; }
   #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
@@ -389,13 +411,20 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   th, td { font-size: 11px; }
   #page-logs .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-logs .card-body { padding: 0; }
-  #logs-list table.logs-table { min-width: 100%; font-size: 9px; }
-  #logs-list .logs-table th { font-size: 8px; padding: 4px 3px; }
-  #logs-list .logs-table td { padding: 5px 3px; font-size: 9px; min-height: 32px; line-height: 1.28; }
+  #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
+  #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
+  #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
+  #logs-list .log-col-fecha { width: 14%; }
+  #logs-list .log-col-tipo { width: 11%; }
+  #logs-list .log-col-fact, #logs-list .log-col-conc { display: none; }
+  #logs-list .log-col-desc { width: 69%; }
+  #logs-list .log-col-act { width: 6%; }
   #logs-list .log-time { font-size: 8px; line-height: 1.2; }
   #logs-list .log-hora { font-size: 7px; }
-  #logs-list .badge { font-size: 7px !important; padding: 1px 4px !important; }
-  #logs-list .btn-icon { padding: 3px 5px; font-size: 11px; }
+  #logs-list .badge { font-size: 6px !important; padding: 1px 3px !important; max-width: 100%; }
+  #logs-list .log-desc-prov { font-size: 8px; }
+  #logs-list .log-desc-monto { font-size: 7px; }
+  #logs-list .btn-icon { padding: 2px 4px; font-size: 10px; }
   .desglose-overlay .popup-desglose { width: calc(100vw - 16px); max-width: calc(100vw - 16px); }
   .popup-desglose .popup-header { padding: 6px 8px; }
   .popup-desglose .popup-header-title { font-size: 10px; }
@@ -434,11 +463,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.31";
+const APP_VERSION = "2.33";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
+const APLICA_KEY  = "pagos_v1_aplica";
 </script>
 
 <header class="header">
@@ -457,7 +487,7 @@ const LOGS_KEY    = "pagos_v1_logs";
       <div class="nav-label">Menú</div>
       <div class="nav-item"        onclick="navTo('registrar',this)"><span class="nav-icon">＋</span> Registrar</div>
       <div class="nav-item active" onclick="navTo('totales',this)"><span class="nav-icon">≡</span> Totales</div>
-      <div class="nav-item"        onclick="navTo('logs',this)"><span class="nav-icon">◎</span> Logs</div>
+      <div class="nav-item"        onclick="navTo('logs',this)"><span class="nav-icon">◎</span> Bitácora</div>
       <div class="nav-item"        onclick="navTo('analisis',this)"><span class="nav-icon">◈</span> Análisis</div>
     </div>
     <div class="nav-section">
@@ -515,9 +545,9 @@ const LOGS_KEY    = "pagos_v1_logs";
     </div>
 
     <div class="page" id="page-logs">
-      <div class="page-title">Logs</div>
+      <div class="page-title">Bitácora</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Historial de movimientos</span></div>
+        <div class="card-header"><span class="card-title">Bitácora general</span></div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -556,6 +586,8 @@ let state = { registros:[], proveedores:[] };
 let logsMemory = [];
 let syncTimer = null, desgloseOpen = false;
 let desgloseSort = { col: 'fecha', dir: 'desc' };
+let desgloseProvTab = 'facturas';
+let desgloseAbonarFacturaId = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('app-version').textContent = 'v' + APP_VERSION;
@@ -564,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-monto').addEventListener('blur',  onMontoBlur);
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
-    try { const d=JSON.parse(cached); state.registros=d.registros||[]; state.proveedores=d.proveedores||[]; renderAll(); setSyncStatus('Actualizando…',true); } catch {}
+    try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
@@ -575,7 +607,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function saveAndRender(){localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores}));renderAll();}
+function saveAndRender(){
+  const map={};
+  state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
+  saveAplicaMap(map);
+  localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores}));
+  renderAll();
+}
 function isPageActive(page){const el=document.getElementById('page-'+page);return !!el&&el.classList.contains('active');}
 function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);}
 function fmt3(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:3,maximumFractionDigits:3}).format(v);}
@@ -751,10 +789,45 @@ function mergeProveedoresList(apiList,regs){
   if(!list.length)list=proveedoresFromRegistros(regs);
   return[...new Set(list)].sort((a,b)=>a.localeCompare(b,'es'));
 }
+function loadAplicaMap(){try{return JSON.parse(localStorage.getItem(APLICA_KEY)||'{}');}catch{return {};}}
+function saveAplicaMap(map){try{localStorage.setItem(APLICA_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}}
+function normalizeRegistro(r){
+  const map=loadAplicaMap();
+  const id=String(r.id||'');
+  return Object.assign({},r,{aplicaFacturaId:String(r.aplicaFacturaId||map[id]||'').trim()});
+}
+function mergeAplicaIntoRegs(){
+  const map=loadAplicaMap();
+  state.registros.forEach(r=>{if(r.id&&!r.aplicaFacturaId&&map[r.id])r.aplicaFacturaId=map[r.id];});
+}
 function updateStateFromSheetData(d){
-  state.registros=d.registros||[];
+  state.registros=(d.registros||[]).map(normalizeRegistro);
+  mergeAplicaIntoRegs();
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
   if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
+}
+function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
+function isTipoFactura(r){return !isTipoPago(r);}
+function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
+function calcFacturaAbonado(fact,pagos){
+  const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
+  let ab=0;
+  pagos.forEach(p=>{
+    const m=parseFloat(p.monto)||0;
+    if(String(p.aplicaFacturaId||'')===fid)ab+=m;
+    else if(!p.aplicaFacturaId&&ref&&p.factura&&String(p.factura).trim()===ref)ab+=m;
+  });
+  return ab;
+}
+function sumPendienteFacturas(facts,pagos){
+  return facts.reduce((acc,f)=>acc+Math.max(0,(parseFloat(f.monto)||0)-calcFacturaAbonado(f,pagos)),0);
+}
+function logsProveedor(prov){
+  return getLogs().filter(l=>{
+    if(String(l.tipo||'').toLowerCase()==='proveedor')return String(l.descripcion||'').toUpperCase().includes(String(prov).toUpperCase());
+    const b=parseDescBasics(l.descripcion);
+    return b&&b.proveedor===prov;
+  });
 }
 async function syncQuiet(){try{const d=await api('getAll');if(d.error)return;updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch{}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
@@ -834,7 +907,7 @@ function renderTotales(){
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600;word-break:break-word">'+esc(r.proveedor)+'</td>'+
       '<td class="amount" style="'+color+'">'+fmt(Math.abs(r.saldo))+'</td>'+
       '<td class="pct-cell">'+pct+'%</td>'+
-      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">desglose</button></td>'+
+      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
       '</tr>';
   });
   document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
@@ -852,43 +925,126 @@ function toggleDesglose(e,proveedor,btn){
   if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor===proveedor){closeDesglosePopup();return;}
   showDesglosePopup(proveedor,btn);
 }
-function buildDesglosePanelHtml(proveedor,regs){
-  const facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago'),saldo=sumMonto(facts)-sumMonto(pagos);
-  return '<div id="desglose-popup" class="popup-desglose" data-proveedor="'+esc(proveedor)+'">'+
-    '<div class="popup-header">'+
-      '<div style="min-width:0;flex:1">'+
-        '<span class="popup-header-title">'+esc(proveedor)+'</span>'+
-        '<span class="popup-sub popup-sub-totals">'+
-          '<span class="desglose-sum-f">Fact '+fmt(sumMonto(facts))+'</span>'+
-          '<span class="desglose-sum-p">Pag '+fmt(sumMonto(pagos))+'</span>'+
-          '<span class="desglose-sum-s">Sal '+fmt(Math.abs(saldo))+'</span>'+
-        '</span>'+
-      '</div>'+
-      '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div>'+
-    '</div>'+
-    '<div class="popup-body">'+
-      '<table class="desglose-table"><thead><tr>'+
-        '<th class="desglose-th-sort desglose-col-fecha" onclick="sortDesgloseCol(\'fecha\')">Fecha'+desgloseSortMark('fecha')+'</th>'+
-        '<th class="desglose-col-tipo">Tipo</th>'+
-        '<th class="desglose-th-sort desglose-col-monto" onclick="sortDesgloseCol(\'monto\')">Monto'+desgloseSortMark('monto')+'</th>'+
-        '<th class="desglose-col-del"></th>'+
-      '</tr></thead>'+
-      '<tbody>'+buildDesgloseRows(regs)+'</tbody></table>'+
-    '</div></div>';
+function setDesgloseTab(tab){desgloseProvTab=tab;desgloseAbonarFacturaId='';refreshDesglosePopup();}
+function openAbonarPicker(facturaId){desgloseAbonarFacturaId=facturaId;desgloseProvTab='facturas';refreshDesglosePopup();}
+function cancelAbonarPicker(){desgloseAbonarFacturaId='';refreshDesglosePopup();}
+async function abonarPagoAFactura(pagoId,facturaId){
+  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
+  const prev=p.aplicaFacturaId||'';
+  p.aplicaFacturaId=facturaId;
+  const map=loadAplicaMap();map[pagoId]=facturaId;saveAplicaMap(map);
+  saveAndRender();desgloseAbonarFacturaId='';refreshDesglosePopup();
+  try{
+    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:facturaId}});
+    if(res.error)throw new Error(res.error);
+    toast('Pago abonado a la factura',false,true);
+  }catch(e){
+    p.aplicaFacturaId=prev;delete map[pagoId];saveAplicaMap(map);
+    saveAndRender();refreshDesglosePopup();toastError(e);
+  }
 }
-function buildDesgloseRows(regs){
-  let drows='';
-  sortDesgloseRegs(regs,desgloseSort.col,desgloseSort.dir).forEach(r=>{
-    const sub=(r.factura?'#'+esc(r.factura):'')+(r.concepto?(r.factura?' · ':'')+esc(r.concepto):'');
-    const rowCls=badgeClass(r.tipo)==='badge-pago'?'desglose-row-pago':'desglose-row-factura';
-    drows+='<tr class="desglose-row '+rowCls+'">'+
-      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(r.fecha))+'</td>'+
-      '<td class="desglose-cell-tipo"><span class="badge '+badgeClass(r.tipo)+'">'+esc(r.tipo)+'</span>'+(sub?'<div class="desglose-detail">'+sub+'</div>':'')+'</td>'+
-      '<td class="amount desglose-cell-amt">'+fmt(r.monto)+'</td>'+
-      '<td class="desglose-cell-del"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(r.id)+'\',this)">✕</button></td>'+
-      '</tr>';
+async function quitarAbonoPago(pagoId){
+  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
+  const prev=p.aplicaFacturaId||'';
+  p.aplicaFacturaId='';
+  const map=loadAplicaMap();delete map[pagoId];saveAplicaMap(map);
+  saveAndRender();refreshDesglosePopup();
+  try{
+    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:''}});
+    if(res.error)throw new Error(res.error);
+    toast('Abono quitado',false,true);
+  }catch(e){
+    p.aplicaFacturaId=prev;if(prev)map[pagoId]=prev;saveAplicaMap(map);
+    saveAndRender();refreshDesglosePopup();toastError(e);
+  }
+}
+function facturaLabelById(facts,id){
+  const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
+  return (f.factura?'#'+f.factura+' ':'')+fmtFechaCorta(f.fecha);
+}
+function buildAbonarBox(proveedor,facturaId,facts,pagos){
+  const fact=facts.find(f=>f.id===facturaId);if(!fact)return '';
+  const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
+  let btns=libres.map(p=>'<button type="button" class="btn btn-sm btn-primary" onclick="abonarPagoAFactura(\''+esc(p.id)+'\',\''+esc(facturaId)+'\')">'+fmt(p.monto)+' · '+esc(fmtFechaCorta(p.fecha))+'</button>').join('');
+  if(!btns)btns='<span style="color:var(--text-muted)">No hay pagos sin asignar. Registra un pago primero.</span>';
+  return '<div class="prov-abonar-box"><strong>Abonar a:</strong> '+esc(facturaLabelById(facts,facturaId))+'<div>'+btns+'</div>'+
+    '<button type="button" class="btn btn-sm" style="margin-top:6px" onclick="cancelAbonarPicker()">Cancelar</button></div>';
+}
+function buildDesgloseFacturasHtml(facts,pagos){
+  if(!facts.length)return '<div class="empty">Sin facturas</div>';
+  let rows='';
+  sortDesgloseRegs(facts,'fecha','desc').forEach(f=>{
+    const total=parseFloat(f.monto)||0,ab=calcFacturaAbonado(f,pagos),pend=Math.max(0,total-ab);
+    const ref=esc(f.factura||'—');
+    rows+='<tr class="desglose-row desglose-row-factura">'+
+      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
+      '<td>'+ref+'</td>'+
+      '<td class="col-total">'+fmt(total)+'</td>'+
+      '<td class="col-abon">'+fmt(ab)+'</td>'+
+      '<td class="col-pend">'+fmt(pend)+'</td>'+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
+      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
-  return drows;
+  return '<table class="desglose-table prov-fact-table"><thead><tr>'+
+    '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th></th>'+
+    '</tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function buildDesglosePagosHtml(facts,pagos){
+  if(!pagos.length)return '<div class="empty">Sin pagos</div>';
+  let rows='';
+  sortDesgloseRegs(pagos,'fecha','desc').forEach(p=>{
+    const apl=String(p.aplicaFacturaId||'');
+    const aplTxt=apl?esc(facturaLabelById(facts,apl)):'Sin asignar';
+    rows+='<tr class="desglose-row desglose-row-pago">'+
+      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
+      '<td class="amount desglose-cell-amt">'+fmt(p.monto)+'</td>'+
+      '<td style="font-size:9px">'+aplTxt+'</td>'+
+      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
+      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
+  });
+  return '<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function buildDesgloseBitacoraHtml(proveedor){
+  const logs=logsProveedor(proveedor);
+  if(!logs.length)return '<div class="empty">Sin movimientos en bitácora</div>';
+  let rows='',lastDay='',dayIdx=0;
+  logs.forEach(l=>{
+    const dayKey=getLogDayKey(l)||'—';
+    if(dayKey!==lastDay){dayIdx=1-dayIdx;lastDay=dayKey;}
+    const dayCls=dayIdx===0?'log-day-a':'log-day-b';
+    const cls=logBadgeClass(l.tipo);
+    rows+='<tr class="'+dayCls+'">'+
+      '<td class="log-time log-col-fecha">'+fmtLogDisplayCompact(l)+'</td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
+      '<td class="log-col-desc">'+formatLogDescCell(l)+'</td>'+
+      '<td class="log-col-act"><button class="btn-icon" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">🗑</button></td></tr>';
+  });
+  return '<table class="logs-table"><thead><tr><th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-desc">Detalle</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function buildDesglosePanelHtml(proveedor,regs){
+  const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
+  const saldo=sumMonto(facts)-sumMonto(pagos),pend=sumPendienteFacturas(facts,pagos);
+  const tab=desgloseProvTab;
+  let body='';
+  if(tab==='pagos')body=buildDesglosePagosHtml(facts,pagos);
+  else if(tab==='bitacora')body=buildDesgloseBitacoraHtml(proveedor);
+  else{
+    body=(desgloseAbonarFacturaId?buildAbonarBox(proveedor,desgloseAbonarFacturaId,facts,pagos):'')+buildDesgloseFacturasHtml(facts,pagos);
+  }
+  return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
+    '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
+    '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
+    '<div class="prov-kpi-row">'+
+      '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+fmt(Math.abs(saldo))+'</div></div>'+
+      '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
+      '<div class="prov-kpi pend"><div class="prov-kpi-lbl">Por pagar</div><div class="prov-kpi-val">'+fmt(pend)+'</div></div>'+
+    '</div>'+
+    '<div class="prov-tabs">'+
+      '<button type="button" class="prov-tab'+(tab==='facturas'?' active':'')+'" onclick="setDesgloseTab(\'facturas\')">Facturas</button>'+
+      '<button type="button" class="prov-tab'+(tab==='pagos'?' active':'')+'" onclick="setDesgloseTab(\'pagos\')">Pagos</button>'+
+      '<button type="button" class="prov-tab'+(tab==='bitacora'?' active':'')+'" onclick="setDesgloseTab(\'bitacora\')">Bitácora</button>'+
+    '</div>'+
+    '<div class="popup-body prov-tab-body">'+body+'</div></div>';
 }
 function getDesgloseOverlay(){
   let ov=document.getElementById('desglose-overlay');
@@ -904,6 +1060,8 @@ function getDesgloseOverlay(){
 function showDesglosePopup(proveedor,anchor){
   closeDesglosePopup();desgloseOpen=true;
   desgloseSort={col:'fecha',dir:'desc'};
+  desgloseProvTab='facturas';
+  desgloseAbonarFacturaId='';
   const regs=state.registros.filter(r=>r.proveedor===proveedor);
   const ov=getDesgloseOverlay();
   ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);
@@ -923,6 +1081,7 @@ function refreshDesglosePopup(){
 }
 function closeDesglosePopup(){
   desgloseOpen=false;
+  desgloseAbonarFacturaId='';
   const ov=document.getElementById('desglose-overlay');
   if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;}
   document.body.style.overflow='';
@@ -970,8 +1129,26 @@ function parseDescBasics(descripcion){
   if(!parts.length)return null;
   const proveedor=parts[0];
   let monto=NaN;
-  if(parts[1])monto=parseFloat(parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,''));
+  if(parts[1]){const s=parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,'');monto=parseFloat(s);}
   return{proveedor,monto};
+}
+function formatLogDescCell(l){
+  const tipo=String(l.tipo||'').toLowerCase();
+  const concepto=String(l.concepto||l.detalle||'').trim();
+  if(tipo==='proveedor'||tipo==='eliminar'){
+    const c=esc(cleanLogDescripcion(l.descripcion));
+    return c?'<div class="log-desc-stack"><span class="log-desc-prov">'+c+'</span></div>':'—';
+  }
+  const b=parseDescBasics(l.descripcion);
+  if(b&&b.proveedor){
+    let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
+    if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
+    html+='</div>';
+    if(concepto)html+='<div class="log-desc-conc">'+esc(concepto)+'</div>';
+    return html;
+  }
+  const clean=esc(cleanLogDescripcion(l.descripcion));
+  return clean?'<div class="log-desc-stack"><span class="log-desc-prov">'+clean+'</span></div>':'—';
 }
 function montoCerca(a,b){return Math.abs((parseFloat(a)||0)-(parseFloat(b)||0))<0.02;}
 function findLogsForRegistro(reg){
@@ -1052,20 +1229,20 @@ function renderLogs(){
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concepto=esc(String(l.concepto||l.detalle||'').trim());
-    const descripcion=esc(cleanLogDescripcion(l.descripcion));
+    const descCell=formatLogDescCell(l);
     tableRows+='<tr class="'+dayCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
-      '<td class="log-col-desc">'+descripcion+'</td>'+
+      '<td class="log-col-desc">'+descCell+'</td>'+
       '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
   });
   el.innerHTML=
     '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
       '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
-      '<th class="log-col-conc">Concepto</th><th class="log-col-desc">Descripción</th><th class="log-col-act"></th>'+
+      '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
 }
 

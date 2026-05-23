@@ -17,7 +17,7 @@ const SHEET_PROVEEDORES = 'Proveedores';
 const SHEET_LOGS = 'Logs';
 
 /* ===== Registros ===== */
-const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'concepto', 'createdAt'];
+const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'concepto', 'aplicaFacturaId', 'createdAt'];
 
 /* ===== Proveedores ===== */
 const PROV_HEADERS = ['nombre'];
@@ -96,6 +96,8 @@ function route_(action, payload) {
       return addRegistro_(payload.data || {});
     case 'deleteRegistro':
       return deleteRegistro_(payload.id);
+    case 'updateRegistro':
+      return updateRegistro_(payload.id, payload.data || {});
 
     case 'addLog':
       return addLog_(payload.data || {});
@@ -128,6 +130,7 @@ function getRegistros_() {
       monto: toNum_(cell_(row, map, 'monto')),
       factura: cell_(row, map, 'factura'),
       concepto: cell_(row, map, 'concepto'),
+      aplicaFacturaId: cell_(row, map, 'aplicaFacturaId'),
       createdAt: cell_(row, map, 'createdAt')
     }))
     .filter((r) => r.id || r.fecha || r.proveedor);
@@ -157,10 +160,49 @@ function addRegistro_(data) {
     monto: monto,
     factura: factura,
     concepto: concepto,
+    aplicaFacturaId: str_(data.aplicaFacturaId),
     createdAt: new Date().toISOString()
   });
 
   return { ok: true, id: id };
+}
+
+function updateRegistro_(id, data) {
+  const target = str_(id);
+  if (!target) return { ok: false, error: 'ID requerido' };
+
+  const sh = sheet_(SHEET_REGISTROS);
+  const map = ensureHeaders_(sh, REG_HEADERS);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { ok: false, error: 'Registro no encontrado' };
+
+  const colId = map.id;
+  if (!colId) return { ok: false, error: 'Columna id no encontrada' };
+
+  const ids = sh.getRange(2, colId, lastRow - 1, 1).getValues();
+  let rowNum = -1;
+  for (let i = 0; i < ids.length; i++) {
+    if (str_(ids[i][0]) === target) {
+      rowNum = i + 2;
+      break;
+    }
+  }
+  if (rowNum < 0) return { ok: false, error: 'Registro no encontrado' };
+
+  if (Object.prototype.hasOwnProperty.call(data, 'aplicaFacturaId')) {
+    const col = map.aplicafacturaid;
+    if (col) sh.getRange(rowNum, col).setValue(str_(data.aplicaFacturaId));
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'concepto')) {
+    const col = map.concepto;
+    if (col) sh.getRange(rowNum, col).setValue(str_(data.concepto));
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'factura')) {
+    const col = map.factura;
+    if (col) sh.getRange(rowNum, col).setValue(str_(data.factura));
+  }
+
+  return { ok: true, id: target };
 }
 
 function deleteRegistro_(id) {
