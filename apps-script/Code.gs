@@ -1,5 +1,7 @@
 /**
- * ESTADO DE CUENTA - Google Apps Script (compatible con index.HTML v2.11+)
+ * ESTADO DE CUENTA - Google Apps Script (compatible con index.HTML v2.34+)
+ *
+ * Columna Registros: aplicaFacturaId = id del registro FACTURA al que se abona un PAGO.
  *
  * IMPORTANTE:
  * 1) Reemplaza TODO el contenido de Code.gs con este archivo.
@@ -152,6 +154,10 @@ function addRegistro_(data) {
     return { ok: false, error: 'Datos incompletos para registro' };
   }
 
+  const aplicaFacturaId = str_(data.aplicaFacturaId);
+  const errAplica = validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo);
+  if (errAplica) return { ok: false, error: errAplica };
+
   appendByMap_(sh, map, {
     id: id,
     fecha: fecha,
@@ -160,7 +166,7 @@ function addRegistro_(data) {
     monto: monto,
     factura: factura,
     concepto: concepto,
-    aplicaFacturaId: str_(data.aplicaFacturaId),
+    aplicaFacturaId: aplicaFacturaId,
     createdAt: new Date().toISOString()
   });
 
@@ -190,8 +196,13 @@ function updateRegistro_(id, data) {
   if (rowNum < 0) return { ok: false, error: 'Registro no encontrado' };
 
   if (Object.prototype.hasOwnProperty.call(data, 'aplicaFacturaId')) {
+    const tipoActual = str_(sh.getRange(rowNum, map.tipo).getValue());
+    const provActual = str_(sh.getRange(rowNum, map.proveedor).getValue());
+    const aplicaVal = str_(data.aplicaFacturaId);
+    const errAplica = validateAplicaFacturaId_(aplicaVal, provActual, tipoActual);
+    if (errAplica) return { ok: false, error: errAplica };
     const col = map.aplicafacturaid;
-    if (col) sh.getRange(rowNum, col).setValue(str_(data.aplicaFacturaId));
+    if (col) sh.getRange(rowNum, col).setValue(aplicaVal);
   }
   if (Object.prototype.hasOwnProperty.call(data, 'concepto')) {
     const col = map.concepto;
@@ -214,6 +225,46 @@ function deleteRegistro_(id) {
   const deleted = deleteByField_(sh, map, 'id', target);
 
   return deleted ? { ok: true } : { ok: false, error: 'Registro no encontrado' };
+}
+
+/** true si el tipo es pago (incluye "pago sin comprobante", etc.) */
+function isTipoPago_(tipo) {
+  return str_(tipo).toLowerCase().indexOf('pago') !== -1;
+}
+
+/**
+ * Valida que aplicaFacturaId apunte a una factura del mismo proveedor.
+ * Solo los pagos pueden tener aplicaFacturaId.
+ */
+function validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo) {
+  const apl = str_(aplicaFacturaId);
+  if (!apl) return '';
+  if (!isTipoPago_(tipo)) {
+    return 'Solo un pago puede aplicarse a una factura';
+  }
+  const regs = getRegistros_();
+  const fact = regs.find(function (r) {
+    return str_(r.id) === apl;
+  });
+  if (!fact) return 'Factura no encontrada: ' + apl;
+  if (isTipoPago_(fact.tipo)) return 'El destino debe ser una factura, no un pago';
+  if (str_(fact.proveedor).toUpperCase() !== str_(proveedor).toUpperCase()) {
+    return 'La factura debe ser del mismo proveedor';
+  }
+  return '';
+}
+
+/**
+ * Ejecutar una vez: agrega columna aplicaFacturaId en hoja Registros si falta.
+ */
+function repairRegistrosAplicaColumn() {
+  const sh = sheet_(SHEET_REGISTROS);
+  const map = ensureHeaders_(sh, REG_HEADERS);
+  return {
+    ok: true,
+    column: map.aplicafacturaid || 0,
+    headers: REG_HEADERS.join(', ')
+  };
 }
 
 /* ===================== PROVEEDORES ===================== */
@@ -604,12 +655,17 @@ function repairLogsFacturaConcepto() {
 
 /** Ejecutar una vez */
 function setupSheets() {
-  ensureHeaders_(sheet_(SHEET_REGISTROS), REG_HEADERS);
+  const regMap = ensureHeaders_(sheet_(SHEET_REGISTROS), REG_HEADERS);
   const provSh = sheet_(SHEET_PROVEEDORES);
   ensureProveedoresLayout_(provSh);
   ensureHeaders_(provSh, PROV_HEADERS);
   ensureLogsLayout_(sheet_(SHEET_LOGS));
-  return repairLogsFacturaConcepto();
+  const logsRepair = repairLogsFacturaConcepto();
+  return {
+    ok: true,
+    registrosColumnaAplica: regMap.aplicafacturaid || 0,
+    logs: logsRepair
+  };
 }
 
 /** Ejecutar una vez si la hoja Proveedores quedó con encabezado en columna B */

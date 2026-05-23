@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.33
+    ESTADO DE CUENTA  |  Versión 2.34
      ============================================================ -->
 <html lang="es">
 <head>
@@ -213,6 +213,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-tab-body{padding:0;}
 .prov-abonar-box{padding:8px;background:#fff8e6;border-bottom:1px solid var(--amber-border);font-size:10px;}
 .prov-abonar-box .btn-sm{margin-top:6px;margin-right:4px;}
+#f-aplica-group{display:none;}
+.prov-aplicar-box{padding:8px 10px;background:var(--blue-soft);border-bottom:1px solid var(--blue-border);font-size:10px;}
+.prov-aplicar-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
+.prov-aplica-select{flex:1;min-width:110px;max-width:100%;font-size:11px;padding:5px 8px;height:auto;}
 .prov-fact-table .col-total,.prov-fact-table .col-abon,.prov-fact-table .col-pend{text-align:right;font-family:var(--mono);font-size:9px;}
 .prov-fact-table .col-abon{color:#047857;} .prov-fact-table .col-pend{color:#b91c1c;font-weight:600;}
 .prov-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
@@ -463,7 +467,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.33";
+const APP_VERSION = "2.34";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbycRIsXGJWyH4PAUDKJViNrJKi3RbskxwbsXvGX8X20WTxf8Zl1peaAnpeQvBc7sCzC/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -522,6 +526,10 @@ const APLICA_KEY  = "pagos_v1_aplica";
             </div>
             <div class="form-group"><label>Núm. factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
             <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
+            <div class="form-group" id="f-aplica-group" style="grid-column:1/-1">
+              <label>Aplicar a factura <span class="hint-text">(opcional)</span></label>
+              <select id="f-aplica-factura"><option value="">— Sin asignar (aplicar después) —</option></select>
+            </div>
           </div>
           <div class="form-actions">
             <button class="btn" onclick="clearForm()">Limpiar</button>
@@ -808,6 +816,33 @@ function updateStateFromSheetData(d){
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
 function isTipoFactura(r){return !isTipoPago(r);}
+function registrosProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
+function facturasAbiertasProveedor(prov){
+  const regs=registrosProveedor(prov);
+  const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
+  return facts.filter(f=>{
+    const total=parseFloat(f.monto)||0;
+    return Math.max(0,total-calcFacturaAbonado(f,pagos))>0.001;
+  }).sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
+}
+function facturaOptionLabel(f,pagos){
+  const total=parseFloat(f.monto)||0,pend=Math.max(0,total-calcFacturaAbonado(f,pagos));
+  return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+' · pend. '+fmt(pend);
+}
+function updateRegistrarAplicaUI(){
+  const group=document.getElementById('f-aplica-group'),sel=document.getElementById('f-aplica-factura');
+  if(!group||!sel)return;
+  const tipo=document.getElementById('f-tipo').value,prov=document.getElementById('f-proveedor').value;
+  if(!isTipoPago({tipo})||!prov){group.style.display='none';sel.value='';return;}
+  group.style.display='';
+  const pagos=registrosProveedor(prov).filter(isTipoPago);
+  const facts=facturasAbiertasProveedor(prov),prev=sel.value;
+  let opts='<option value="">— Sin asignar (aplicar después) —</option>';
+  facts.forEach(f=>{opts+='<option value="'+esc(f.id)+'">'+esc(facturaOptionLabel(f,pagos))+'</option>';});
+  if(!facts.length)opts='<option value="">— Sin facturas pendientes —</option>';
+  sel.innerHTML=opts;
+  sel.value=prev&&facts.some(f=>f.id===prev)?prev:'';
+}
 function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
 function calcFacturaAbonado(fact,pagos){
   const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
@@ -841,7 +876,12 @@ async function loadAll(){
 }
 function setSyncStatus(msg,loading=false){const el=document.getElementById('sync-status');el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg;}
 
-function setSelectBtn(btn,inputId){btn.parentElement.querySelectorAll('.btn-select').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById(inputId).value=btn.dataset.val;}
+function setSelectBtn(btn,inputId){
+  btn.parentElement.querySelectorAll('.btn-select').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(inputId).value=btn.dataset.val;
+  if(inputId==='f-tipo'||inputId==='f-proveedor')updateRegistrarAplicaUI();
+}
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);}
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
@@ -852,12 +892,17 @@ async function guardarRegistro(){
   const prov=document.getElementById('f-proveedor').value,tipo=document.getElementById('f-tipo').value,
         montoNum=parseMonto(document.getElementById('f-monto').value),fecha=document.getElementById('f-fecha').value,
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
+  const aplicaEl=document.getElementById('f-aplica-factura');
+  const aplicaFacturaId=(isTipoPago({tipo})&&aplicaEl)?String(aplicaEl.value||'').trim():'';
   if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
   const btn=document.getElementById('btn-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto}});
+    const payload={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId};
+    const res=await apiPost({action:'addRegistro',data:payload});
     if(res.error)throw new Error(res.error);
-    state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto});
+    const reg={id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId};
+    state.registros.push(reg);
+    if(aplicaFacturaId){const map=loadAplicaMap();map[res.id]=aplicaFacturaId;saveAplicaMap(map);}
     addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
     saveAndRender();clearForm();toast('✓ Guardado',false,true);setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
@@ -883,7 +928,9 @@ async function eliminarRegistro(id,btn){
 function clearForm(){
   ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
+  const aplica=document.getElementById('f-aplica-factura');if(aplica)aplica.value='';
   document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
+  updateRegistrarAplicaUI();
 }
 function renderProvSelect(){
   const group=document.getElementById('f-proveedor-group');
@@ -892,6 +939,7 @@ function renderProvSelect(){
   if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
   group.innerHTML=state.proveedores.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
+  updateRegistrarAplicaUI();
 }
 
 function renderTotales(){
@@ -989,8 +1037,39 @@ function buildDesgloseFacturasHtml(facts,pagos){
     '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th></th>'+
     '</tr></thead><tbody>'+rows+'</tbody></table>';
 }
+function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
+  const abiertas=facts.filter(f=>{
+    const total=parseFloat(f.monto)||0;
+    return Math.max(0,total-calcFacturaAbonado(f,pagos))>0.001;
+  });
+  const list=abiertas.length?abiertas:facts;
+  return list.map(f=>{
+    const sel=f.id===selectedId?' selected':'';
+    return '<option value="'+esc(f.id)+'"'+sel+'>'+esc(facturaOptionLabel(f,pagos))+'</option>';
+  }).join('');
+}
+async function aplicarPagoDesdeSelect(pagoId,selectId){
+  const sel=document.getElementById(selectId);
+  if(!sel){toast('Selector no encontrado',true);return;}
+  const facturaId=String(sel.value||'').trim();
+  if(!facturaId){toast('Elige una factura',true);return;}
+  await abonarPagoAFactura(pagoId,facturaId);
+}
 function buildDesglosePagosHtml(facts,pagos){
   if(!pagos.length)return '<div class="empty">Sin pagos</div>';
+  const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
+  let aplicarHtml='';
+  if(libres.length){
+    aplicarHtml='<div class="prov-aplicar-box"><strong>Aplicar</strong> · pagos sin asignar';
+    sortDesgloseRegs(libres,'fecha','desc').forEach(p=>{
+      const sid='aplica-sel-'+String(p.id).replace(/[^a-zA-Z0-9_]/g,'_');
+      const opts='<option value="">Elegir factura…</option>'+buildAplicaFacturaSelectOptions(facts,pagos,'');
+      aplicarHtml+='<div class="prov-aplicar-row"><span class="amount">'+fmt(p.monto)+'</span><span>'+esc(fmtFechaCorta(p.fecha))+'</span>'+
+        '<select id="'+sid+'" class="prov-aplica-select">'+opts+'</select>'+
+        '<button type="button" class="btn btn-sm btn-primary" onclick="aplicarPagoDesdeSelect(\''+esc(p.id)+'\',\''+sid+'\')">Aplicar</button></div>';
+    });
+    aplicarHtml+='</div>';
+  }
   let rows='';
   sortDesgloseRegs(pagos,'fecha','desc').forEach(p=>{
     const apl=String(p.aplicaFacturaId||'');
@@ -1002,7 +1081,7 @@ function buildDesglosePagosHtml(facts,pagos){
       '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
-  return '<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return aplicarHtml+'<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildDesgloseBitacoraHtml(proveedor){
   const logs=logsProveedor(proveedor);
