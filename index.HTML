@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.35
+    ESTADO DE CUENTA  |  Versión 2.36
      ============================================================ -->
 <html lang="es">
 <head>
@@ -213,7 +213,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-tab-body{padding:0;}
 .prov-abonar-box{padding:8px;background:#fff8e6;border-bottom:1px solid var(--amber-border);font-size:10px;}
 .prov-abonar-box .btn-sm{margin-top:6px;margin-right:4px;}
-#f-aplica-group{display:none;}
+#f-factura-group .f-factura-select{display:none;}
+#f-factura-group.registrar-modo-pago .f-factura-input{display:none;}
+#f-factura-group.registrar-modo-pago .f-factura-select{display:block;}
 .prov-aplicar-box{padding:8px 10px;background:var(--blue-soft);border-bottom:1px solid var(--blue-border);font-size:10px;}
 .prov-aplicar-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
 .prov-aplica-select{flex:1;min-width:110px;max-width:100%;font-size:11px;padding:5px 8px;height:auto;}
@@ -331,6 +333,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     padding: 0;
   }
   #page-registrar input#f-monto { font-size: 14px; padding: 6px 8px; height: 36px; }
+  #page-registrar #f-factura-group.registrar-modo-pago .f-factura-select { font-size: 14px; padding: 8px 10px; min-height: 40px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
   .kpi-card { padding: 12px 14px; text-align: center; }
   .kpi-card::after { display: none; }
@@ -467,7 +470,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.35";
+const APP_VERSION = "2.36";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -524,12 +527,15 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
               <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             </div>
-            <div class="form-group"><label>Núm. factura</label><input type="text" id="f-factura" placeholder="Ej: FAC-001"></div>
-            <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
-            <div class="form-group" id="f-aplica-group" style="grid-column:1/-1">
-              <label>Aplicar a factura <span class="hint-text">(opcional)</span></label>
-              <select id="f-aplica-factura"><option value="">— Sin asignar (aplicar después) —</option></select>
+            <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
+              <label id="f-factura-label">Núm. factura</label>
+              <input type="text" id="f-factura" class="f-factura-input" placeholder="Ej: FAC-001">
+              <select id="f-aplica-factura" class="f-factura-select" onchange="onAplicaFacturaChange()">
+                <option value="">— Sin asignar (aplicar después en Cuenta) —</option>
+              </select>
+              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:4px">Facturas con saldo pendiente del proveedor seleccionado.</span>
             </div>
+            <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
           </div>
           <div class="form-actions">
             <button class="btn" onclick="clearForm()">Limpiar</button>
@@ -753,6 +759,7 @@ function navTo(page,el){
   document.getElementById('page-'+page).classList.add('active');el.classList.add('active');
   if(page==='totales')renderTotales();if(page==='logs')renderLogs();
   if(page==='config')renderProvManager();if(page==='analisis')renderAnalisis();
+  if(page==='registrar')updateRegistrarAplicaUI();
 }
 
 function cacheBustParam(){return '_='+Date.now();}
@@ -820,28 +827,50 @@ function registrosProveedor(prov){return state.registros.filter(r=>r.proveedor==
 function facturasAbiertasProveedor(prov){
   const regs=registrosProveedor(prov);
   const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
-  return facts.filter(f=>{
+  const abiertas=facts.filter(f=>{
     const total=parseFloat(f.monto)||0;
     return Math.max(0,total-calcFacturaAbonado(f,pagos))>0.001;
   }).sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
+  if(abiertas.length)return abiertas;
+  return facts.slice().sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
 }
 function facturaOptionLabel(f,pagos){
   const total=parseFloat(f.monto)||0,pend=Math.max(0,total-calcFacturaAbonado(f,pagos));
-  return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+' · pend. '+fmt(pend);
+  const pendTxt=pend>0.001?(' · pend. '+fmt(pend)):' · saldada';
+  return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+pendTxt;
+}
+function onAplicaFacturaChange(){
+  const sel=document.getElementById('f-aplica-factura'),inp=document.getElementById('f-factura');
+  if(!sel||!inp)return;
+  const id=String(sel.value||'').trim();
+  if(!id){inp.value='';return;}
+  const f=state.registros.find(r=>r.id===id);
+  if(f&&f.factura)inp.value=String(f.factura).trim();
 }
 function updateRegistrarAplicaUI(){
-  const group=document.getElementById('f-aplica-group'),sel=document.getElementById('f-aplica-factura');
-  if(!group||!sel)return;
+  const wrap=document.getElementById('f-factura-group'),sel=document.getElementById('f-aplica-factura');
+  const lbl=document.getElementById('f-factura-label'),hint=document.getElementById('f-factura-hint');
+  const inp=document.getElementById('f-factura');
+  if(!wrap||!sel||!lbl)return;
   const tipo=document.getElementById('f-tipo').value,prov=document.getElementById('f-proveedor').value;
-  if(!isTipoPago({tipo})||!prov){group.style.display='none';sel.value='';return;}
-  group.style.display='';
+  const modoPago=isTipoPago({tipo})&&!!prov;
+  wrap.classList.toggle('registrar-modo-pago',modoPago);
+  if(hint)hint.style.display=modoPago?'block':'none';
+  if(!modoPago){
+    lbl.textContent='Núm. factura';
+    sel.value='';
+    return;
+  }
+  lbl.textContent='Factura pendiente';
   const pagos=registrosProveedor(prov).filter(isTipoPago);
   const facts=facturasAbiertasProveedor(prov),prev=sel.value;
-  let opts='<option value="">— Sin asignar (aplicar después) —</option>';
-  facts.forEach(f=>{opts+='<option value="'+esc(f.id)+'">'+esc(facturaOptionLabel(f,pagos))+'</option>';});
-  if(!facts.length)opts='<option value="">— Sin facturas pendientes —</option>';
+  let opts='<option value="">— Sin asignar (aplicar después en Cuenta) —</option>';
+  if(!facts.length)opts='<option value="">— Este proveedor no tiene facturas registradas —</option>';
+  else facts.forEach(f=>{opts+='<option value="'+esc(f.id)+'">'+esc(facturaOptionLabel(f,pagos))+'</option>';});
   sel.innerHTML=opts;
   sel.value=prev&&facts.some(f=>f.id===prev)?prev:'';
+  if(sel.value)onAplicaFacturaChange();
+  else if(inp)inp.value='';
 }
 function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
 function calcFacturaAbonado(fact,pagos){
@@ -894,6 +923,10 @@ async function guardarRegistro(){
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
   const aplicaEl=document.getElementById('f-aplica-factura');
   const aplicaFacturaId=(isTipoPago({tipo})&&aplicaEl)?String(aplicaEl.value||'').trim():'';
+  if(isTipoPago({tipo})&&aplicaFacturaId){
+    const fac=state.registros.find(r=>r.id===aplicaFacturaId);
+    if(fac&&fac.factura&&!factura)factura=String(fac.factura).trim();
+  }
   if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
   const btn=document.getElementById('btn-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
