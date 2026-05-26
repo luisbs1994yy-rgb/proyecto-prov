@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.45
+    ESTADO DE CUENTA  |  Versión 2.46
      ============================================================ -->
 <html lang="es">
 <head>
@@ -569,7 +569,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.45";
+const APP_VERSION = "2.46";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1215,6 +1215,33 @@ async function quitarAbonoPago(pagoId){
     saveAndRender();refreshDesglosePopup();toastError(e);
   }
 }
+async function editarRegistroRefTotal(regId){
+  const reg=state.registros.find(r=>r.id===regId);
+  if(!reg){toast('Registro no encontrado',true);return;}
+  const refActual=String(reg.factura||'').trim();
+  const totalActual=formatMontoDisplay(parseFloat(reg.monto)||0);
+  const nuevaRef=prompt('Editar REF (factura/referencia):',refActual);
+  if(nuevaRef===null)return;
+  const nuevoTotalRaw=prompt('Editar TOTAL ($):',totalActual);
+  if(nuevoTotalRaw===null)return;
+  const totalNum=parseMonto(nuevoTotalRaw);
+  if(isNaN(totalNum)||totalNum<0){toast('TOTAL inválido',true);return;}
+
+  const prev={factura:reg.factura,monto:reg.monto};
+  reg.factura=String(nuevaRef||'').trim();
+  reg.monto=totalNum;
+  saveAndRender();refreshDesglosePopup();
+  try{
+    const res=await apiPost({action:'updateRegistro',id:regId,data:{factura:reg.factura,monto:totalNum}});
+    if(res.error)throw new Error(res.error);
+    toast('Registro actualizado',false,true);
+  }catch(e){
+    reg.factura=prev.factura;
+    reg.monto=prev.monto;
+    saveAndRender();refreshDesglosePopup();
+    toastError(e);
+  }
+}
 function facturaLabelById(facts,id){
   const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
   return (f.factura?'#'+f.factura+' ':'')+fmtFechaCorta(f.fecha);
@@ -1239,7 +1266,8 @@ function buildDesgloseFacturasHtml(facts,pagos){
       '<td class="col-total">'+fmt(total)+'</td>'+
       '<td class="col-abon">'+fmt(ab)+'</td>'+
       '<td class="col-pend">'+fmt(pend)+'</td>'+
-      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(f.id)+'\')">Editar</button>'+
+      '<button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return '<table class="desglose-table prov-fact-table"><thead><tr>'+
@@ -1287,7 +1315,7 @@ function buildDesglosePagosHtml(facts,pagos){
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
       '<td class="amount desglose-cell-amt">'+fmt(p.monto)+'</td>'+
       '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(p.id)+'\')">Editar</button>'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
   return aplicarHtml+'<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
