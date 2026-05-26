@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.44
+    ESTADO DE CUENTA  |  Versión 2.46
      ============================================================ -->
 <html lang="es">
 <head>
@@ -288,19 +288,23 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .trend-week-delta{font-size:6px;color:var(--text-faint);margin-top:1px;}
 .trend-glossary{padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);line-height:1.45;}
 .trend-glossary b{color:var(--navy);}
-.trend-week-list{display:flex;flex-direction:column;gap:8px;padding:12px;}
-.trend-week-row-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow-sm);}
-.trend-week-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-.trend-week-name{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;}
-.trend-week-pct{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue-text);}
-.trend-week-bars{display:grid;gap:6px;}
-.trend-week-bar-line{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:8px;}
-.trend-week-bar-label{font-size:10px;color:var(--text-muted);font-weight:600;}
-.trend-week-bar-track{height:10px;background:#e8ecf4;border-radius:999px;overflow:hidden;}
-.trend-week-bar-fill-f{height:100%;background:linear-gradient(90deg,#3a86ff,#60a5fa);}
-.trend-week-bar-fill-p{height:100%;background:linear-gradient(90deg,#10b981,#34d399);}
-.trend-week-bar-fill-s{height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);}
-.trend-week-bar-val{font-family:var(--mono);font-size:10px;color:var(--text-muted);}
+.trend-week-vertical-wrap{padding:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.trend-week-vertical-grid{display:flex;align-items:flex-end;gap:10px;min-width:max-content;padding:4px 2px 2px;}
+.trend-week-col{width:118px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 8px 10px;box-shadow:var(--shadow-sm);cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+.trend-week-col.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.16);}
+.trend-week-col-head{font-size:9px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;min-height:28px;}
+.trend-week-bars-vertical{height:132px;display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:8px 0 6px;padding:0 2px;}
+.trend-vbar-wrap{width:24px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.trend-vbar{width:100%;min-height:3px;border-radius:5px 5px 0 0;}
+.trend-vbar.fact{background:linear-gradient(180deg,#3a86ff,#60a5fa);}
+.trend-vbar.pago{background:linear-gradient(180deg,#10b981,#34d399);}
+.trend-vbar.pte{background:linear-gradient(180deg,#f59e0b,#fbbf24);}
+.trend-vbar-lbl{font-size:8px;font-weight:700;color:var(--text-muted);}
+.trend-week-meta{display:grid;gap:2px;}
+.trend-week-meta-row{display:flex;justify-content:space-between;gap:6px;font-size:9px;}
+.trend-week-meta-row .k{color:var(--text-muted);}
+.trend-week-meta-row .v{font-family:var(--mono);color:var(--navy);}
+.trend-week-pct-line{margin-top:4px;font-family:var(--mono);font-size:9px;color:var(--blue-text);font-weight:700;text-align:right;}
 .decision-panel{padding:10px 14px 14px;}
 .decision-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;}
 .decision-toolbar span{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-right:4px;}
@@ -541,8 +545,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .donut-legend { width: 100%; align-items: flex-start; }
   .legend-row { font-size: 12px; }
   .trend-legend { padding: 8px 10px; gap: 10px; font-size: 11px; }
-  .trend-week-bar-line { grid-template-columns:82px 1fr auto; gap:6px; }
-  .trend-week-bar-label,.trend-week-bar-val { font-size: 9px; }
+  .trend-week-col { width: 104px; padding: 7px 6px 8px; }
+  .trend-week-bars-vertical { height: 112px; gap: 6px; }
+  .trend-vbar-wrap { width: 20px; }
+  .trend-week-col-head { font-size: 8px; min-height: 24px; }
+  .trend-week-meta-row { font-size: 8px; }
+  .trend-week-pct-line { font-size: 8px; }
   .trend-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 10px 8px; }
   .trend-month { padding: 8px 6px; }
   .add-prov-row { flex-direction: column; }
@@ -561,7 +569,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.44";
+const APP_VERSION = "2.46";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1207,6 +1215,33 @@ async function quitarAbonoPago(pagoId){
     saveAndRender();refreshDesglosePopup();toastError(e);
   }
 }
+async function editarRegistroRefTotal(regId){
+  const reg=state.registros.find(r=>r.id===regId);
+  if(!reg){toast('Registro no encontrado',true);return;}
+  const refActual=String(reg.factura||'').trim();
+  const totalActual=formatMontoDisplay(parseFloat(reg.monto)||0);
+  const nuevaRef=prompt('Editar REF (factura/referencia):',refActual);
+  if(nuevaRef===null)return;
+  const nuevoTotalRaw=prompt('Editar TOTAL ($):',totalActual);
+  if(nuevoTotalRaw===null)return;
+  const totalNum=parseMonto(nuevoTotalRaw);
+  if(isNaN(totalNum)||totalNum<0){toast('TOTAL inválido',true);return;}
+
+  const prev={factura:reg.factura,monto:reg.monto};
+  reg.factura=String(nuevaRef||'').trim();
+  reg.monto=totalNum;
+  saveAndRender();refreshDesglosePopup();
+  try{
+    const res=await apiPost({action:'updateRegistro',id:regId,data:{factura:reg.factura,monto:totalNum}});
+    if(res.error)throw new Error(res.error);
+    toast('Registro actualizado',false,true);
+  }catch(e){
+    reg.factura=prev.factura;
+    reg.monto=prev.monto;
+    saveAndRender();refreshDesglosePopup();
+    toastError(e);
+  }
+}
 function facturaLabelById(facts,id){
   const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
   return (f.factura?'#'+f.factura+' ':'')+fmtFechaCorta(f.fecha);
@@ -1231,7 +1266,8 @@ function buildDesgloseFacturasHtml(facts,pagos){
       '<td class="col-total">'+fmt(total)+'</td>'+
       '<td class="col-abon">'+fmt(ab)+'</td>'+
       '<td class="col-pend">'+fmt(pend)+'</td>'+
-      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(f.id)+'\')">Editar</button>'+
+      '<button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return '<table class="desglose-table prov-fact-table"><thead><tr>'+
@@ -1279,7 +1315,7 @@ function buildDesglosePagosHtml(facts,pagos){
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
       '<td class="amount desglose-cell-amt">'+fmt(p.monto)+'</td>'+
       '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(p.id)+'\')">Editar</button>'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
   return aplicarHtml+'<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
@@ -1748,21 +1784,27 @@ function renderAnalisis(){
   if(insEl)insEl.innerHTML=buildTrendInsights(selW,prevW,resumen);
   const maxVal=Math.max(...weekData.map(w=>Math.max(w.fact,w.pago,w.pte)),1);
   trendEl.className='';
-  trendEl.innerHTML='<div class="trend-week-list">'+weekData.map((w,i)=>{
+  trendEl.innerHTML='<div class="trend-week-vertical-wrap"><div class="trend-week-vertical-grid">'+weekData.map((w,i)=>{
     const active=i===analisisTrendWeekIdx;
-    const pctF=Math.max(2,(w.fact/maxVal*100));
-    const pctP=Math.max(2,(w.pago/maxVal*100));
-    const pctS=Math.max(2,(w.pte/maxVal*100));
+    const hF=Math.max(3,Math.round((w.fact/maxVal)*92));
+    const hP=Math.max(3,Math.round((w.pago/maxVal)*92));
+    const hS=Math.max(3,Math.round((w.pte/maxVal)*92));
     const pctText='Pagado '+w.pctPag.toFixed(1)+'% · PTE '+w.pctPte.toFixed(1)+'%';
-    return '<div class="trend-week-row-card'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')" style="'+(active?'border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);':'')+'">'+
-      '<div class="trend-week-head"><div class="trend-week-name">SEMANA '+esc(w.label)+' (LUN-DOM)</div><div class="trend-week-pct">'+pctText+'</div></div>'+
-      '<div class="trend-week-bars">'+
-        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">Facturado</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-f" style="width:'+pctF.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.fact)+'</div></div>'+
-        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">Pagado</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-p" style="width:'+pctP.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.pago)+'</div></div>'+
-        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">PTE</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-s" style="width:'+pctS.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.pte)+'</div></div>'+
+    return '<div class="trend-week-col'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')">'+
+      '<div class="trend-week-col-head">SEM '+esc(w.label)+'</div>'+
+      '<div class="trend-week-bars-vertical">'+
+        '<div class="trend-vbar-wrap"><div class="trend-vbar fact" style="height:'+hF+'px"></div><div class="trend-vbar-lbl">F</div></div>'+
+        '<div class="trend-vbar-wrap"><div class="trend-vbar pago" style="height:'+hP+'px"></div><div class="trend-vbar-lbl">P</div></div>'+
+        '<div class="trend-vbar-wrap"><div class="trend-vbar pte" style="height:'+hS+'px"></div><div class="trend-vbar-lbl">PTE</div></div>'+
       '</div>'+
+      '<div class="trend-week-meta">'+
+        '<div class="trend-week-meta-row"><span class="k">Fact.</span><span class="v">'+fmtShort(w.fact)+'</span></div>'+
+        '<div class="trend-week-meta-row"><span class="k">Pag.</span><span class="v">'+fmtShort(w.pago)+'</span></div>'+
+        '<div class="trend-week-meta-row"><span class="k">Pte.</span><span class="v">'+fmtShort(w.pte)+'</span></div>'+
+      '</div>'+
+      '<div class="trend-week-pct-line">'+pctText+'</div>'+
       '</div>';
-  }).join('')+'</div>';
+  }).join('')+'</div></div>';
 }
 
 async function agregarProveedor(){
