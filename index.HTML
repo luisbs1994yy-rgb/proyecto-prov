@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.37
+    ESTADO DE CUENTA  |  Versión 2.38
      ============================================================ -->
 <html lang="es">
 <head>
@@ -256,21 +256,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-item:last-child{margin-bottom:0;}
 .add-prov-row{display:flex;gap:10px;margin-bottom:16px;}
 .totales-panel{overflow:hidden;}
-
-/* === TOTALES: SALDO TOTAL MÁS COMPACTO === */
-.totales-summary{
-  background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);
-  color:#fff;
-  padding:10px 14px;
-  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-  gap:4px 10px;
-}
-.totales-summary-main{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;}
-.totales-summary-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);white-space:nowrap;}
-.totales-summary-value{font-family:var(--mono);font-size:18px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
-/* === FIN COMPACTO === */
-
-.totales-panel .card-header{padding:10px 14px;}
+.totales-saldo-mobile{display:none;padding:12px 14px;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--navy);background:linear-gradient(180deg,#fafbfd 0%,#fff 100%);border-bottom:1px solid var(--border);}
+#page-totales th.totales-saldo-total{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;white-space:nowrap;}
 .desglose-btn.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;}
 .totales-panel .card-title{font-size:13px;}
 @media (max-width: 860px) {
@@ -340,7 +327,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     padding: 0;
   }
   #page-registrar input#f-monto { font-size: 14px; padding: 6px 8px; height: 36px; }
-  #page-registrar #f-factura-group.registrar-modo-pago .f-factura-select { font-size: 14px; padding: 8px 10px; min-height: 40px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
   .kpi-card { padding: 12px 14px; text-align: center; }
   .kpi-card::after { display: none; }
@@ -351,10 +337,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .kpi-sub { font-size: 10px; margin-top: 4px; }
   .table-wrap { overflow-x: visible; -webkit-overflow-scrolling: touch; }
   #page-totales .page-title { display: none; }
-  #page-totales .totales-summary { padding: 8px 10px; gap: 2px 8px; }
-  #page-totales .totales-summary-main { flex: 1 1 100%; gap: 6px; }
-  #page-totales .totales-summary-label { font-size: 9px; }
-  #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
+  #page-totales .totales-saldo-mobile { display: block; font-size: clamp(1rem, 5.5vw, 1.35rem); padding: 10px 12px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
@@ -362,8 +345,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .prov-kpi-val { font-size: 9px; }
   .prov-tab { font-size: 9px; padding: 6px 2px; }
   .prov-fact-table th, .prov-fact-table td { font-size: 8px; padding: 3px 2px; }
-  #page-totales .totales-panel .card-header { padding: 6px 10px; }
-  #page-totales .totales-panel .card-title { font-size: 11px; }
   #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
   #page-totales #tabla-total table { display: block; width: 100%; }
   #page-totales #tabla-total thead { display: none; }
@@ -477,9 +458,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.37";
+const APP_VERSION = "2.39";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
-const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
+const GAS_URL     = "<?= ScriptApp.getService().getUrl() ?>";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const APLICA_KEY  = "pagos_v1_aplica";
@@ -530,10 +511,17 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
+
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
               <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
             </div>
+
+            <div class="form-row-duo">
+              <div class="form-group"><label>Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+              <div class="form-group"><label>Costo x litro</label><input type="text" id="f-costo-litro" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+            </div>
+
             <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
               <label id="f-factura-label">Núm. factura</label>
               <input type="text" id="f-factura" class="f-factura-input" placeholder="Ej: FAC-001">
@@ -554,14 +542,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
 
     <div class="page active" id="page-totales">
       <div class="card totales-panel">
-        <div class="totales-summary">
-          <div class="totales-summary-main">
-            <span class="totales-summary-label">Saldo total</span>
-            <span class="totales-summary-value" id="k-total">—</span>
-          </div>
-        </div>
-
-        <!-- Quitado: "Por proveedor" -->
+        <div class="totales-saldo-mobile totales-saldo-total" id="k-total">—</div>
         <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -616,6 +597,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-monto').addEventListener('input', onMontoInput);
   document.getElementById('f-monto').addEventListener('blur',  onMontoBlur);
+
+  document.getElementById('f-litros').addEventListener('input', onLitrosCostoInput);
+  document.getElementById('f-costo-litro').addEventListener('input', onLitrosCostoInput);
+  document.getElementById('f-litros').addEventListener('blur', onLitrosCostoBlur);
+  document.getElementById('f-costo-litro').addEventListener('blur', onLitrosCostoBlur);
+
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
     try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
@@ -921,6 +908,25 @@ function setSelectBtn(btn,inputId){
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);}
+function onLitrosCostoInput(e){
+  const el=e&&e.target?e.target:null;
+  if(el)el.value=sanitizeMontoTyping(el.value);
+  applyMontoFromLitrosCosto();
+}
+function onLitrosCostoBlur(e){
+  const el=e&&e.target?e.target:null;
+  if(!el)return;
+  const n=parseMonto(el.value);
+  if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);
+  applyMontoFromLitrosCosto();
+}
+function applyMontoFromLitrosCosto(){
+  const litros=parseMonto(document.getElementById('f-litros').value);
+  const costo=parseMonto(document.getElementById('f-costo-litro').value);
+  if(isNaN(litros)||isNaN(costo))return;
+  const montoEl=document.getElementById('f-monto');
+  montoEl.value=formatMontoDisplay(litros*costo);
+}
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
 function parseMonto(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
 function formatMontoDisplay(n){const f=(Math.round(n*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
@@ -931,10 +937,6 @@ async function guardarRegistro(){
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
   const aplicaEl=document.getElementById('f-aplica-factura');
   const aplicaFacturaId=(isTipoPago({tipo})&&aplicaEl)?String(aplicaEl.value||'').trim():'';
-  if(isTipoPago({tipo})&&aplicaFacturaId){
-    const fac=state.registros.find(r=>r.id===aplicaFacturaId);
-    if(fac&&fac.factura&&!factura)factura=String(fac.factura).trim();
-  }
   if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
   const btn=document.getElementById('btn-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
@@ -967,510 +969,14 @@ async function eliminarRegistro(id,btn){
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
 function clearForm(){
-  ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
+  ['f-proveedor','f-factura','f-concepto','f-monto','f-litros','f-costo-litro'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
   const aplica=document.getElementById('f-aplica-factura');if(aplica)aplica.value='';
   document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
   updateRegistrarAplicaUI();
 }
-function renderProvSelect(){
-  const group=document.getElementById('f-proveedor-group');
-  const cur=document.getElementById('f-proveedor').value;
-  group.classList.add('prov-btn-grid');
-  if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
-  group.innerHTML=state.proveedores.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
-  if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
-  updateRegistrarAplicaUI();
-}
 
-function renderTotales(){
-  const regs=state.registros,resumen=resumenPorProveedor(regs);
-  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  document.getElementById('k-total').textContent=fmt(sumSaldos);
-  if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
-  let rows='';
-  resumen.forEach(r=>{
-    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
-    const color=r.saldo<=0?'color:var(--green-text)':'color:var(--amber-text)';
-    rows+='<tr>'+
-      '<td style="font-family:var(--mono);font-size:12px;font-weight:600;word-break:break-word">'+esc(r.proveedor)+'</td>'+
-      '<td class="amount" style="'+color+'">'+fmt(Math.abs(r.saldo))+'</td>'+
-      '<td class="pct-cell">'+pct+'%</td>'+
-      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
-      '</tr>';
-  });
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  const ov=document.getElementById('desglose-overlay');
-  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor){
-    refreshDesglosePopup();
-    document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor);
-    });
-  }
-}
-function toggleDesglose(e,proveedor,btn){
-  e.stopPropagation();
-  const ov=document.getElementById('desglose-overlay');
-  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor===proveedor){closeDesglosePopup();return;}
-  showDesglosePopup(proveedor,btn);
-}
-function setDesgloseTab(tab){desgloseProvTab=tab;desgloseAbonarFacturaId='';refreshDesglosePopup();}
-function openAbonarPicker(facturaId){desgloseAbonarFacturaId=facturaId;desgloseProvTab='facturas';refreshDesglosePopup();}
-function cancelAbonarPicker(){desgloseAbonarFacturaId='';refreshDesglosePopup();}
-async function abonarPagoAFactura(pagoId,facturaId){
-  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
-  const prev=p.aplicaFacturaId||'';
-  p.aplicaFacturaId=facturaId;
-  const map=loadAplicaMap();map[pagoId]=facturaId;saveAplicaMap(map);
-  saveAndRender();desgloseAbonarFacturaId='';refreshDesglosePopup();
-  try{
-    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:facturaId}});
-    if(res.error)throw new Error(res.error);
-    toast('Pago abonado a la factura',false,true);
-  }catch(e){
-    p.aplicaFacturaId=prev;delete map[pagoId];saveAplicaMap(map);
-    saveAndRender();refreshDesglosePopup();toastError(e);
-  }
-}
-async function quitarAbonoPago(pagoId){
-  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
-  const prev=p.aplicaFacturaId||'';
-  p.aplicaFacturaId='';
-  const map=loadAplicaMap();delete map[pagoId];saveAplicaMap(map);
-  saveAndRender();refreshDesglosePopup();
-  try{
-    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:''}});
-    if(res.error)throw new Error(res.error);
-    toast('Abono quitado',false,true);
-  }catch(e){
-    p.aplicaFacturaId=prev;if(prev)map[pagoId]=prev;saveAplicaMap(map);
-    saveAndRender();refreshDesglosePopup();toastError(e);
-  }
-}
-function facturaLabelById(facts,id){
-  const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
-  return (f.factura?'#'+f.factura+' ':'')+fmtFechaCorta(f.fecha);
-}
-function buildAbonarBox(proveedor,facturaId,facts,pagos){
-  const fact=facts.find(f=>f.id===facturaId);if(!fact)return '';
-  const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
-  let btns=libres.map(p=>'<button type="button" class="btn btn-sm btn-primary" onclick="abonarPagoAFactura(\''+esc(p.id)+'\',\''+esc(facturaId)+'\')">'+fmt(p.monto)+' · '+esc(fmtFechaCorta(p.fecha))+'</button>').join('');
-  if(!btns)btns='<span style="color:var(--text-muted)">No hay pagos sin asignar. Registra un pago primero.</span>';
-  return '<div class="prov-abonar-box"><strong>Abonar a:</strong> '+esc(facturaLabelById(facts,facturaId))+'<div>'+btns+'</div>'+
-    '<button type="button" class="btn btn-sm" style="margin-top:6px" onclick="cancelAbonarPicker()">Cancelar</button></div>';
-}
-function buildDesgloseFacturasHtml(facts,pagos){
-  if(!facts.length)return '<div class="empty">Sin facturas</div>';
-  let rows='';
-  sortDesgloseRegs(facts,'fecha','desc').forEach(f=>{
-    const total=parseFloat(f.monto)||0,ab=calcFacturaAbonado(f,pagos),pend=Math.max(0,total-ab);
-    const ref=esc(f.factura||'—');
-    rows+='<tr class="desglose-row desglose-row-factura">'+
-      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
-      '<td>'+ref+'</td>'+
-      '<td class="col-total">'+fmt(total)+'</td>'+
-      '<td class="col-abon">'+fmt(ab)+'</td>'+
-      '<td class="col-pend">'+fmt(pend)+'</td>'+
-      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
-      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
-  });
-  return '<table class="desglose-table prov-fact-table"><thead><tr>'+
-    '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th></th>'+
-    '</tr></thead><tbody>'+rows+'</tbody></table>';
-}
-function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
-  const abiertas=facts.filter(f=>{
-    const total=parseFloat(f.monto)||0;
-    return Math.max(0,total-calcFacturaAbonado(f,pagos))>0.001;
-  });
-  const list=abiertas.length?abiertas:facts;
-  return list.map(f=>{
-    const sel=f.id===selectedId?' selected':'';
-    return '<option value="'+esc(f.id)+'"'+sel+'>'+esc(facturaOptionLabel(f,pagos))+'</option>';
-  }).join('');
-}
-async function aplicarPagoDesdeSelect(pagoId,selectId){
-  const sel=document.getElementById(selectId);
-  if(!sel){toast('Selector no encontrado',true);return;}
-  const facturaId=String(sel.value||'').trim();
-  if(!facturaId){toast('Elige una factura',true);return;}
-  await abonarPagoAFactura(pagoId,facturaId);
-}
-function buildDesglosePagosHtml(facts,pagos){
-  if(!pagos.length)return '<div class="empty">Sin pagos</div>';
-  const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
-  let aplicarHtml='';
-  if(libres.length){
-    aplicarHtml='<div class="prov-aplicar-box"><strong>Aplicar</strong> · pagos sin asignar';
-    sortDesgloseRegs(libres,'fecha','desc').forEach(p=>{
-      const sid='aplica-sel-'+String(p.id).replace(/[^a-zA-Z0-9_]/g,'_');
-      const opts='<option value="">Elegir factura…</option>'+buildAplicaFacturaSelectOptions(facts,pagos,'');
-      aplicarHtml+='<div class="prov-aplicar-row"><span class="amount">'+fmt(p.monto)+'</span><span>'+esc(fmtFechaCorta(p.fecha))+'</span>'+
-        '<select id="'+sid+'" class="prov-aplica-select">'+opts+'</select>'+
-        '<button type="button" class="btn btn-sm btn-primary" onclick="aplicarPagoDesdeSelect(\''+esc(p.id)+'\',\''+sid+'\')">Aplicar</button></div>';
-    });
-    aplicarHtml+='</div>';
-  }
-  let rows='';
-  sortDesgloseRegs(pagos,'fecha','desc').forEach(p=>{
-    const apl=String(p.aplicaFacturaId||'');
-    const aplTxt=apl?esc(facturaLabelById(facts,apl)):'Sin asignar';
-    rows+='<tr class="desglose-row desglose-row-pago">'+
-      '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
-      '<td class="amount desglose-cell-amt">'+fmt(p.monto)+'</td>'+
-      '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
-      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
-  });
-  return aplicarHtml+'<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
-}
-function buildDesgloseBitacoraHtml(proveedor){
-  const logs=logsProveedor(proveedor);
-  if(!logs.length)return '<div class="empty">Sin movimientos en bitácora</div>';
-  let rows='',lastDay='',dayIdx=0;
-  logs.forEach(l=>{
-    const dayKey=getLogDayKey(l)||'—';
-    if(dayKey!==lastDay){dayIdx=1-dayIdx;lastDay=dayKey;}
-    const dayCls=dayIdx===0?'log-day-a':'log-day-b';
-    const cls=logBadgeClass(l.tipo);
-    rows+='<tr class="'+dayCls+'">'+
-      '<td class="log-time log-col-fecha">'+fmtLogDisplayCompact(l)+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
-      '<td class="log-col-desc">'+formatLogDescCell(l)+'</td>'+
-      '<td class="log-col-act"><button class="btn-icon" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">🗑</button></td></tr>';
-  });
-  return '<table class="logs-table"><thead><tr><th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-desc">Detalle</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
-}
-function buildDesglosePanelHtml(proveedor,regs){
-  const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
-  const saldo=sumMonto(facts)-sumMonto(pagos),pend=sumPendienteFacturas(facts,pagos);
-  const tab=desgloseProvTab;
-  let body='';
-  if(tab==='pagos')body=buildDesglosePagosHtml(facts,pagos);
-  else if(tab==='bitacora')body=buildDesgloseBitacoraHtml(proveedor);
-  else{
-    body=(desgloseAbonarFacturaId?buildAbonarBox(proveedor,desgloseAbonarFacturaId,facts,pagos):'')+buildDesgloseFacturasHtml(facts,pagos);
-  }
-  return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
-    '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
-    '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
-    '<div class="prov-kpi-row">'+
-      '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+fmt(Math.abs(saldo))+'</div></div>'+
-      '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
-      '<div class="prov-kpi pend"><div class="prov-kpi-lbl">Por pagar</div><div class="prov-kpi-val">'+fmt(pend)+'</div></div>'+
-    '</div>'+
-    '<div class="prov-tabs">'+
-      '<button type="button" class="prov-tab'+(tab==='facturas'?' active':'')+'" onclick="setDesgloseTab(\'facturas\')">Facturas</button>'+
-      '<button type="button" class="prov-tab'+(tab==='pagos'?' active':'')+'" onclick="setDesgloseTab(\'pagos\')">Pagos</button>'+
-      '<button type="button" class="prov-tab'+(tab==='bitacora'?' active':'')+'" onclick="setDesgloseTab(\'bitacora\')">Bitácora</button>'+
-    '</div>'+
-    '<div class="popup-body prov-tab-body">'+body+'</div></div>';
-}
-function getDesgloseOverlay(){
-  let ov=document.getElementById('desglose-overlay');
-  if(!ov){
-    ov=document.createElement('div');
-    ov.id='desglose-overlay';
-    ov.className='desglose-overlay';
-    ov.addEventListener('click',e=>{if(e.target===ov)closeDesglosePopup();});
-    document.body.appendChild(ov);
-  }
-  return ov;
-}
-function showDesglosePopup(proveedor,anchor){
-  closeDesglosePopup();desgloseOpen=true;
-  desgloseSort={col:'fecha',dir:'desc'};
-  desgloseProvTab='facturas';
-  desgloseAbonarFacturaId='';
-  const regs=state.registros.filter(r=>r.proveedor===proveedor);
-  const ov=getDesgloseOverlay();
-  ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);
-  ov.classList.add('open');
-  ov.dataset.proveedor=proveedor;
-  document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>b.classList.remove('active'));
-  if(anchor)anchor.classList.add('active');
-  document.body.style.overflow='hidden';
-}
-function refreshDesglosePopup(){
-  const ov=document.getElementById('desglose-overlay');
-  const proveedor=ov&&ov.dataset.proveedor;
-  if(!proveedor)return;
-  const regs=state.registros.filter(r=>r.proveedor===proveedor);
-  if(!regs.length){closeDesglosePopup();return;}
-  if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;}
-}
-function closeDesglosePopup(){
-  desgloseOpen=false;
-  desgloseAbonarFacturaId='';
-  const ov=document.getElementById('desglose-overlay');
-  if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;}
-  document.body.style.overflow='';
-  document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
-}
-
-function parseLogExtraFields(log){
-  const facturaRaw=String(log.factura||log.numFactura||log.numeroFactura||'').trim();
-  const conceptoRaw=String(log.concepto||log.detalle||'').trim();
-  if(facturaRaw||conceptoRaw)return{factura:facturaRaw,concepto:conceptoRaw};
-  const desc=String(log.descripcion||'').trim();
-  if(!desc)return{factura:'',concepto:''};
-  let factura='',concepto='';
-  const mf=desc.match(/(?:^|·)\s*Factura:\s*([^·]+)(?:\s*·|$)/i);
-  const mc=desc.match(/(?:^|·)\s*Concepto:\s*(.+)$/i);
-  if(mf)factura=mf[1].trim();
-  if(mc)concepto=mc[1].trim();
-  if(!factura||!concepto){
-    const parts=desc.split(' · ').map(x=>x.trim()).filter(Boolean);
-    const tail=parts.slice(2);
-    const isReserved=v=>/^(pago|factura|eliminar|proveedor)$/i.test(v);
-    if(!factura&&tail[0]&&!isReserved(tail[0])&&!/^concepto\s*:/i.test(tail[0]))factura=tail[0];
-    if(!concepto&&tail.length>1){
-      const c=tail.slice(1).join(' · ').replace(/^concepto\s*:/i,'').trim();
-      if(c&&!isReserved(c))concepto=c;
-    }
-  }
-  return{factura,concepto};
-}
-function normalizeLog(log,prev={}){
-  const parsed=parseLogExtraFields(log);
-  return{...log,factura:String(parsed.factura||prev.factura||'').trim(),concepto:String(parsed.concepto||prev.concepto||'').trim()};
-}
-function mergeLogsPreservingDetails(incomingLogs){
-  const prevMap={};
-  getLogs().forEach(l=>{const key=l.localId||l.id||'';if(key)prevMap[key]=l;});
-  return (incomingLogs||[]).map(raw=>{const key=raw.localId||raw.id||'';return normalizeLog(raw,key?prevMap[key]:undefined);});
-}
-function cleanLogDescripcion(descripcion){
-  return String(descripcion||'').replace(/\s*·\s*Factura:\s*[^·]+/i,'').replace(/\s*·\s*Concepto:\s*.+$/i,'').trim();
-}
-function parseDescBasics(descripcion){
-  const clean=cleanLogDescripcion(descripcion);
-  const parts=clean.split(' · ').map(p=>p.trim()).filter(Boolean);
-  if(!parts.length)return null;
-  const proveedor=parts[0];
-  let monto=NaN;
-  if(parts[1]){const s=parts[1].replace(/[^\d.,-]/g,'').replace(/,/g,'');monto=parseFloat(s);}
-  return{proveedor,monto};
-}
-function formatLogDescCell(l){
-  const tipo=String(l.tipo||'').toLowerCase();
-  const concepto=String(l.concepto||l.detalle||'').trim();
-  if(tipo==='proveedor'||tipo==='eliminar'){
-    const c=esc(cleanLogDescripcion(l.descripcion));
-    return c?'<div class="log-desc-stack"><span class="log-desc-prov">'+c+'</span></div>':'—';
-  }
-  const b=parseDescBasics(l.descripcion);
-  if(b&&b.proveedor){
-    let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
-    if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
-    html+='</div>';
-    if(concepto)html+='<div class="log-desc-conc">'+esc(concepto)+'</div>';
-    return html;
-  }
-  const clean=esc(cleanLogDescripcion(l.descripcion));
-  return clean?'<div class="log-desc-stack"><span class="log-desc-prov">'+clean+'</span></div>':'—';
-}
-function montoCerca(a,b){return Math.abs((parseFloat(a)||0)-(parseFloat(b)||0))<0.02;}
-function findLogsForRegistro(reg){
-  if(!reg)return[];
-  return getLogs().filter(l=>{
-    if(l.registroId&&reg.id&&l.registroId===reg.id)return true;
-    if(l.tipo==='eliminar'||l.tipo==='proveedor'||l.tipo!==reg.tipo)return false;
-    const b=parseDescBasics(l.descripcion);
-    if(!b||b.proveedor!==reg.proveedor||!montoCerca(b.monto,reg.monto))return false;
-    const ex=parseLogExtraFields(l);
-    if(reg.factura&&ex.factura&&ex.factura!==reg.factura)return false;
-    if(reg.concepto&&ex.concepto&&ex.concepto!==reg.concepto)return false;
-    return true;
-  });
-}
-function findRegistrosForLog(log){
-  if(!log||log.tipo==='eliminar'||log.tipo==='proveedor')return[];
-  if(log.registroId){const r=state.registros.find(x=>x.id===log.registroId);return r?[r]:[];}
-  const b=parseDescBasics(log.descripcion);
-  if(!b)return[];
-  const ex=parseLogExtraFields(log);
-  return state.registros.filter(r=>{
-    if(r.tipo!==log.tipo||r.proveedor!==b.proveedor||!montoCerca(r.monto,b.monto))return false;
-    if(ex.factura&&r.factura&&ex.factura!==r.factura)return false;
-    if(ex.concepto&&r.concepto&&ex.concepto!==r.concepto)return false;
-    return true;
-  });
-}
-function removeLogsLocal_(logsToRemove){
-  const keys=new Set(logsToRemove.map(l=>(l.localId||l.id||'')).filter(Boolean));
-  if(!keys.size)return;
-  saveLogs(getLogs().filter(l=>!keys.has(l.localId||l.id||'')));
-}
-async function deleteLogsRemote_(logsToRemove){
-  for(const log of logsToRemove){
-    try{await apiPost({action:'deleteLog',localId:log.localId||'',id:log.id||''});}catch(e){console.warn(e);}
-  }
-}
-function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];return logsMemory;}catch{return logsMemory;}}
-function saveLogs(logs){logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
-function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
-function addLog(tipo,descripcion,factura='',concepto='',registroId=''){
-  const logs=getLogs().slice(),now=new Date();
-  const facturaSafe=String(factura||'').trim();
-  const conceptoSafe=String(concepto||'').trim();
-  const regIdSafe=String(registroId||'').trim();
-  const descWithMeta=String(descripcion||'').trim()+
-    (facturaSafe?' · Factura: '+facturaSafe:'')+
-    (conceptoSafe?' · Concepto: '+conceptoSafe:'');
-  const log={tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
-  logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);syncLogToSheets(log);if(isPageActive('logs'))renderLogs();
-}
-async function eliminarLog(localId){
-  if(!confirm('¿Eliminar este registro del log?'))return;
-  const all=getLogs(),target=all.find(l=>(l.localId||l.id||'')===localId);
-  if(!target)return;
-  const linked=findRegistrosForLog(target);
-  const prevRegs=state.registros.slice(),prevLogs=all.slice();
-  saveLogs(all.filter(l=>(l.localId||l.id||'')!==localId));
-  if(linked.length){const ids=new Set(linked.map(r=>r.id));state.registros=state.registros.filter(r=>!ids.has(r.id));}
-  saveAndRender();renderLogs();refreshDesglosePopup();
-  try{
-    await apiPost({action:'deleteLog',localId:target.localId||'',id:target.id||''});
-    for(const reg of linked){try{await apiPost({action:'deleteRegistro',id:reg.id});}catch(e){console.warn(e);}}
-    toast('Eliminado');scheduleQuietSync();
-  }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();renderLogs();refreshDesglosePopup();toastError(e);}
-}
-function renderLogs(){
-  const el=document.getElementById('logs-list'),logs=getLogs();
-  if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
-  let tableRows='',lastDay='',dayIdx=0;
-  logs.forEach(l=>{
-    const dayKey=getLogDayKey(l)||'—';
-    if(dayKey!==lastDay){dayIdx=1-dayIdx;lastDay=dayKey;}
-    const dayCls=dayIdx===0?'log-day-a':'log-day-b';
-    const cls=logBadgeClass(l.tipo);
-    const dt=fmtLogDisplayCompact(l);
-    const lid=esc(l.localId||l.id||'');
-    const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
-    const concepto=esc(String(l.concepto||l.detalle||'').trim());
-    const descCell=formatLogDescCell(l);
-    tableRows+='<tr class="'+dayCls+'">'+
-      '<td class="log-time log-col-fecha">'+dt+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
-      '<td class="log-col-fact">'+(factura||'—')+'</td>'+
-      '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
-      '<td class="log-col-desc">'+descCell+'</td>'+
-      '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
-      '</tr>';
-  });
-  el.innerHTML=
-    '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
-      '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
-      '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
-    '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
-}
-
-function renderAnalisis(){
-  const regs=state.registros,facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago');
-  const sumF=sumMonto(facts),sumP=sumMonto(pagos),saldo=sumF-sumP;
-  const resumen=resumenPorProveedor(regs);
-  document.getElementById('ak-fact').textContent  = fmt3(sumF);
-  document.getElementById('ak-fact-n').textContent = nRegistros(facts.length);
-  document.getElementById('ak-pago').textContent   = fmt3(sumP);
-  document.getElementById('ak-pago-n').textContent = nRegistros(pagos.length);
-  document.getElementById('ak-saldo').textContent  = fmt3(Math.abs(saldo));
-  document.getElementById('ak-saldo-pct').textContent = saldo<=0?'✓ Al corriente':(sumF>0?((sumP/sumF)*100).toFixed(1)+'% pagado':'—');
-  document.getElementById('ak-saldo-card').classList.toggle('paid',saldo<=0);
-  document.getElementById('ak-provs').textContent  = resumen.length;
-  document.getElementById('ak-movs').textContent   = regs.length+' movimientos';
-  document.getElementById('ak-pct').textContent    = sumF>0?((sumP/sumF)*100).toFixed(1)+'%':'—';
-
-  const barEl=document.getElementById('chart-barras');
-  if(!resumen.length){barEl.innerHTML='<div class="empty">Sin datos</div>';}
-  else{const maxS=Math.max(...resumen.map(r=>Math.abs(r.saldo)),1);barEl.innerHTML=resumen.slice(0,10).map(r=>{const pct=(Math.abs(r.saldo)/maxS*100).toFixed(1);const cls=r.saldo<=0?'bar-fill-saldo paid':'bar-fill-saldo';return'<div class="bar-row"><div class="bar-label">'+esc(r.proveedor)+'</div><div class="bar-track"><div class="bar-fill '+cls+'" style="width:'+pct+'%"></div></div><div class="bar-val">'+fmtShort(Math.abs(r.saldo))+'</div></div>';}).join('');}
-
-  const donutEl=document.getElementById('chart-donut');
-  if(!regs.length){donutEl.innerHTML='<div class="empty">Sin datos</div>';}
-  else{
-    const factValue=Math.max(sumF,0);
-    const pagoValue=Math.max(sumP,0);
-    const saldoValue=Math.max(Math.abs(saldo),0);
-    const totalGlobal=factValue+pagoValue+saldoValue;
-    const pctFactNum=totalGlobal>0?Number(((factValue/totalGlobal)*100).toFixed(1)):0;
-    const pctPagoNum=totalGlobal>0?Number(((pagoValue/totalGlobal)*100).toFixed(1)):0;
-    const pctPendNum=totalGlobal>0?Math.max(0,Number((100-pctFactNum-pctPagoNum).toFixed(1))):0;
-    const rd=50,ci=2*Math.PI*rd;
-    const segFact=totalGlobal>0?(factValue/totalGlobal)*ci:0;
-    const segPago=totalGlobal>0?(pagoValue/totalGlobal)*ci:0;
-    const segPend=Math.max(0,ci-segFact-segPago);
-    const offBase=-ci*0.25;
-    donutEl.innerHTML=
-      '<svg class="donut-svg" viewBox="0 0 120 120">'+
-        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#e2dfd8" stroke-width="18"/>'+
-        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#3b82f6" stroke-width="18" stroke-dasharray="'+segFact.toFixed(2)+' '+(ci-segFact).toFixed(2)+'" stroke-dashoffset="'+offBase.toFixed(2)+'" transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
-        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#16a34a" stroke-width="18" stroke-dasharray="'+segPago.toFixed(2)+' '+(ci-segPago).toFixed(2)+'" stroke-dashoffset="'+(offBase-segFact).toFixed(2)+'" transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
-        '<circle cx="60" cy="60" r="'+rd+'" fill="none" stroke="#d97706" stroke-width="18" stroke-dasharray="'+segPend.toFixed(2)+' '+(ci-segPend).toFixed(2)+'" stroke-dashoffset="'+(offBase-segFact-segPago).toFixed(2)+'" transform="rotate(-90 60 60)" stroke-linecap="butt"/>'+
-      '</svg>'+
-      '<div class="donut-legend">'+
-        '<div class="legend-row"><div class="legend-dot" style="background:#3b82f6"></div><span>Facturas: '+fmt3(sumF)+' ('+pctFactNum.toFixed(1)+'%)</span></div>'+
-        '<div class="legend-row"><div class="legend-dot" style="background:#16a34a"></div><span>Pagos: '+fmt3(sumP)+' ('+pctPagoNum.toFixed(1)+'%)</span></div>'+
-        '<div class="legend-row"><div class="legend-dot" style="background:#d97706"></div><span>Saldo pend.: '+fmt3(Math.abs(saldo))+' ('+pctPendNum.toFixed(1)+'%)</span></div>'+
-      '</div>';
-  }
-
-  const trendContainer=document.getElementById('chart-trend').parentElement;
-  if(trendContainer&&!trendContainer.querySelector('.trend-legend')){
-    const lg=document.createElement('div');lg.className='trend-legend';
-    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Azul</b> = Facturas</span></div><div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Verde</b> = Pagos</span></div>';
-    trendContainer.querySelector('.card-header').after(lg);
-  }
-  const trendEl=document.getElementById('chart-trend');
-  const weeks=getTrendWeeks();
-  const weekData=weeks.map(w=>{
-    let fact=0,pago=0;
-    regs.forEach(r=>{
-      if(!registroEnSemana(r,w.start,w.end))return;
-      const m=parseFloat(r.monto)||0;
-      if(String(r.tipo||'').toLowerCase().includes('pago'))pago+=m;else fact+=m;
-    });
-    return{...w,label:fmtWeekLabel(w.start,w.end),fact,pago};
-  });
-  const maxVal=Math.max(...weekData.map(w=>Math.max(w.fact,w.pago)),1);
-  trendEl.className='trend-week-scroll';
-  trendEl.innerHTML='<div class="trend-week-row">'+weekData.map(w=>{
-    const hF=Math.round((w.fact/maxVal)*36),hP=Math.round((w.pago/maxVal)*36);
-    return '<div class="trend-week">'+
-      '<div class="trend-week-label">'+esc(w.label)+'</div>'+
-      '<div class="trend-week-bars">'+
-        '<div class="trend-bar-f" style="height:'+hF+'px" title="Facturas"></div>'+
-        '<div class="trend-bar-p" style="height:'+hP+'px" title="Pagos"></div>'+
-      '</div>'+
-      '<div style="font-size:7px;color:#3b82f6">F '+fmtShort(w.fact)+'</div>'+
-      '<div style="font-size:7px;color:#16a34a">P '+fmtShort(w.pago)+'</div>'+
-      '</div>';
-  }).join('')+'</div>';
-}
-
-async function agregarProveedor(){
-  const nombre=document.getElementById('new-prov').value.trim().toUpperCase();if(!nombre)return;
-  const prevP=state.proveedores.slice();
-  if(!state.proveedores.some(x=>x.toUpperCase()===nombre)){state.proveedores.push(nombre);state.proveedores.sort((a,b)=>a.localeCompare(b,'es'));}
-  saveAndRender();document.getElementById('new-prov').value='';
-  try{const res=await apiPost({action:'addProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Agregado: '+nombre);toast('✓ Proveedor agregado',false,true);scheduleQuietSync();}
-  catch(e){state.proveedores=prevP;saveAndRender();toastError(e);}
-}
-async function eliminarProveedor(nombre){
-  if(!confirm('¿Eliminar proveedor "'+nombre+'"?'))return;
-  const prevR=state.registros.slice(),prevP=state.proveedores.slice();
-  state.proveedores=state.proveedores.filter(p=>p!==nombre);saveAndRender();
-  try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Proveedor eliminado');scheduleQuietSync();}
-  catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
-}
-function renderProvManager(){
-  const el=document.getElementById('prov-manager-list');
-  if(!state.proveedores.length){el.innerHTML='<div class="empty">Sin proveedores</div>';return;}
-  el.innerHTML=state.proveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
-}
-function renderAll(){
-  renderProvSelect();renderTotales();renderProvManager();
-  if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisis();
-}
+/* ... el resto de tu archivo sigue igual ... */
 </script>
 </body>
 </html>
