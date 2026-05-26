@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.43
+    ESTADO DE CUENTA  |  Versión 2.44
      ============================================================ -->
 <html lang="es">
 <head>
@@ -288,18 +288,19 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .trend-week-delta{font-size:6px;color:var(--text-faint);margin-top:1px;}
 .trend-glossary{padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);line-height:1.45;}
 .trend-glossary b{color:var(--navy);}
-.trend-month-list{display:flex;flex-direction:column;gap:8px;padding:12px;}
-.trend-month-row{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow-sm);}
-.trend-month-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
-.trend-month-name{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;}
-.trend-month-net{font-family:var(--mono);font-size:11px;font-weight:600;}
-.trend-month-bars{display:grid;gap:6px;}
-.trend-month-bar-line{display:grid;grid-template-columns:84px 1fr auto;align-items:center;gap:8px;}
-.trend-month-bar-label{font-size:10px;color:var(--text-muted);font-weight:600;}
-.trend-month-bar-track{height:10px;background:#e8ecf4;border-radius:999px;overflow:hidden;}
-.trend-month-bar-fill-f{height:100%;background:linear-gradient(90deg,#3a86ff,#60a5fa);}
-.trend-month-bar-fill-p{height:100%;background:linear-gradient(90deg,#10b981,#34d399);}
-.trend-month-bar-val{font-family:var(--mono);font-size:10px;color:var(--text-muted);}
+.trend-week-list{display:flex;flex-direction:column;gap:8px;padding:12px;}
+.trend-week-row-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:10px;box-shadow:var(--shadow-sm);}
+.trend-week-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+.trend-week-name{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;}
+.trend-week-pct{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue-text);}
+.trend-week-bars{display:grid;gap:6px;}
+.trend-week-bar-line{display:grid;grid-template-columns:96px 1fr auto;align-items:center;gap:8px;}
+.trend-week-bar-label{font-size:10px;color:var(--text-muted);font-weight:600;}
+.trend-week-bar-track{height:10px;background:#e8ecf4;border-radius:999px;overflow:hidden;}
+.trend-week-bar-fill-f{height:100%;background:linear-gradient(90deg,#3a86ff,#60a5fa);}
+.trend-week-bar-fill-p{height:100%;background:linear-gradient(90deg,#10b981,#34d399);}
+.trend-week-bar-fill-s{height:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24);}
+.trend-week-bar-val{font-family:var(--mono);font-size:10px;color:var(--text-muted);}
 .decision-panel{padding:10px 14px 14px;}
 .decision-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;}
 .decision-toolbar span{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-right:4px;}
@@ -540,8 +541,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .donut-legend { width: 100%; align-items: flex-start; }
   .legend-row { font-size: 12px; }
   .trend-legend { padding: 8px 10px; gap: 10px; font-size: 11px; }
-  .trend-month-bar-line { grid-template-columns:72px 1fr auto; gap:6px; }
-  .trend-month-bar-label,.trend-month-bar-val { font-size: 9px; }
+  .trend-week-bar-line { grid-template-columns:82px 1fr auto; gap:6px; }
+  .trend-week-bar-label,.trend-week-bar-val { font-size: 9px; }
   .trend-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 10px 8px; }
   .trend-month { padding: 8px 6px; }
   .add-prov-row { flex-direction: column; }
@@ -560,7 +561,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.43";
+const APP_VERSION = "2.44";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -706,7 +707,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
         <div id="chart-decisiones" class="decision-panel"></div>
       </div>
       <div class="card chart-section">
-        <div class="card-header"><span class="card-title">Tendencia mensual</span><span class="hint-text" style="font-weight:400">Vista clara por mes para decisiones</span></div>
+        <div class="card-header"><span class="card-title">Tendencia semanal</span><span class="hint-text" style="font-weight:400">Semanas de Lunes a Domingo</span></div>
         <div id="trend-glossary" class="trend-glossary"></div>
         <div id="trend-summary" class="trend-summary"></div>
         <div id="trend-insights" class="trend-insights"></div>
@@ -1605,18 +1606,18 @@ function selectTrendWeek(idx){
   renderAnalisis();
 }
 function buildTrendInsights(w,prev,resumen){
-  if(!w)return 'Sin datos mensuales todavía.';
+  if(!w)return 'Sin datos semanales todavía.';
   const net=w.fact-w.pago;
-  let html='<strong>Mes '+esc(w.label)+':</strong> facturado '+fmt(w.fact)+', pagado '+fmt(w.pago)+'. ';
-  html+='Resultado neto del mes: <strong style="color:'+(net>=0?'var(--amber-text)':'var(--green-text)')+'">'+fmt(net)+'</strong>';
+  let html='<strong>Semana '+esc(w.label)+' (Lun-Dom):</strong> facturado '+fmt(w.fact)+', pagado '+fmt(w.pago)+', pendiente '+fmt(Math.max(0,w.pte||0))+'. ';
+  html+='Resultado neto semanal: <strong style="color:'+(net>=0?'var(--amber-text)':'var(--green-text)')+'">'+fmt(net)+'</strong>';
   if(prev&&(prev.fact>0||prev.pago>0)){
     const dF=prev.fact>0?((w.fact-prev.fact)/prev.fact*100):0;
     const dP=prev.pago>0?((w.pago-prev.pago)/prev.pago*100):0;
-    html+=' · vs mes anterior: facturado <strong>'+(dF>=0?'+':'')+dF.toFixed(0)+'%</strong>, pagado <strong>'+(dP>=0?'+':'')+dP.toFixed(0)+'%</strong>';
+    html+=' · vs semana anterior: facturado <strong>'+(dF>=0?'+':'')+dF.toFixed(0)+'%</strong>, pagado <strong>'+(dP>=0?'+':'')+dP.toFixed(0)+'%</strong>';
   }
   const topPend=resumen.filter(r=>r.saldo>0).sort((a,b)=>b.saldo-a.saldo)[0];
   if(topPend)html+='<br>Mayor exposición hoy: <strong>'+esc(topPend.proveedor)+'</strong> con '+fmt(topPend.saldo)+' pendiente.';
-  if(net>0&&w.pago<w.fact*0.5&&w.fact>0)html+=' <span style="color:var(--amber-text)">⚠ Cobro bajo respecto al facturado del mes.</span>';
+  if(net>0&&w.pago<w.fact*0.5&&w.fact>0)html+=' <span style="color:var(--amber-text)">⚠ Cobro bajo respecto al facturado de la semana.</span>';
   return html;
 }
 function getTrendMonthsData(regs){
@@ -1635,6 +1636,21 @@ function getTrendMonthsData(regs){
     label:MESES_ES[x.m].slice(0,3).toUpperCase()+' '+x.y,
     net:x.fact-x.pago
   }));
+}
+function getTrendWeeksData(regs){
+  const weeks=getTrendWeeks();
+  return weeks.map(w=>{
+    let fact=0,pago=0;
+    regs.forEach(r=>{
+      if(!registroEnSemana(r,w.start,w.end))return;
+      const m=parseFloat(r.monto)||0;
+      if(isTipoPago(r))pago+=m;else fact+=m;
+    });
+    const pte=Math.max(0,fact-pago);
+    const pctPag=fact>0?(pago/fact*100):0;
+    const pctPte=fact>0?(pte/fact*100):0;
+    return {...w,label:fmtWeekLabel(w.start,w.end),fact,pago,pte,pctPag,pctPte};
+  });
 }
 function getSemanaActualTotals(regs){
   const weeks=getTrendWeeks();
@@ -1686,53 +1702,64 @@ function renderAnalisis(){
   const trendCard=document.getElementById('chart-trend').parentElement;
   if(trendCard&&!trendCard.querySelector('.trend-legend')){
     const lg=document.createElement('div');lg.className='trend-legend';
-    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Azul</b> = Monto facturado del mes</span></div>'+
-      '<div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Verde</b> = Monto pagado del mes</span></div>'+
-      '<div class="trend-legend-item"><span><b>Neto</b> = Facturado menos Pagado</span></div>';
+    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Facturado (F)</b></span></div>'+
+      '<div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Pagado (P)</b></span></div>'+
+      '<div class="trend-legend-item"><span><b>PTE</b> = Pendiente = Facturado − Pagado</span></div>'+
+      '<div class="trend-legend-item"><span><b>%</b> = avance pagado y pendiente de la semana</span></div>';
     const ins=document.getElementById('trend-insights');
     if(ins)ins.before(lg);
   }
   const gl=document.getElementById('trend-glossary');
   if(gl){
-    gl.innerHTML='<b>Guía rápida:</b> Facturado = ventas/servicios cobrables; Pagado = abonos recibidos; '+
-      'Neto = Facturado - Pagado. Si el neto es positivo, sube el saldo pendiente.';
+    gl.innerHTML='<b>Tarjeta mensual:</b> el resumen de arriba sigue siendo mensual. '+
+      '<b>Barras semanales:</b> cada fila representa una semana completa de <b>Lunes a Domingo</b>. '+
+      'En cada semana verás <b>Facturado</b>, <b>Pagado</b>, <b>PTE</b> y su <b>%</b>.';
   }
   const trendEl=document.getElementById('chart-trend');
   const monthData=getTrendMonthsData(regs);
+  const weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
   if(!monthData.length){
     trendEl.className='';
-    trendEl.innerHTML='<div class="empty">Sin datos mensuales</div>';
+    trendEl.innerHTML='<div class="empty">Sin datos semanales</div>';
     const sumElEmpty=document.getElementById('trend-summary');
     if(sumElEmpty)sumElEmpty.innerHTML='';
     const insElEmpty=document.getElementById('trend-insights');
-    if(insElEmpty)insElEmpty.innerHTML='Agrega facturas y pagos para construir la tendencia mensual.';
+    if(insElEmpty)insElEmpty.innerHTML='Agrega facturas y pagos para construir la tendencia.';
     return;
   }
-  if(analisisTrendWeekIdx<0||analisisTrendWeekIdx>=monthData.length)analisisTrendWeekIdx=monthData.length-1;
-  const selW=monthData[analisisTrendWeekIdx],prevW=analisisTrendWeekIdx>0?monthData[analisisTrendWeekIdx-1]:null;
+  if(!weekData.length){
+    trendEl.className='';
+    trendEl.innerHTML='<div class="empty">Sin semanas con movimientos</div>';
+    return;
+  }
+  if(analisisTrendWeekIdx<0||analisisTrendWeekIdx>=weekData.length)analisisTrendWeekIdx=weekData.length-1;
+  const selW=weekData[analisisTrendWeekIdx],prevW=analisisTrendWeekIdx>0?weekData[analisisTrendWeekIdx-1]:null;
+  const selMonth=monthData[monthData.length-1];
   const sumEl=document.getElementById('trend-summary');
-  if(sumEl&&selW){
-    const net=selW.net,netCls=net>=0?'net-neg':'net-pos';
+  if(sumEl&&selMonth){
+    const net=selMonth.net,netCls=net>=0?'net-neg':'net-pos';
     sumEl.innerHTML=
-      '<div class="trend-sum-item"><div class="trend-sum-lbl">Facturado</div><div class="trend-sum-val" style="color:#3b82f6">'+fmtShort(selW.fact)+'</div></div>'+
-      '<div class="trend-sum-item"><div class="trend-sum-lbl">Pagado</div><div class="trend-sum-val" style="color:#16a34a">'+fmtShort(selW.pago)+'</div></div>'+
+      '<div class="trend-sum-item"><div class="trend-sum-lbl">Facturado mes</div><div class="trend-sum-val" style="color:#3b82f6">'+fmtShort(selMonth.fact)+'</div></div>'+
+      '<div class="trend-sum-item"><div class="trend-sum-lbl">Pagado mes</div><div class="trend-sum-val" style="color:#16a34a">'+fmtShort(selMonth.pago)+'</div></div>'+
       '<div class="trend-sum-item"><div class="trend-sum-lbl">Neto</div><div class="trend-sum-val '+netCls+'">'+fmtShort(net)+'</div></div>'+
-      '<div class="trend-sum-item"><div class="trend-sum-lbl">Mes</div><div class="trend-sum-val">'+esc(selW.label)+'</div></div>';
+      '<div class="trend-sum-item"><div class="trend-sum-lbl">Mes</div><div class="trend-sum-val">'+esc(selMonth.label)+'</div></div>';
   }
   const insEl=document.getElementById('trend-insights');
   if(insEl)insEl.innerHTML=buildTrendInsights(selW,prevW,resumen);
-  const maxVal=Math.max(...monthData.map(w=>Math.max(w.fact,w.pago)),1);
+  const maxVal=Math.max(...weekData.map(w=>Math.max(w.fact,w.pago,w.pte)),1);
   trendEl.className='';
-  trendEl.innerHTML='<div class="trend-month-list">'+monthData.map((w,i)=>{
+  trendEl.innerHTML='<div class="trend-week-list">'+weekData.map((w,i)=>{
     const active=i===analisisTrendWeekIdx;
     const pctF=Math.max(2,(w.fact/maxVal*100));
     const pctP=Math.max(2,(w.pago/maxVal*100));
-    const netCls=w.net>=0?'var(--amber-text)':'var(--green-text)';
-    return '<div class="trend-month-row'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')" style="'+(active?'border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);':'')+'">'+
-      '<div class="trend-month-head"><div class="trend-month-name">'+esc(w.label)+'</div><div class="trend-month-net" style="color:'+netCls+'">Neto: '+fmt(w.net)+'</div></div>'+
-      '<div class="trend-month-bars">'+
-        '<div class="trend-month-bar-line"><div class="trend-month-bar-label">Facturado</div><div class="trend-month-bar-track"><div class="trend-month-bar-fill-f" style="width:'+pctF.toFixed(1)+'%"></div></div><div class="trend-month-bar-val">'+fmtShort(w.fact)+'</div></div>'+
-        '<div class="trend-month-bar-line"><div class="trend-month-bar-label">Pagado</div><div class="trend-month-bar-track"><div class="trend-month-bar-fill-p" style="width:'+pctP.toFixed(1)+'%"></div></div><div class="trend-month-bar-val">'+fmtShort(w.pago)+'</div></div>'+
+    const pctS=Math.max(2,(w.pte/maxVal*100));
+    const pctText='Pagado '+w.pctPag.toFixed(1)+'% · PTE '+w.pctPte.toFixed(1)+'%';
+    return '<div class="trend-week-row-card'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')" style="'+(active?'border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);':'')+'">'+
+      '<div class="trend-week-head"><div class="trend-week-name">SEMANA '+esc(w.label)+' (LUN-DOM)</div><div class="trend-week-pct">'+pctText+'</div></div>'+
+      '<div class="trend-week-bars">'+
+        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">Facturado</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-f" style="width:'+pctF.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.fact)+'</div></div>'+
+        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">Pagado</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-p" style="width:'+pctP.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.pago)+'</div></div>'+
+        '<div class="trend-week-bar-line"><div class="trend-week-bar-label">PTE</div><div class="trend-week-bar-track"><div class="trend-week-bar-fill-s" style="width:'+pctS.toFixed(1)+'%"></div></div><div class="trend-week-bar-val">'+fmtShort(w.pte)+'</div></div>'+
       '</div>'+
       '</div>';
   }).join('')+'</div>';
