@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.46
+    ESTADO DE CUENTA  |  Versión 2.47
      ============================================================ -->
 <html lang="es">
 <head>
@@ -223,6 +223,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-aplica-select{flex:1;min-width:110px;max-width:100%;font-size:11px;padding:5px 8px;height:auto;}
 .prov-fact-table .col-total,.prov-fact-table .col-abon,.prov-fact-table .col-pend{text-align:right;font-family:var(--mono);font-size:9px;}
 .prov-fact-table .col-abon{color:#047857;} .prov-fact-table .col-pend{color:#b91c1c;font-weight:600;}
+.desglose-inline-input{width:100%;min-width:0;padding:4px 6px;font-size:10px;font-family:var(--font);border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text);box-sizing:border-box;}
+.desglose-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);background:#fff;}
+.desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
+.desglose-inline-input.saving{opacity:.6;border-color:var(--amber-border);background:var(--amber-bg);}
 .prov-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:1.5rem;}
 .kpi-flujo-card{grid-column:1/-1;background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-md);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
@@ -569,7 +573,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.46";
+const APP_VERSION = "2.47";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1215,32 +1219,41 @@ async function quitarAbonoPago(pagoId){
     saveAndRender();refreshDesglosePopup();toastError(e);
   }
 }
-async function editarRegistroRefTotal(regId){
+async function guardarDesgloseCampo(regId,campo,valor,el){
   const reg=state.registros.find(r=>r.id===regId);
-  if(!reg){toast('Registro no encontrado',true);return;}
-  const refActual=String(reg.factura||'').trim();
-  const totalActual=formatMontoDisplay(parseFloat(reg.monto)||0);
-  const nuevaRef=prompt('Editar REF (factura/referencia):',refActual);
-  if(nuevaRef===null)return;
-  const nuevoTotalRaw=prompt('Editar TOTAL ($):',totalActual);
-  if(nuevoTotalRaw===null)return;
-  const totalNum=parseMonto(nuevoTotalRaw);
-  if(isNaN(totalNum)||totalNum<0){toast('TOTAL inválido',true);return;}
-
-  const prev={factura:reg.factura,monto:reg.monto};
-  reg.factura=String(nuevaRef||'').trim();
-  reg.monto=totalNum;
+  if(!reg)return;
+  let nuevo=valor;
+  if(campo==='factura')nuevo=String(valor||'').trim();
+  else if(campo==='monto'){
+    nuevo=parseMonto(valor);
+    if(isNaN(nuevo)||nuevo<0){toast('TOTAL inválido',true);if(el){el.value=formatMontoDisplay(parseFloat(reg.monto)||0);}return;}
+  }else return;
+  const prev=reg[campo];
+  if(campo==='factura'&&prev===nuevo)return;
+  if(campo==='monto'&&Math.abs((parseFloat(prev)||0)-nuevo)<0.001){
+    if(el)el.value=formatMontoDisplay(nuevo);
+    return;
+  }
+  if(el)el.classList.add('saving');
+  reg[campo]=nuevo;
   saveAndRender();refreshDesglosePopup();
   try{
-    const res=await apiPost({action:'updateRegistro',id:regId,data:{factura:reg.factura,monto:totalNum}});
+    const data={};data[campo]=nuevo;
+    const res=await apiPost({action:'updateRegistro',id:regId,data});
     if(res.error)throw new Error(res.error);
-    toast('Registro actualizado',false,true);
+    toast('Actualizado',false,true);
   }catch(e){
-    reg.factura=prev.factura;
-    reg.monto=prev.monto;
+    reg[campo]=prev;
     saveAndRender();refreshDesglosePopup();
     toastError(e);
-  }
+  }finally{if(el)el.classList.remove('saving');}
+}
+function onDesgloseRefBlur(regId,el){guardarDesgloseCampo(regId,'factura',el.value,el);}
+function onDesgloseMontoInput(el){el.value=sanitizeMontoTyping(el.value);}
+function onDesgloseMontoBlur(regId,el){
+  const n=parseMonto(el.value);
+  if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);
+  guardarDesgloseCampo(regId,'monto',el.value,el);
 }
 function facturaLabelById(facts,id){
   const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
@@ -1259,15 +1272,15 @@ function buildDesgloseFacturasHtml(facts,pagos){
   let rows='';
   sortDesgloseRegs(facts,'fecha','desc').forEach(f=>{
     const total=parseFloat(f.monto)||0,ab=calcFacturaAbonado(f,pagos),pend=Math.max(0,total-ab);
-    const ref=esc(f.factura||'—');
+    const refVal=esc(f.factura||'');
+    const montoVal=formatMontoDisplay(total);
     rows+='<tr class="desglose-row desglose-row-factura">'+
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
-      '<td>'+ref+'</td>'+
-      '<td class="col-total">'+fmt(total)+'</td>'+
+      '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
+      '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon">'+fmt(ab)+'</td>'+
       '<td class="col-pend">'+fmt(pend)+'</td>'+
-      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(f.id)+'\')">Editar</button>'+
-      '<button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
+      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return '<table class="desglose-table prov-fact-table"><thead><tr>'+
@@ -1311,14 +1324,17 @@ function buildDesglosePagosHtml(facts,pagos){
   sortDesgloseRegs(pagos,'fecha','desc').forEach(p=>{
     const apl=String(p.aplicaFacturaId||'');
     const aplTxt=apl?esc(facturaLabelById(facts,apl)):'Sin asignar';
+    const refVal=esc(p.factura||'');
+    const montoVal=formatMontoDisplay(parseFloat(p.monto)||0);
     rows+='<tr class="desglose-row desglose-row-pago">'+
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
-      '<td class="amount desglose-cell-amt">'+fmt(p.monto)+'</td>'+
+      '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(p.id)+'\',this)"></td>'+
+      '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="editarRegistroRefTotal(\''+esc(p.id)+'\')">Editar</button>'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
+      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
-  return aplicarHtml+'<table class="desglose-table"><thead><tr><th>Fecha</th><th>Monto</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return aplicarHtml+'<table class="desglose-table prov-fact-table"><thead><tr><th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildDesgloseBitacoraHtml(proveedor){
   const logs=logsProveedor(proveedor);
