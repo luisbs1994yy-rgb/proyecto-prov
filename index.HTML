@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.37
+    ESTADO DE CUENTA  |  Versión 2.40
      ============================================================ -->
 <html lang="es">
 <head>
@@ -83,7 +83,7 @@ body{
 label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
 input,select,textarea{width:100%;min-width:0;padding:9px 12px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);transition:all .14s;}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(58,134,255,.12);}
-input#f-monto{font-family:var(--mono);font-size:14px;}
+input#f-monto,input#f-precio-litro,input#f-litros{font-family:var(--mono);font-size:14px;}
 textarea{resize:vertical;min-height:60px;}
 .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
 .btn{padding:9px 20px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:500;transition:all .18s;}
@@ -339,7 +339,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     min-width: 0;
     padding: 0;
   }
-  #page-registrar input#f-monto { font-size: 14px; padding: 6px 8px; height: 36px; }
+  #page-registrar input#f-monto,
+  #page-registrar input#f-precio-litro,
+  #page-registrar input#f-litros { font-size: 14px; padding: 6px 8px; height: 36px; }
   #page-registrar #f-factura-group.registrar-modo-pago .f-factura-select { font-size: 14px; padding: 8px 10px; min-height: 40px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
   .kpi-card { padding: 12px 14px; text-align: center; }
@@ -477,7 +479,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.37";
+const APP_VERSION = "2.40";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -529,6 +531,10 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <label>Proveedor *</label>
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
+            </div>
+            <div class="form-row-duo" id="f-litros-row">
+              <div class="form-group"><label>Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+              <div class="form-group"><label>Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="0" autocomplete="off"></div>
             </div>
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
@@ -616,6 +622,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-monto').addEventListener('input', onMontoInput);
   document.getElementById('f-monto').addEventListener('blur',  onMontoBlur);
+  document.getElementById('f-precio-litro').addEventListener('input', onPrecioLitroInput);
+  document.getElementById('f-precio-litro').addEventListener('blur', onPrecioLitroBlur);
+  document.getElementById('f-litros').addEventListener('input', onLitrosInput);
+  document.getElementById('f-litros').addEventListener('blur', onLitrosBlur);
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
     try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
@@ -921,6 +931,19 @@ function setSelectBtn(btn,inputId){
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);}
+function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizeMontoTyping(el.value);updateMontoFromLitros();}
+function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateMontoFromLitros();}
+function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
+function onLitrosBlur(){const el=document.getElementById('f-litros'),n=parseLitros(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatLitrosDisplay(n);updateMontoFromLitros();}
+function sanitizeLitrosTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,3);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}const ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'');if(dotIdx===-1)return ip;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,3):'';return dec?ip+'.'+dec:ip;}
+function parseLitros(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
+function formatLitrosDisplay(n){const v=parseFloat(n);if(isNaN(v))return'';const r=Math.round(v*1000)/1000;return String(r).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');}
+function updateMontoFromLitros(){
+  const pn=parseMonto(document.getElementById('f-precio-litro').value);
+  const ln=parseLitros(document.getElementById('f-litros').value);
+  if(isNaN(pn)||isNaN(ln)||pn<=0||ln<=0)return;
+  document.getElementById('f-monto').value=formatMontoDisplay(pn*ln);
+}
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
 function parseMonto(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
 function formatMontoDisplay(n){const f=(Math.round(n*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
@@ -967,7 +990,7 @@ async function eliminarRegistro(id,btn){
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
 function clearForm(){
-  ['f-proveedor','f-factura','f-concepto','f-monto'].forEach(id=>document.getElementById(id).value='');
+  ['f-proveedor','f-factura','f-concepto','f-monto','f-precio-litro','f-litros'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
   const aplica=document.getElementById('f-aplica-factura');if(aplica)aplica.value='';
   document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
