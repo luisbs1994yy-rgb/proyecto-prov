@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.36
+    ESTADO DE CUENTA  |  Versión 2.37
      ============================================================ -->
 <html lang="es">
 <head>
@@ -256,14 +256,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-item:last-child{margin-bottom:0;}
 .add-prov-row{display:flex;gap:10px;margin-bottom:16px;}
 .totales-panel{overflow:hidden;}
-.totales-summary{
-  background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);
-  color:#fff;padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;
-}
-.totales-summary-main{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;}
-.totales-summary-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);white-space:nowrap;}
-.totales-summary-value{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
-.totales-panel .card-header{padding:10px 14px;}
+.totales-saldo-mobile{display:none;padding:12px 14px;font-family:var(--mono);font-size:20px;font-weight:600;color:var(--navy);background:linear-gradient(180deg,#fafbfd 0%,#fff 100%);border-bottom:1px solid var(--border);}
+#page-totales th.totales-saldo-total{font-family:var(--mono);font-size:14px;font-weight:600;letter-spacing:0;text-transform:none;white-space:nowrap;}
 .desglose-btn.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;}
 .totales-panel .card-title{font-size:13px;}
 @media (max-width: 860px) {
@@ -343,10 +337,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .kpi-sub { font-size: 10px; margin-top: 4px; }
   .table-wrap { overflow-x: visible; -webkit-overflow-scrolling: touch; }
   #page-totales .page-title { display: none; }
-  #page-totales .totales-summary { padding: 8px 10px; gap: 2px 8px; }
-  #page-totales .totales-summary-main { flex: 1 1 100%; gap: 6px; }
-  #page-totales .totales-summary-label { font-size: 9px; }
-  #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
+  #page-totales .totales-saldo-mobile { display: block; font-size: clamp(1rem, 5.5vw, 1.35rem); padding: 10px 12px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
@@ -354,8 +345,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .prov-kpi-val { font-size: 9px; }
   .prov-tab { font-size: 9px; padding: 6px 2px; }
   .prov-fact-table th, .prov-fact-table td { font-size: 8px; padding: 3px 2px; }
-  #page-totales .totales-panel .card-header { padding: 6px 10px; }
-  #page-totales .totales-panel .card-title { font-size: 11px; }
   #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
   #page-totales #tabla-total table { display: block; width: 100%; }
   #page-totales #tabla-total thead { display: none; }
@@ -469,7 +458,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.36";
+const APP_VERSION = "2.37";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -546,13 +535,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
 
     <div class="page active" id="page-totales">
       <div class="card totales-panel">
-        <div class="totales-summary">
-          <div class="totales-summary-main">
-            <span class="totales-summary-label">Saldo total</span>
-            <span class="totales-summary-value" id="k-total">—</span>
-          </div>
-        </div>
-        <div class="card-header"><span class="card-title">Por proveedor</span></div>
+        <div class="totales-saldo-mobile totales-saldo-total" id="k-total">—</div>
         <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -976,10 +959,14 @@ function renderProvSelect(){
   updateRegistrarAplicaUI();
 }
 
+function setTotalesSaldoTotal(txt){
+  document.querySelectorAll('.totales-saldo-total').forEach(el=>{el.textContent=txt;});
+}
 function renderTotales(){
   const regs=state.registros,resumen=resumenPorProveedor(regs);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  document.getElementById('k-total').textContent=fmt(sumSaldos);
+  const totalTxt=fmt(sumSaldos);
+  setTotalesSaldoTotal(totalTxt);
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
   let rows='';
   resumen.forEach(r=>{
@@ -992,7 +979,7 @@ function renderTotales(){
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
       '</tr>';
   });
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th class="totales-saldo-total">'+esc(totalTxt)+'</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   const ov=document.getElementById('desglose-overlay');
   if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor){
     refreshDesglosePopup();
