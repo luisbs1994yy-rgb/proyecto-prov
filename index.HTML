@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.57
+    ESTADO DE CUENTA  |  Versión 2.58
      ============================================================ -->
 <html lang="es">
 <head>
@@ -266,6 +266,18 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-fact-table .btn-abonar-mini{padding:2px 5px;font-size:7px;font-weight:600;line-height:1.15;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--navy);cursor:pointer;font-family:var(--font);min-height:0;height:auto;flex-shrink:0;}
 .prov-fact-table .btn-abonar-mini:hover{background:var(--blue-soft);border-color:var(--blue-border);}
 .prov-fact-table .btn-del-compact{width:17px;height:17px;min-width:17px;font-size:8px;line-height:1;border-radius:4px;flex-shrink:0;padding:0;}
+.prov-bitacora-table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.prov-bitacora-table thead th{background:#f1f5f9;color:var(--navy);font-size:7px;padding:3px 4px;text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);}
+.prov-bitacora-table td{padding:2px 4px!important;font-size:7px;line-height:1.2;vertical-align:middle;border-bottom:1px solid #eef2f7;}
+.prov-bitacora-table tr:last-child td{border-bottom:none;}
+.prov-bitacora-table .log-col-fecha{width:20%;text-align:center;white-space:nowrap;font-family:var(--mono);font-size:7px;}
+.prov-bitacora-table .log-col-tipo{width:16%;text-align:center;}
+.prov-bitacora-table .log-col-desc{width:58%;text-align:left;}
+.prov-bitacora-table .log-col-act{width:6%;text-align:center;padding:2px!important;}
+.prov-bitacora-table .badge{font-size:6px!important;padding:1px 4px!important;line-height:1.15;}
+.prov-bitacora-table .log-desc-inline{font-size:7px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prov-bitacora-table.log-day-a td{background:#f8fafc;}
+.prov-bitacora-table.log-day-b td{background:#fff;}
 .prov-fact-table .desglose-row td{padding:2px 3px!important;}
 .prov-fact-table .desglose-inline-input{padding:2px 3px;line-height:1.2;min-height:0;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:1.5rem;}
@@ -618,7 +630,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.57";
+const APP_VERSION = "2.58";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1385,6 +1397,30 @@ function toggleDesglose(e,proveedor,btn){
 function setDesgloseTab(tab){desgloseProvTab=tab;desgloseAbonarFacturaId='';refreshDesglosePopup();}
 function toggleDesgloseSaldadas(){desgloseShowSaldadas=!desgloseShowSaldadas;refreshDesglosePopup();}
 function openAbonarPicker(facturaId){desgloseAbonarFacturaId=facturaId;desgloseProvTab='facturas';refreshDesglosePopup();}
+function onPagoDesgloseX(pagoId,btn){
+  const p=state.registros.find(r=>r.id===pagoId);
+  if(p&&String(p.aplicaFacturaId||''))quitarAbonoPago(pagoId);
+  else eliminarRegistro(pagoId,btn);
+}
+function fmtLogFechaCortaDesglose(l){
+  const d=parseLogDate(l);
+  if(!d)return esc(String(getFechaDisplay(l)||'—').slice(0,14));
+  const h=d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
+  return esc(fmtFechaCorta(d)+' '+h);
+}
+function formatLogDescInline(l){
+  const tipo=String(l.tipo||'').toLowerCase();
+  if(tipo==='proveedor'||tipo==='eliminar')return esc(cleanLogDescripcion(l.descripcion).slice(0,80));
+  const b=parseDescBasics(l.descripcion);
+  if(b&&b.proveedor){
+    let t=esc(b.proveedor);
+    if(!isNaN(b.monto))t+=' · '+esc(fmt(b.monto));
+    const c=String(l.concepto||'').trim();
+    if(c)t+=' · '+esc(c.slice(0,36));
+    return t;
+  }
+  return esc(cleanLogDescripcion(l.descripcion).slice(0,80));
+}
 function cancelAbonarPicker(){desgloseAbonarFacturaId='';refreshDesglosePopup();}
 async function abonarPagoAFactura(pagoId,facturaId){
   const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
@@ -1638,8 +1674,7 @@ function buildDesgloseFacturasHtml(facts,pagos){
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
-      '<td class="prov-actions prov-actions-col">'+(pend>0.001?'<button type="button" class="btn-abonar-mini" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>':'')+
-      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
+      '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return toolbar+'<table class="desglose-table prov-fact-table"><thead><tr>'+
     '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th class="prov-actions-col"></th>'+
@@ -1689,8 +1724,7 @@ function buildDesglosePagosHtml(facts,pagos){
       '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions prov-actions-col">'+(apl?'<button type="button" class="btn-abonar-mini" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
-      '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
+      '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" title="'+(apl?'Quitar de factura':'Eliminar pago')+'" onclick="onPagoDesgloseX(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
   return aplicarHtml+'<table class="desglose-table prov-fact-table"><thead><tr><th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
@@ -1704,12 +1738,12 @@ function buildDesgloseBitacoraHtml(proveedor){
     const dayCls=dayIdx===0?'log-day-a':'log-day-b';
     const cls=logBadgeClass(l.tipo);
     rows+='<tr class="'+dayCls+'">'+
-      '<td class="log-time log-col-fecha">'+fmtLogDisplayCompact(l)+'</td>'+
+      '<td class="log-col-fecha">'+fmtLogFechaCortaDesglose(l)+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
-      '<td class="log-col-desc">'+formatLogDescCell(l)+'</td>'+
-      '<td class="log-col-act"><button class="btn-icon" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">🗑</button></td></tr>';
+      '<td class="log-col-desc"><div class="log-desc-inline">'+formatLogDescInline(l)+'</div></td>'+
+      '<td class="log-col-act prov-actions"><button type="button" class="btn-del-compact" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">✕</button></td></tr>';
   });
-  return '<table class="logs-table"><thead><tr><th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-desc">Detalle</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
+  return '<table class="desglose-table prov-bitacora-table"><thead><tr><th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildDesglosePanelHtml(proveedor,regs){
   const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
