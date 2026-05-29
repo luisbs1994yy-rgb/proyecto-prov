@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.50
+    ESTADO DE CUENTA  |  Versión 2.51
      ============================================================ -->
 <html lang="es">
 <head>
@@ -223,6 +223,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-aplica-select{flex:1;min-width:110px;max-width:100%;font-size:11px;padding:5px 8px;height:auto;}
 .prov-fact-table .col-total,.prov-fact-table .col-abon,.prov-fact-table .col-pend{text-align:right;font-family:var(--mono);font-size:9px;}
 .prov-fact-table .col-abon{color:#047857;} .prov-fact-table .col-pend{color:#b91c1c;font-weight:600;}
+.desglose-over-abon{color:var(--red-text);font-weight:600;}
 .desglose-inline-input{width:100%;min-width:0;padding:4px 6px;font-size:10px;font-family:var(--font);border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text);box-sizing:border-box;}
 .desglose-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);background:#fff;}
 .desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
@@ -573,7 +574,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.50";
+const APP_VERSION = "2.51";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -908,10 +909,7 @@ function resumenProveedoresActivos(regs){
   const activos=new Set(state.proveedores);
   return resumenPorProveedor(regs).filter(r=>activos.has(r.proveedor));
 }
-function pendienteFactura(fact,pagos){
-  const total=parseFloat(fact.monto)||0;
-  return Math.max(0,total-calcFacturaAbonado(fact,pagos));
-}
+function pendienteFactura(fact,pagos){return pendienteFacturaExcl(fact,pagos,'');}
 function toggleMobileMenu(){const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebar-overlay'),open=sb.classList.toggle('open');ov.classList.toggle('open',open);}
 function closeMobileMenu(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
 function navTo(page,el){
@@ -1037,15 +1035,24 @@ function updateRegistrarAplicaUI(){
   updateRegistrarLitrosUI();
 }
 function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
-function calcFacturaAbonado(fact,pagos){
+function calcFacturaAbonado(fact,pagos,excluirId){
   const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
+  const skip=excluirId?String(excluirId):'';
   let ab=0;
   pagos.forEach(p=>{
+    if(skip&&String(p.id||'')===skip)return;
     const m=parseFloat(p.monto)||0;
     if(String(p.aplicaFacturaId||'')===fid)ab+=m;
     else if(!p.aplicaFacturaId&&ref&&p.factura&&String(p.factura).trim()===ref)ab+=m;
   });
   return ab;
+}
+function pendienteFacturaExcl(fact,pagos,excluirId){
+  const total=parseFloat(fact.monto)||0;
+  return Math.max(0,total-calcFacturaAbonado(fact,pagos,excluirId));
+}
+function montoMaxPagoAFactura(fact,pagos,pagoId){
+  return pendienteFacturaExcl(fact,pagos,pagoId);
 }
 function sumPendienteFacturas(facts,pagos){
   return facts.reduce((acc,f)=>acc+Math.max(0,(parseFloat(f.monto)||0)-calcFacturaAbonado(f,pagos)),0);
@@ -1111,21 +1118,39 @@ async function guardarRegistro(){
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
   const aplicaEl=document.getElementById('f-aplica-factura');
   const aplicaFacturaId=(isTipoPago({tipo})&&aplicaEl)?String(aplicaEl.value||'').trim():'';
+  if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
+  let montoGuardar=montoNum,extraRemanente=null;
   if(isTipoPago({tipo})&&aplicaFacturaId){
     const fac=state.registros.find(r=>r.id===aplicaFacturaId);
-    if(fac&&fac.factura&&!factura)factura=String(fac.factura).trim();
+    if(!fac){toast('Factura no encontrada',true);return;}
+    if(fac.factura&&!factura)factura=String(fac.factura).trim();
+    const pagos=registrosProveedor(prov).filter(isTipoPago);
+    const pend=pendienteFactura(fac,pagos);
+    if(pend<=0.001){toast('Esta factura ya está saldada',true);return;}
+    if(montoNum>pend+0.001){
+      montoGuardar=Math.round(pend*100)/100;
+      const resto=Math.round((montoNum-montoGuardar)*100)/100;
+      if(resto>0.001){
+        extraRemanente={fecha,proveedor:prov,tipo,monto:resto,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''};
+      }
+    }
   }
-  if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
   const btn=document.getElementById('btn-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const payload={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId};
+    const payload={fecha,proveedor:prov,tipo,monto:montoGuardar,factura,concepto,aplicaFacturaId};
     const res=await apiPost({action:'addRegistro',data:payload});
     if(res.error)throw new Error(res.error);
-    const reg={id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId};
+    const reg={id:res.id,fecha,proveedor:prov,tipo,monto:montoGuardar,factura,concepto,aplicaFacturaId};
     state.registros.push(reg);
     if(aplicaFacturaId){const map=loadAplicaMap();map[res.id]=aplicaFacturaId;saveAplicaMap(map);}
     addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
-    saveAndRender();clearForm();toast('✓ Guardado',false,true);setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
+    if(extraRemanente){
+      const resRem=await apiPost({action:'addRegistro',data:extraRemanente});
+      if(resRem.error)throw new Error(resRem.error);
+      state.registros.push(Object.assign({},extraRemanente,{id:resRem.id}));
+      toast('Abonado '+fmt(montoGuardar)+' · Remanente '+fmt(extraRemanente.monto)+' sin asignar',false,true);
+    }else toast('✓ Guardado',false,true);
+    saveAndRender();clearForm();setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
   finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
 }
@@ -1202,7 +1227,7 @@ async function abonarPagoAFactura(pagoId,facturaId){
   const fact=state.registros.find(r=>r.id===facturaId);
   if(!fact){toast('Factura no encontrada',true);return;}
   const pagos=registrosProveedor(p.proveedor).filter(isTipoPago);
-  const pend=pendienteFactura(fact,pagos);
+  const pend=pendienteFacturaExcl(fact,pagos,pagoId);
   const pagoMonto=parseFloat(p.monto)||0;
   if(pend<=0.001){toast('Esta factura ya está saldada',true);return;}
   if(pagoMonto<=0.001){toast('El pago no tiene monto',true);return;}
@@ -1266,6 +1291,27 @@ async function guardarDesgloseCampo(regId,campo,valor,el){
   else if(campo==='monto'){
     nuevo=parseMonto(valor);
     if(isNaN(nuevo)||nuevo<0){toast('TOTAL inválido',true);if(el){el.value=formatMontoDisplay(parseFloat(reg.monto)||0);}return;}
+    const prov=reg.proveedor;
+    const pagos=registrosProveedor(prov).filter(isTipoPago);
+    if(isTipoFactura(reg)){
+      const ab=calcFacturaAbonado(reg,pagos);
+      if(nuevo<ab-0.001){
+        toast('TOTAL no puede ser menor que lo abonado ('+fmt(ab)+')',true);
+        if(el)el.value=formatMontoDisplay(parseFloat(reg.monto)||0);
+        return;
+      }
+    }
+    if(isTipoPago(reg)&&String(reg.aplicaFacturaId||'')){
+      const fact=state.registros.find(r=>r.id===reg.aplicaFacturaId);
+      if(fact){
+        const maxAplicar=montoMaxPagoAFactura(fact,pagos,regId);
+        if(nuevo>maxAplicar+0.001){
+          toast('El pago no puede superar lo pendiente ('+fmt(maxAplicar)+') de la factura',true);
+          if(el)el.value=formatMontoDisplay(parseFloat(reg.monto)||0);
+          return;
+        }
+      }
+    }
   }else return;
   const prev=reg[campo];
   if(campo==='factura'&&prev===nuevo)return;
@@ -1305,7 +1351,8 @@ function buildAbonarBox(proveedor,facturaId,facts,pagos){
   const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
   let btns=libres.map(p=>{
     const pm=parseFloat(p.monto)||0;
-    const aplicar=Math.min(pm,pend);
+    const pendPago=pendienteFacturaExcl(fact,pagos,p.id);
+    const aplicar=Math.min(pm,pendPago);
     const resto=Math.max(0,pm-aplicar);
     const hint=resto>0.001?(' · aplica '+fmt(aplicar)+', sobra '+fmt(resto)):('');
     return '<button type="button" class="btn btn-sm btn-primary" onclick="abonarPagoAFactura(\''+esc(p.id)+'\',\''+esc(facturaId)+'\')">'+fmt(pm)+' · '+esc(fmtFechaCorta(p.fecha))+hint+'</button>';
@@ -1319,13 +1366,14 @@ function buildDesgloseFacturasHtml(facts,pagos){
   let rows='';
   sortDesgloseRegs(facts,'fecha','desc').forEach(f=>{
     const total=parseFloat(f.monto)||0,ab=calcFacturaAbonado(f,pagos),pend=Math.max(0,total-ab);
+    const abHtml=ab>total+0.001?'<span class="desglose-over-abon" title="Abono mayor al total">'+fmt(ab)+'</span>':fmt(ab);
     const refVal=esc(f.factura||'');
     const montoVal=formatMontoDisplay(total);
     rows+='<tr class="desglose-row desglose-row-factura">'+
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
       '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
-      '<td class="col-abon">'+fmt(ab)+'</td>'+
+      '<td class="col-abon">'+abHtml+'</td>'+
       '<td class="col-pend">'+fmt(pend)+'</td>'+
       '<td class="prov-actions"><button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>'+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
