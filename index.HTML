@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.56
+    ESTADO DE CUENTA  |  Versión 2.57
      ============================================================ -->
 <html lang="es">
 <head>
@@ -261,7 +261,13 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
 .desglose-inline-input.saving{opacity:.6;border-color:var(--amber-border);background:var(--amber-bg);}
 .desglose-inline-input.warn{border-color:var(--red-border);background:var(--red-bg);}
-.prov-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
+.prov-actions{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:3px;padding:2px 3px!important;white-space:nowrap;}
+.prov-fact-table .prov-actions-col{width:13%;max-width:56px;}
+.prov-fact-table .btn-abonar-mini{padding:2px 5px;font-size:7px;font-weight:600;line-height:1.15;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--navy);cursor:pointer;font-family:var(--font);min-height:0;height:auto;flex-shrink:0;}
+.prov-fact-table .btn-abonar-mini:hover{background:var(--blue-soft);border-color:var(--blue-border);}
+.prov-fact-table .btn-del-compact{width:17px;height:17px;min-width:17px;font-size:8px;line-height:1;border-radius:4px;flex-shrink:0;padding:0;}
+.prov-fact-table .desglose-row td{padding:2px 3px!important;}
+.prov-fact-table .desglose-inline-input{padding:2px 3px;line-height:1.2;min-height:0;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:1.5rem;}
 .kpi-flujo-card{grid-column:1/-1;background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-md);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
 .kpi-flujo-card::after{content:'';position:absolute;top:-40%;right:-10%;width:55%;height:140%;background:radial-gradient(ellipse at center,rgba(0,180,216,.18),transparent 70%);pointer-events:none;}
@@ -488,6 +494,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .prov-tab { font-size: 9px; padding: 6px 2px; }
   .prov-fact-table th, .prov-fact-table td { font-size: 7px; padding: 2px 3px; }
   .prov-fact-table .desglose-inline-input { font-size: 7px; padding: 2px 3px; }
+  .prov-fact-table .btn-abonar-mini { font-size: 6px; padding: 1px 4px; }
+  .prov-fact-table .btn-del-compact { width: 15px; height: 15px; min-width: 15px; font-size: 7px; }
+  .prov-fact-table .prov-actions-col { max-width: 48px; }
   #page-totales .totales-panel .card-header { padding: 6px 10px; }
   #page-totales .totales-panel .card-title { font-size: 11px; }
   #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
@@ -609,7 +618,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.56";
+const APP_VERSION = "2.57";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1629,11 +1638,11 @@ function buildDesgloseFacturasHtml(facts,pagos){
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
-      '<td class="prov-actions">'+(pend>0.001?'<button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>':'')+
+      '<td class="prov-actions prov-actions-col">'+(pend>0.001?'<button type="button" class="btn-abonar-mini" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return toolbar+'<table class="desglose-table prov-fact-table"><thead><tr>'+
-    '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th></th>'+
+    '<th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th class="prov-actions-col"></th>'+
     '</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
@@ -1680,7 +1689,7 @@ function buildDesglosePagosHtml(facts,pagos){
       '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td style="font-size:9px">'+aplTxt+'</td>'+
-      '<td class="prov-actions">'+(apl?'<button type="button" class="btn btn-sm" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
+      '<td class="prov-actions prov-actions-col">'+(apl?'<button type="button" class="btn-abonar-mini" onclick="quitarAbonoPago(\''+esc(p.id)+'\')">Quitar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
   });
   return aplicarHtml+'<table class="desglose-table prov-fact-table"><thead><tr><th>Fecha</th><th>Ref.</th><th class="col-total">Total</th><th>Aplica a</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
