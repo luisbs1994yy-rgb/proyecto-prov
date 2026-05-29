@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.49
+    ESTADO DE CUENTA  |  Versión 2.50
      ============================================================ -->
 <html lang="es">
 <head>
@@ -573,7 +573,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.49";
+const APP_VERSION = "2.50";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -904,6 +904,14 @@ function resumenPorProveedor(regs){
   regs.forEach(r=>{const p=r.proveedor||'SIN PROVEEDOR',m=parseFloat(r.monto)||0;if(!map[p])map[p]={proveedor:p,facturas:0,pagos:0,saldo:0,movimientos:0};if(r.tipo==='pago')map[p].pagos+=m;else map[p].facturas+=m;map[p].saldo=map[p].facturas-map[p].pagos;map[p].movimientos+=1;});
   return Object.values(map).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
 }
+function resumenProveedoresActivos(regs){
+  const activos=new Set(state.proveedores);
+  return resumenPorProveedor(regs).filter(r=>activos.has(r.proveedor));
+}
+function pendienteFactura(fact,pagos){
+  const total=parseFloat(fact.monto)||0;
+  return Math.max(0,total-calcFacturaAbonado(fact,pagos));
+}
 function toggleMobileMenu(){const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebar-overlay'),open=sb.classList.toggle('open');ov.classList.toggle('open',open);}
 function closeMobileMenu(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
 function navTo(page,el){
@@ -1156,7 +1164,7 @@ function renderProvSelect(){
 }
 
 function renderTotales(){
-  const regs=state.registros,resumen=resumenPorProveedor(regs);
+  const regs=state.registros,resumen=resumenProveedoresActivos(regs);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   document.getElementById('k-total').textContent=fmt(sumSaldos);
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
@@ -1191,17 +1199,48 @@ function openAbonarPicker(facturaId){desgloseAbonarFacturaId=facturaId;desgloseP
 function cancelAbonarPicker(){desgloseAbonarFacturaId='';refreshDesglosePopup();}
 async function abonarPagoAFactura(pagoId,facturaId){
   const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
-  const prev=p.aplicaFacturaId||'';
+  const fact=state.registros.find(r=>r.id===facturaId);
+  if(!fact){toast('Factura no encontrada',true);return;}
+  const pagos=registrosProveedor(p.proveedor).filter(isTipoPago);
+  const pend=pendienteFactura(fact,pagos);
+  const pagoMonto=parseFloat(p.monto)||0;
+  if(pend<=0.001){toast('Esta factura ya está saldada',true);return;}
+  if(pagoMonto<=0.001){toast('El pago no tiene monto',true);return;}
+  const montoAplicar=Math.min(pagoMonto,pend);
+  const resto=Math.round((pagoMonto-montoAplicar)*100)/100;
+  const prevPago={id:p.id,monto:p.monto,factura:p.factura,aplicaFacturaId:p.aplicaFacturaId||''};
+  const map=loadAplicaMap();
+  const prevMapEntry=map[pagoId];
+  p.monto=montoAplicar;
   p.aplicaFacturaId=facturaId;
-  const map=loadAplicaMap();map[pagoId]=facturaId;saveAplicaMap(map);
+  if(fact.factura)p.factura=String(fact.factura).trim();
+  map[pagoId]=facturaId;
+  saveAplicaMap(map);
+  let nuevoRemanente=null;
+  if(resto>0.001){
+    nuevoRemanente={id:'tmp_'+Date.now(),fecha:p.fecha,proveedor:p.proveedor,tipo:'pago',monto:resto,factura:'',concepto:(p.concepto?p.concepto+' · ':'')+'Remanente',aplicaFacturaId:''};
+    state.registros.push(nuevoRemanente);
+  }
   saveAndRender();desgloseAbonarFacturaId='';refreshDesglosePopup();
   try{
-    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:facturaId}});
-    if(res.error)throw new Error(res.error);
-    toast('Pago abonado a la factura',false,true);
+    const resUpd=await apiPost({action:'updateRegistro',id:pagoId,data:{monto:montoAplicar,aplicaFacturaId:facturaId,factura:p.factura||''}});
+    if(resUpd.error)throw new Error(resUpd.error);
+    if(nuevoRemanente){
+      const resAdd=await apiPost({action:'addRegistro',data:{fecha:nuevoRemanente.fecha,proveedor:nuevoRemanente.proveedor,tipo:'pago',monto:resto,factura:'',concepto:nuevoRemanente.concepto,aplicaFacturaId:''}});
+      if(resAdd.error)throw new Error(resAdd.error);
+      nuevoRemanente.id=resAdd.id;
+    }
+    if(resto>0.001)toast('Abonado '+fmt(montoAplicar)+' · Remanente '+fmt(resto)+' disponible',false,true);
+    else toast('Pago abonado a la factura',false,true);
   }catch(e){
-    p.aplicaFacturaId=prev;delete map[pagoId];saveAplicaMap(map);
-    saveAndRender();refreshDesglosePopup();toastError(e);
+    p.monto=prevPago.monto;
+    p.factura=prevPago.factura;
+    p.aplicaFacturaId=prevPago.aplicaFacturaId;
+    if(prevMapEntry)map[pagoId]=prevMapEntry;else delete map[pagoId];
+    saveAplicaMap(map);
+    if(nuevoRemanente)state.registros=state.registros.filter(r=>r.id!==nuevoRemanente.id);
+    saveAndRender();refreshDesglosePopup();
+    toastError(e);
   }
 }
 async function quitarAbonoPago(pagoId){
@@ -1262,10 +1301,17 @@ function facturaLabelById(facts,id){
 }
 function buildAbonarBox(proveedor,facturaId,facts,pagos){
   const fact=facts.find(f=>f.id===facturaId);if(!fact)return '';
+  const pend=pendienteFactura(fact,pagos);
   const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
-  let btns=libres.map(p=>'<button type="button" class="btn btn-sm btn-primary" onclick="abonarPagoAFactura(\''+esc(p.id)+'\',\''+esc(facturaId)+'\')">'+fmt(p.monto)+' · '+esc(fmtFechaCorta(p.fecha))+'</button>').join('');
+  let btns=libres.map(p=>{
+    const pm=parseFloat(p.monto)||0;
+    const aplicar=Math.min(pm,pend);
+    const resto=Math.max(0,pm-aplicar);
+    const hint=resto>0.001?(' · aplica '+fmt(aplicar)+', sobra '+fmt(resto)):('');
+    return '<button type="button" class="btn btn-sm btn-primary" onclick="abonarPagoAFactura(\''+esc(p.id)+'\',\''+esc(facturaId)+'\')">'+fmt(pm)+' · '+esc(fmtFechaCorta(p.fecha))+hint+'</button>';
+  }).join('');
   if(!btns)btns='<span style="color:var(--text-muted)">No hay pagos sin asignar. Registra un pago primero.</span>';
-  return '<div class="prov-abonar-box"><strong>Abonar a:</strong> '+esc(facturaLabelById(facts,facturaId))+'<div>'+btns+'</div>'+
+  return '<div class="prov-abonar-box"><strong>Abonar a:</strong> '+esc(facturaLabelById(facts,facturaId))+' · Pendiente: '+fmt(pend)+'<div>'+btns+'</div>'+
     '<button type="button" class="btn btn-sm" style="margin-top:6px" onclick="cancelAbonarPicker()">Cancelar</button></div>';
 }
 function buildDesgloseFacturasHtml(facts,pagos){
@@ -1722,7 +1768,7 @@ function getSemanaActualTotals(regs){
 function renderAnalisis(){
   const regs=state.registros,facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago');
   const sumF=sumMonto(facts),sumP=sumMonto(pagos),saldo=sumF-sumP;
-  const resumen=resumenPorProveedor(regs);
+  const resumen=resumenProveedoresActivos(regs);
   const pctPag=sumF>0?(sumP/sumF*100):0;
   const pctPend=sumF>0?Math.max(0,100-pctPag):0;
   const flujoPct=document.getElementById('ak-flujo-pct');
