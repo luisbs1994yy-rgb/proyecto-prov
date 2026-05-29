@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.51
+    ESTADO DE CUENTA  |  Versión 2.53
      ============================================================ -->
 <html lang="es">
 <head>
@@ -215,9 +215,24 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-tab-body{padding:0;}
 .prov-abonar-box{padding:8px;background:#fff8e6;border-bottom:1px solid var(--amber-border);font-size:10px;}
 .prov-abonar-box .btn-sm{margin-top:6px;margin-right:4px;}
-#f-factura-group .f-factura-select{display:none;}
+#f-factura-group .f-aplica-multi{display:none;}
 #f-factura-group.registrar-modo-pago .f-factura-input{display:none;}
-#f-factura-group.registrar-modo-pago .f-factura-select{display:block;}
+#f-factura-group.registrar-modo-pago .f-aplica-multi{display:block;}
+.registrar-fact-list{border:1px solid var(--border);border-radius:10px;max-height:220px;overflow-y:auto;background:#fafbfd;}
+.registrar-fact-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;user-select:none;}
+.registrar-fact-item:last-child{border-bottom:none;}
+.registrar-fact-item:hover{background:var(--blue-soft);}
+.registrar-fact-item input[type=checkbox]{margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer;}
+.registrar-fact-item .registrar-fact-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.35;}
+.registrar-aplica-resumen{margin-top:10px;font-size:12px;}
+.registrar-alloc-alert{background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;color:var(--amber-text);font-size:11px;line-height:1.45;}
+.registrar-alloc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px;}
+.registrar-alloc-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;}
+.registrar-alloc-row:last-child{border-bottom:none;}
+.registrar-alloc-row.warn{color:var(--red-text);font-weight:600;}
+.registrar-alloc-row .amount{font-family:var(--mono);font-weight:600;white-space:nowrap;}
+#btn-save.btn-locked{background:linear-gradient(135deg,#64748b 0%,#475569 100%);box-shadow:0 4px 14px rgba(71,85,105,.35);}
+#btn-save.btn-locked::before{content:'🔒 ';}
 .prov-aplicar-box{padding:8px 10px;background:var(--blue-soft);border-bottom:1px solid var(--blue-border);font-size:10px;}
 .prov-aplicar-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:6px;}
 .prov-aplica-select{flex:1;min-width:110px;max-width:100%;font-size:11px;padding:5px 8px;height:auto;}
@@ -428,7 +443,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-registrar input#f-monto,
   #page-registrar input#f-precio-litro,
   #page-registrar input#f-litros { font-size: 14px; padding: 6px 8px; height: 36px; }
-  #page-registrar #f-factura-group.registrar-modo-pago .f-factura-select { font-size: 14px; padding: 8px 10px; min-height: 40px; }
+  #page-registrar .registrar-fact-item { font-size: 13px; padding: 12px; }
+  #page-registrar .registrar-fact-item input[type=checkbox] { width: 18px; height: 18px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
   .kpi-flujo-grid { grid-template-columns: 1fr; gap: 8px; }
   .kpi-flujo-card { padding: 12px 14px; }
@@ -574,7 +590,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.51";
+const APP_VERSION = "2.53";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -638,10 +654,11 @@ const APLICA_KEY  = "pagos_v1_aplica";
             <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
               <label id="f-factura-label">Núm. factura</label>
               <input type="text" id="f-factura" class="f-factura-input" placeholder="Ej: FAC-001">
-              <select id="f-aplica-factura" class="f-factura-select" onchange="onAplicaFacturaChange()">
-                <option value="">— Sin asignar (aplicar después en Cuenta) —</option>
-              </select>
-              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:4px">Facturas con saldo pendiente del proveedor seleccionado.</span>
+              <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
+                <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
+                <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
+              </div>
+              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca una o más facturas pendientes. Si el pago excede lo seleccionado, podrás agregar otras o confirmar dos veces al guardar.</span>
             </div>
             <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
           </div>
@@ -999,39 +1016,120 @@ function facturaOptionLabel(f,pagos){
   const pendTxt=pend>0.001?(' · pend. '+fmt(pend)):' · saldada';
   return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+pendTxt;
 }
-function onAplicaFacturaChange(){
-  const sel=document.getElementById('f-aplica-factura'),inp=document.getElementById('f-factura');
-  if(!sel||!inp)return;
-  const id=String(sel.value||'').trim();
-  if(!id){inp.value='';return;}
-  const f=state.registros.find(r=>r.id===id);
-  if(f&&f.factura)inp.value=String(f.factura).trim();
+function getRegistrarFacturasSeleccionadas(){
+  const list=document.getElementById('f-aplica-facturas-list');
+  if(!list)return[];
+  return[...list.querySelectorAll('input[type=checkbox]:checked')].map(cb=>String(cb.value||'').trim()).filter(Boolean);
+}
+function calcAllocacionPago(prov,montoTotal,facturaIds){
+  const pagos=registrosProveedor(prov).filter(isTipoPago);
+  let resto=Math.round((parseFloat(montoTotal)||0)*100)/100;
+  const parts=[];
+  const facts=facturaIds.map(id=>state.registros.find(r=>r.id===id)).filter(Boolean)
+    .sort((a,b)=>parseRegistroDateMs(a.fecha)-parseRegistroDateMs(b.fecha));
+  facts.forEach(f=>{
+    if(resto<=0.001)return;
+    const pend=pendienteFactura(f,pagos);
+    if(pend<=0.001)return;
+    const apl=Math.min(resto,pend);
+    const m=Math.round(apl*100)/100;
+    parts.push({facturaId:f.id,factura:String(f.factura||'').trim(),monto:m});
+    resto=Math.round((resto-m)*100)/100;
+  });
+  return{parts,remanente:resto>0.001?resto:0};
+}
+function onRegistrarFacturaSelChange(){
+  syncRegistrarFacturaRefs();
+  updateRegistrarAplicaResumen();
+}
+function syncRegistrarFacturaRefs(){
+  const inp=document.getElementById('f-factura');
+  if(!inp)return;
+  const ids=getRegistrarFacturasSeleccionadas();
+  if(!ids.length){inp.value='';return;}
+  const refs=ids.map(id=>{const f=state.registros.find(r=>r.id===id);return f&&f.factura?String(f.factura).trim():'';}).filter(Boolean);
+  inp.value=refs.join(', ');
+}
+function updateRegistrarAplicaResumen(){
+  const resumen=document.getElementById('f-aplica-resumen');
+  const btn=document.getElementById('btn-save');
+  if(!resumen)return;
+  const tipo=document.getElementById('f-tipo').value;
+  const prov=document.getElementById('f-proveedor').value;
+  const montoNum=parseMonto(document.getElementById('f-monto').value);
+  if(!isTipoPago({tipo})||!prov){
+    resumen.innerHTML='';
+    if(btn)btn.classList.remove('btn-locked');
+    return;
+  }
+  const ids=getRegistrarFacturasSeleccionadas();
+  if(!ids.length){
+    resumen.innerHTML='<span class="hint-text">Opcional: marca facturas para aplicar el pago antes de guardar.</span>';
+    if(btn)btn.classList.remove('btn-locked');
+    return;
+  }
+  if(isNaN(montoNum)||montoNum<=0){
+    resumen.innerHTML='<span class="hint-text">Ingresa el monto para ver cómo se distribuirá.</span>';
+    if(btn)btn.classList.remove('btn-locked');
+    return;
+  }
+  const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
+  if(!parts.length){
+    resumen.innerHTML='<span class="hint-text" style="color:var(--red-text)">Las facturas seleccionadas ya están saldadas.</span>';
+    if(btn)btn.classList.add('btn-locked');
+    return;
+  }
+  let html='';
+  if(remanente>0.001){
+    html+='<div class="registrar-alloc-alert">🔒 Faltan <strong>'+fmt(remanente)+'</strong> por asignar · selecciona otra factura más o guarda con <strong>doble confirmación</strong></div>';
+    if(btn)btn.classList.add('btn-locked');
+  }else if(btn)btn.classList.remove('btn-locked');
+  html+='<div class="registrar-alloc-title">Distribución del pago · '+fmt(montoNum)+'</div>';
+  parts.forEach(p=>{
+    html+='<div class="registrar-alloc-row"><span>'+(p.factura?'#'+esc(p.factura):'Factura')+'</span><span class="amount">'+fmt(p.monto)+'</span></div>';
+  });
+  if(remanente>0.001){
+    html+='<div class="registrar-alloc-row warn"><span>Remanente sin asignar</span><span class="amount">'+fmt(remanente)+'</span></div>';
+  }
+  resumen.innerHTML=html;
+}
+function confirmarRemanentePago(montoNum,aplicado,remanente,nFacturas){
+  if(!confirm('El pago de '+fmt(montoNum)+' excede lo pendiente en las facturas seleccionadas.\n\nSe aplicará '+fmt(aplicado)+' a '+nFacturas+' factura(s).\nQuedarán '+fmt(remanente)+' sin asignar.\n\n¿Continuar? (1 de 2)'))return false;
+  if(!confirm('Confirmación final: ¿Guardar con remanente de '+fmt(remanente)+' sin asignar? (2 de 2)'))return false;
+  return true;
 }
 function updateRegistrarAplicaUI(){
-  const wrap=document.getElementById('f-factura-group'),sel=document.getElementById('f-aplica-factura');
+  const wrap=document.getElementById('f-factura-group');
+  const list=document.getElementById('f-aplica-facturas-list');
   const lbl=document.getElementById('f-factura-label'),hint=document.getElementById('f-factura-hint');
   const inp=document.getElementById('f-factura');
-  if(!wrap||!sel||!lbl)return;
+  if(!wrap||!list||!lbl)return;
   const tipo=document.getElementById('f-tipo').value,prov=document.getElementById('f-proveedor').value;
   const modoPago=isTipoPago({tipo})&&!!prov;
+  const prevSel=new Set(getRegistrarFacturasSeleccionadas());
   wrap.classList.toggle('registrar-modo-pago',modoPago);
   if(hint)hint.style.display=modoPago?'block':'none';
   if(!modoPago){
     lbl.textContent='Núm. factura';
-    sel.value='';
+    list.innerHTML='';
+    const resumen=document.getElementById('f-aplica-resumen');if(resumen)resumen.innerHTML='';
     updateRegistrarLitrosUI();
     return;
   }
-  lbl.textContent='Factura pendiente';
+  lbl.textContent='Facturas pendientes';
   const pagos=registrosProveedor(prov).filter(isTipoPago);
-  const facts=facturasAbiertasProveedor(prov),prev=sel.value;
-  let opts='<option value="">— Sin asignar (aplicar después en Cuenta) —</option>';
-  if(!facts.length)opts='<option value="">— Este proveedor no tiene facturas registradas —</option>';
-  else facts.forEach(f=>{opts+='<option value="'+esc(f.id)+'">'+esc(facturaOptionLabel(f,pagos))+'</option>';});
-  sel.innerHTML=opts;
-  sel.value=prev&&facts.some(f=>f.id===prev)?prev:'';
-  if(sel.value)onAplicaFacturaChange();
-  else if(inp)inp.value='';
+  const facts=facturasAbiertasProveedor(prov).filter(f=>pendienteFactura(f,pagos)>0.001);
+  if(!facts.length){
+    list.innerHTML='<div class="registrar-fact-item" style="cursor:default;color:var(--text-muted)">Este proveedor no tiene facturas con saldo pendiente.</div>';
+  }else{
+    list.innerHTML=facts.map(f=>{
+      const checked=prevSel.has(f.id)?' checked':'';
+      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'"'+checked+' onchange="onRegistrarFacturaSelChange()">'+
+        '<span class="registrar-fact-meta">'+esc(facturaOptionLabel(f,pagos))+'</span></label>';
+    }).join('');
+  }
+  syncRegistrarFacturaRefs();
+  updateRegistrarAplicaResumen();
   updateRegistrarLitrosUI();
 }
 function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
@@ -1093,8 +1191,8 @@ function updateRegistrarLitrosUI(){
     if(lt)lt.value='';
   }
 }
-function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);}
-function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);}
+function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();}
+function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
 function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizeMontoTyping(el.value);updateMontoFromLitros();}
 function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateMontoFromLitros();}
 function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
@@ -1107,50 +1205,72 @@ function updateMontoFromLitros(){
   const ln=parseLitros(document.getElementById('f-litros').value);
   if(isNaN(pn)||isNaN(ln)||pn<=0||ln<=0)return;
   document.getElementById('f-monto').value=formatMontoDisplay(pn*ln);
+  updateRegistrarAplicaResumen();
 }
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
 function parseMonto(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
 function formatMontoDisplay(n){const f=(Math.round(n*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
 
+async function persistPagoRegistro({fecha,prov,tipo,monto,factura,concepto,aplicaFacturaId}){
+  const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto,factura,concepto,aplicaFacturaId:aplicaFacturaId||''}});
+  if(res.error)throw new Error(res.error);
+  const reg={id:res.id,fecha,proveedor:prov,tipo,monto,factura,concepto,aplicaFacturaId:aplicaFacturaId||''};
+  state.registros.push(reg);
+  if(aplicaFacturaId){const map=loadAplicaMap();map[res.id]=aplicaFacturaId;saveAplicaMap(map);}
+  return reg;
+}
 async function guardarRegistro(){
   const prov=document.getElementById('f-proveedor').value,tipo=document.getElementById('f-tipo').value,
         montoNum=parseMonto(document.getElementById('f-monto').value),fecha=document.getElementById('f-fecha').value,
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
-  const aplicaEl=document.getElementById('f-aplica-factura');
-  const aplicaFacturaId=(isTipoPago({tipo})&&aplicaEl)?String(aplicaEl.value||'').trim():'';
   if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
-  let montoGuardar=montoNum,extraRemanente=null;
-  if(isTipoPago({tipo})&&aplicaFacturaId){
-    const fac=state.registros.find(r=>r.id===aplicaFacturaId);
-    if(!fac){toast('Factura no encontrada',true);return;}
-    if(fac.factura&&!factura)factura=String(fac.factura).trim();
-    const pagos=registrosProveedor(prov).filter(isTipoPago);
-    const pend=pendienteFactura(fac,pagos);
-    if(pend<=0.001){toast('Esta factura ya está saldada',true);return;}
-    if(montoNum>pend+0.001){
-      montoGuardar=Math.round(pend*100)/100;
-      const resto=Math.round((montoNum-montoGuardar)*100)/100;
-      if(resto>0.001){
-        extraRemanente={fecha,proveedor:prov,tipo,monto:resto,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''};
+  const btn=document.getElementById('btn-save');
+  if(isTipoPago({tipo})){
+    const selectedIds=getRegistrarFacturasSeleccionadas();
+    if(selectedIds.length){
+      const{parts,remanente}=calcAllocacionPago(prov,montoNum,selectedIds);
+      if(!parts.length){toast('Las facturas seleccionadas ya están saldadas',true);return;}
+      if(remanente>0.001){
+        const aplicado=montoNum-remanente;
+        if(!confirmarRemanentePago(montoNum,aplicado,remanente,parts.length))return;
       }
+      btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+      try{
+        const saved=[];
+        for(const part of parts){
+          saved.push(await persistPagoRegistro({fecha,prov,tipo,monto:part.monto,factura:part.factura,concepto,aplicaFacturaId:part.facturaId}));
+        }
+        if(remanente>0.001){
+          await persistPagoRegistro({fecha,prov,tipo,monto:remanente,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''});
+        }
+        const refList=parts.map(p=>p.factura).filter(Boolean).join(', ');
+        addLog(tipo,prov+' · '+fmt(montoNum),refList,concepto,saved[0]?saved[0].id:'');
+        saveAndRender();clearForm();
+        if(remanente>0.001)toast('✓ Aplicado a '+parts.length+' factura(s) · Remanente '+fmt(remanente),false,true);
+        else toast('✓ Pago aplicado a '+parts.length+' factura(s)',false,true);
+        setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
+      }catch(e){toastError(e);}
+      finally{btn.disabled=false;btn.innerHTML='Guardar registro';btn.classList.remove('btn-locked');}
+      return;
     }
+    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+    try{
+      await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
+      addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,state.registros[state.registros.length-1].id);
+      saveAndRender();clearForm();toast('✓ Guardado (sin asignar)',false,true);
+      setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
+    }catch(e){toastError(e);}
+    finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
+    return;
   }
-  const btn=document.getElementById('btn-save');btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const payload={fecha,proveedor:prov,tipo,monto:montoGuardar,factura,concepto,aplicaFacturaId};
-    const res=await apiPost({action:'addRegistro',data:payload});
+    const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''}});
     if(res.error)throw new Error(res.error);
-    const reg={id:res.id,fecha,proveedor:prov,tipo,monto:montoGuardar,factura,concepto,aplicaFacturaId};
-    state.registros.push(reg);
-    if(aplicaFacturaId){const map=loadAplicaMap();map[res.id]=aplicaFacturaId;saveAplicaMap(map);}
+    state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
     addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
-    if(extraRemanente){
-      const resRem=await apiPost({action:'addRegistro',data:extraRemanente});
-      if(resRem.error)throw new Error(resRem.error);
-      state.registros.push(Object.assign({},extraRemanente,{id:resRem.id}));
-      toast('Abonado '+fmt(montoGuardar)+' · Remanente '+fmt(extraRemanente.monto)+' sin asignar',false,true);
-    }else toast('✓ Guardado',false,true);
-    saveAndRender();clearForm();setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
+    saveAndRender();clearForm();toast('✓ Guardado',false,true);
+    setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
   finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
 }
@@ -1174,7 +1294,9 @@ async function eliminarRegistro(id,btn){
 function clearForm(){
   ['f-proveedor','f-factura','f-concepto','f-monto','f-precio-litro','f-litros'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
-  const aplica=document.getElementById('f-aplica-factura');if(aplica)aplica.value='';
+  const list=document.getElementById('f-aplica-facturas-list');if(list)list.innerHTML='';
+  const resumen=document.getElementById('f-aplica-resumen');if(resumen)resumen.innerHTML='';
+  const btn=document.getElementById('btn-save');if(btn)btn.classList.remove('btn-locked');
   document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
   updateRegistrarAplicaUI();
 }
