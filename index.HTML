@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.54
+    ESTADO DE CUENTA  |  Versión 2.55
      ============================================================ -->
 <html lang="es">
 <head>
@@ -245,6 +245,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);background:#fff;}
 .desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
 .desglose-inline-input.saving{opacity:.6;border-color:var(--amber-border);background:var(--amber-bg);}
+.desglose-inline-input.warn{border-color:var(--red-border);background:var(--red-bg);}
 .prov-actions{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:1.5rem;}
 .kpi-flujo-card{grid-column:1/-1;background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-md);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
@@ -592,7 +593,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.54";
+const APP_VERSION = "2.55";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1136,6 +1137,7 @@ function updateRegistrarAplicaUI(){
   updateRegistrarLitrosUI();
 }
 function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
+function isAjusteManualPago(p){return isTipoPago(p)&&/ajuste\s*manual/i.test(String(p.concepto||''));}
 function calcFacturaAbonado(fact,pagos,excluirId){
   const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
   const skip=excluirId?String(excluirId):'';
@@ -1147,6 +1149,13 @@ function calcFacturaAbonado(fact,pagos,excluirId){
     else if(!p.aplicaFacturaId&&ref&&p.factura&&String(p.factura).trim()===ref)ab+=m;
   });
   return ab;
+}
+function calcFacturaAbonadoSinAjuste(fact,pagos,excluirId){
+  return calcFacturaAbonado(fact,pagos.filter(p=>!isAjusteManualPago(p)),excluirId);
+}
+function findAjusteManualPago(facturaId,pagos){
+  const fid=String(facturaId||'');
+  return pagos.find(p=>isAjusteManualPago(p)&&String(p.aplicaFacturaId||'')===fid);
 }
 function pendienteFacturaExcl(fact,pagos,excluirId){
   const total=parseFloat(fact.monto)||0;
@@ -1471,6 +1480,85 @@ function onDesgloseMontoBlur(regId,el){
   if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);
   guardarDesgloseCampo(regId,'monto',el.value,el);
 }
+async function ajustarAbonadoFactura(facturaId,targetAb,el){
+  const fact=state.registros.find(r=>r.id===facturaId);
+  if(!fact)return;
+  const prov=fact.proveedor;
+  const pagos=registrosProveedor(prov).filter(isTipoPago);
+  const total=parseFloat(fact.monto)||0;
+  const actual=calcFacturaAbonado(fact,pagos);
+  if(isNaN(targetAb)||targetAb<0){
+    toast('Abonado inválido',true);
+    if(el)el.value=formatMontoDisplay(actual);
+    return;
+  }
+  if(targetAb>total+0.001){
+    toast('Abonado no puede superar el total ('+fmt(total)+')',true);
+    if(el)el.value=formatMontoDisplay(actual);
+    return;
+  }
+  if(Math.abs(actual-targetAb)<0.001){
+    if(el)el.value=formatMontoDisplay(targetAb);
+    return;
+  }
+  const base=calcFacturaAbonadoSinAjuste(fact,pagos);
+  if(targetAb<base-0.001){
+    toast('No puede ser menor que los pagos registrados ('+fmt(base)+'). Edita en la pestaña Pagos.',true);
+    if(el)el.value=formatMontoDisplay(actual);
+    return;
+  }
+  const ajusteMonto=Math.round((targetAb-base)*100)/100;
+  const ajuste=findAjusteManualPago(facturaId,pagos);
+  if(el)el.classList.add('saving');
+  try{
+    if(ajusteMonto<=0.001){
+      if(ajuste){
+        const prevRegs=state.registros.slice();
+        state.registros=state.registros.filter(r=>r.id!==ajuste.id);
+        limpiarAplicaMapRegistros([ajuste]);
+        saveAndRender();
+        const res=await apiPost({action:'deleteRegistro',id:ajuste.id});
+        if(res.error)throw new Error(res.error);
+      }
+    }else if(ajuste){
+      const prevM=ajuste.monto;
+      ajuste.monto=ajusteMonto;
+      saveAndRender();
+      const res=await apiPost({action:'updateRegistro',id:ajuste.id,data:{monto:ajusteMonto}});
+      if(res.error){ajuste.monto=prevM;throw new Error(res.error);}
+    }else{
+      const fecha=fact.fecha||document.getElementById('f-fecha').value||new Date().toISOString().split('T')[0];
+      const data={fecha,proveedor:prov,tipo:'pago',monto:ajusteMonto,factura:fact.factura||'',concepto:'Ajuste manual',aplicaFacturaId:facturaId};
+      const res=await apiPost({action:'addRegistro',data});
+      if(res.error)throw new Error(res.error);
+      const reg={id:res.id,...data};
+      state.registros.push(reg);
+      const map=loadAplicaMap();map[res.id]=facturaId;saveAplicaMap(map);
+    }
+    refreshDesglosePopup();
+    toast('Abonado actualizado',false,true);
+    scheduleQuietSync();
+  }catch(e){
+    saveAndRender();refreshDesglosePopup();
+    toastError(e);
+  }finally{if(el)el.classList.remove('saving');}
+}
+function onDesgloseAbonadoBlur(facturaId,el){
+  const n=parseMonto(el.value);
+  if(isNaN(n)||!el.value.trim()){refreshDesglosePopup();return;}
+  el.value=formatMontoDisplay(n);
+  ajustarAbonadoFactura(facturaId,n,el);
+}
+function onDesglosePendienteBlur(facturaId,el){
+  const fact=state.registros.find(r=>r.id===facturaId);
+  if(!fact)return;
+  const total=parseFloat(fact.monto)||0;
+  const n=parseMonto(el.value);
+  if(isNaN(n)||!el.value.trim()){refreshDesglosePopup();return;}
+  el.value=formatMontoDisplay(n);
+  const targetAb=Math.round((total-n)*100)/100;
+  ajustarAbonadoFactura(facturaId,targetAb,el);
+}
 function facturaLabelById(facts,id){
   const f=facts.find(x=>x.id===id);if(!f)return 'Factura';
   return (f.factura?'#'+f.factura+' ':'')+fmtFechaCorta(f.fecha);
@@ -1513,16 +1601,18 @@ function buildDesgloseFacturasHtml(facts,pagos){
   if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>';
   let rows='';
   lista.forEach(({f,total,ab,pend})=>{
-    const abHtml=ab>total+0.001?'<span class="desglose-over-abon" title="Abono mayor al total">'+fmt(ab)+'</span>':fmt(ab);
+    const warnCls=ab>total+0.001?' warn':'';
     const refVal=esc(f.factura||'');
     const montoVal=formatMontoDisplay(total);
+    const abVal=formatMontoDisplay(ab);
+    const pendVal=formatMontoDisplay(pend);
     const saldadaCls=pend<=0.001?' desglose-row-saldada':'';
     rows+='<tr class="desglose-row desglose-row-factura'+saldadaCls+'">'+
       '<td class="desglose-cell-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
       '<td><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
-      '<td class="col-abon">'+abHtml+'</td>'+
-      '<td class="col-pend">'+fmt(pend)+'</td>'+
+      '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
+      '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="prov-actions">'+(pend>0.001?'<button type="button" class="btn btn-sm" onclick="openAbonarPicker(\''+esc(f.id)+'\')">Abonar</button>':'')+
       '<button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
@@ -1786,6 +1876,7 @@ function findRegistrosForLog(log){
     const byRef=state.registros.filter(r=>isTipoPago(r)&&r.proveedor===b.proveedor&&factList.some(f=>String(r.factura||'').trim()===f));
     const byMonto=byRef.filter(r=>montoCerca(r.monto,b.monto));
     if(byMonto.length)return byMonto;
+    if(byRef.length===1)return byRef;
   }
   return [];
 }
