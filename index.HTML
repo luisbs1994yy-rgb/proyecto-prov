@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.60
+    ESTADO DE CUENTA  |  Versión 2.61
      ============================================================ -->
 <html lang="es">
 <head>
@@ -638,7 +638,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.60";
+const APP_VERSION = "2.61";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -667,7 +667,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
     </div>
     <div class="nav-section">
       <div class="nav-label">Config</div>
-      <div class="nav-item" onclick="navTo('config',this)"><span class="nav-icon">⚙</span> Proveedores</div>
+      <div class="nav-item" onclick="navTo('config',this)"><span class="nav-icon">⚙</span> Clientes</div>
     </div>
   </nav>
   <main class="main">
@@ -687,13 +687,13 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <input type="hidden" id="f-tipo" value="">
             </div>
             <div class="form-group">
-              <label>Proveedor *</label>
+              <label>Cliente *</label>
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
             <div class="form-row-duo" id="f-litros-row">
-              <div class="form-group"><label>Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
-              <div class="form-group"><label>Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="0" autocomplete="off"></div>
+              <div class="form-group"><label>Precio x litro ($)<span class="label-long"> · máx. 99.99</span></label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="00.00" autocomplete="off" maxlength="6"></div>
+              <div class="form-group"><label>Litros<span class="label-long"> · máx. 99.99</span></label><input type="text" id="f-litros" inputmode="decimal" placeholder="00.00" autocomplete="off" maxlength="6"></div>
             </div>
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
@@ -777,11 +777,11 @@ const APLICA_KEY  = "pagos_v1_aplica";
         </div>
         <div class="kpi-card fact"><div class="kpi-label">Facturado esta semana</div><div class="kpi-value" id="ak-sem-fact">—</div><div class="kpi-sub" id="ak-sem-fact-n">—</div></div>
         <div class="kpi-card pagos"><div class="kpi-label">Pagado esta semana</div><div class="kpi-value" id="ak-sem-pago">—</div><div class="kpi-sub" id="ak-sem-pago-n">—</div></div>
-        <div class="kpi-card total"><div class="kpi-label">Proveedores</div><div class="kpi-value" id="ak-provs">—</div><div class="kpi-sub" id="ak-movs">—</div></div>
+        <div class="kpi-card total"><div class="kpi-label">Clientes</div><div class="kpi-value" id="ak-provs">—</div><div class="kpi-sub" id="ak-movs">—</div></div>
         <div class="kpi-card" style="--kpi-color:#0891b2"><div class="kpi-label">% Pagado</div><div class="kpi-value" id="ak-pct">—</div><div class="kpi-sub">del total facturado</div></div>
       </div>
       <div class="card chart-section">
-        <div class="card-header"><span class="card-title">Panel de proveedores</span><span class="hint-text" style="font-weight:400">Toca una fila · ordena por criterio</span></div>
+        <div class="card-header"><span class="card-title">Panel de clientes</span><span class="hint-text" style="font-weight:400">Toca una fila · ordena por criterio</span></div>
         <div id="chart-decisiones" class="decision-panel"></div>
       </div>
       <div class="card chart-section">
@@ -794,11 +794,11 @@ const APLICA_KEY  = "pagos_v1_aplica";
     </div>
 
     <div class="page" id="page-config">
-      <div class="page-title">Gestionar proveedores</div>
+      <div class="page-title">Gestionar clientes</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Lista de proveedores</span></div>
+        <div class="card-header"><span class="card-title">Lista de clientes</span></div>
         <div class="card-body">
-          <div class="add-prov-row"><input type="text" id="new-prov" placeholder="Nombre del proveedor" style="flex:1"><button class="btn btn-primary" onclick="agregarProveedor()">Agregar</button></div>
+          <div class="add-prov-row"><input type="text" id="new-prov" placeholder="Nombre del cliente" style="flex:1"><button class="btn btn-primary" onclick="agregarProveedor()">Agregar</button></div>
           <div id="prov-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
         </div>
       </div>
@@ -842,6 +842,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function escTipoDisplay(tipo){const t=String(tipo||'').toLowerCase();if(t==='proveedor')return 'Cliente';return String(tipo||'');}
 function saveAndRender(){
   const map={};
   state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
@@ -968,7 +969,7 @@ function registroEnSemana(r,weekStart,weekEnd){
 function nRegistros(n){return n+' registro'+(n!==1?'s':'');}
 function resumenPorProveedor(regs){
   const map={};
-  regs.forEach(r=>{const p=r.proveedor||'SIN PROVEEDOR',m=parseFloat(r.monto)||0;if(!map[p])map[p]={proveedor:p,facturas:0,pagos:0,saldo:0,movimientos:0};if(r.tipo==='pago')map[p].pagos+=m;else map[p].facturas+=m;map[p].saldo=map[p].facturas-map[p].pagos;map[p].movimientos+=1;});
+  regs.forEach(r=>{const p=r.proveedor||'SIN CLIENTE',m=parseFloat(r.monto)||0;if(!map[p])map[p]={proveedor:p,facturas:0,pagos:0,saldo:0,movimientos:0};if(r.tipo==='pago')map[p].pagos+=m;else map[p].facturas+=m;map[p].saldo=map[p].facturas-map[p].pagos;map[p].movimientos+=1;});
   return Object.values(map).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
 }
 function resumenProveedoresActivos(regs){
@@ -1169,7 +1170,7 @@ function updateRegistrarAplicaUI(){
   const pagos=registrosProveedor(prov).filter(isTipoPago);
   const facts=facturasAbiertasProveedor(prov).filter(f=>pendienteFactura(f,pagos)>0.001);
   if(!facts.length){
-    list.innerHTML='<div class="registrar-fact-item" style="cursor:default;color:var(--text-muted)">Este proveedor no tiene facturas con saldo pendiente.</div>';
+    list.innerHTML='<div class="registrar-fact-item" style="cursor:default;color:var(--text-muted)">Este cliente no tiene facturas con saldo pendiente.</div>';
   }else{
     list.innerHTML=facts.map(f=>{
       const checked=prevSel.has(f.id)?' checked':'';
@@ -1250,16 +1251,26 @@ function updateRegistrarLitrosUI(){
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
-function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizeMontoTyping(el.value);updateMontoFromLitros();}
-function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateMontoFromLitros();}
-function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
-function onLitrosBlur(){const el=document.getElementById('f-litros'),n=parseLitros(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatLitrosDisplay(n);updateMontoFromLitros();}
-function sanitizeLitrosTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}const ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'');if(dotIdx===-1)return ip;const hasTrailingDot=s.endsWith('.');const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';if(hasTrailingDot&&dec==='')return ip+'.';return ip+'.'+dec;}
-function parseLitros(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
-function formatLitrosDisplay(n){const v=parseFloat(n);if(isNaN(v))return'';const r=Math.round(v*100)/100;return String(r).replace(/(\.\d*?)0+$/,'$1').replace(/\.$/,'');}
+function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitize22Typing(el.value);updateMontoFromLitros();}
+function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parse22(el.value);if(!isNaN(n)&&el.value.trim())el.value=format22Display(n);updateMontoFromLitros();}
+function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitize22Typing(el.value);updateMontoFromLitros();}
+function onLitrosBlur(){const el=document.getElementById('f-litros'),n=parse22(el.value);if(!isNaN(n)&&el.value.trim())el.value=format22Display(n);updateMontoFromLitros();}
+function sanitize22Typing(raw){
+  let s=String(raw||'').replace(/[^\d.]/g,'');
+  const dotIdx=s.indexOf('.');
+  if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}
+  let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/\D/g,'').slice(0,2);
+  if(dotIdx===-1)return ip;
+  const hasTrailingDot=s.endsWith('.');
+  const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';
+  if(hasTrailingDot&&dec==='')return ip+'.';
+  return ip+'.'+dec;
+}
+function parse22(str){const s=String(str||'').trim();if(!s||s==='.')return NaN;const n=parseFloat(s);if(isNaN(n))return NaN;return Math.min(99.99,Math.max(0,n));}
+function format22Display(n){const v=parse22(n);if(isNaN(v))return'';return(Math.round(v*100)/100).toFixed(2);}
 function updateMontoFromLitros(){
-  const pn=parseMonto(document.getElementById('f-precio-litro').value);
-  const ln=parseLitros(document.getElementById('f-litros').value);
+  const pn=parse22(document.getElementById('f-precio-litro').value);
+  const ln=parse22(document.getElementById('f-litros').value);
   if(isNaN(pn)||isNaN(ln)||pn<=0||ln<=0)return;
   document.getElementById('f-monto').value=formatMontoDisplay(pn*ln);
   updateRegistrarAplicaResumen();
@@ -1280,7 +1291,7 @@ async function guardarRegistro(){
   const prov=document.getElementById('f-proveedor').value,tipo=document.getElementById('f-tipo').value,
         montoNum=parseMonto(document.getElementById('f-monto').value),fecha=document.getElementById('f-fecha').value,
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
-  if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, proveedor, fecha y monto',true);return;}
+  if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, cliente, fecha y monto',true);return;}
   const btn=document.getElementById('btn-save');
   if(isTipoPago({tipo})){
     const selectedIds=getRegistrarFacturasSeleccionadas();
@@ -1365,7 +1376,7 @@ function renderProvSelect(){
   const group=document.getElementById('f-proveedor-group');
   const cur=document.getElementById('f-proveedor').value;
   group.classList.add('prov-btn-grid');
-  if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin proveedores</div>';return;}
+  if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin clientes</div>';return;}
   group.innerHTML=state.proveedores.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
   updateRegistrarAplicaUI();
@@ -1387,7 +1398,7 @@ function renderTotales(){
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
       '</tr>';
   });
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   const ov=document.getElementById('desglose-overlay');
   if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor){
     refreshDesglosePopup();
@@ -1747,7 +1758,7 @@ function buildDesgloseBitacoraHtml(proveedor){
     const cls=logBadgeClass(l.tipo);
     rows+='<tr class="'+dayCls+'">'+
       '<td class="log-col-fecha">'+fmtLogFechaCortaDesglose(l)+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-desc"><div class="log-desc-inline">'+formatLogDescInline(l)+'</div></td>'+
       '<td class="log-col-act prov-actions"><button type="button" class="btn-del-compact" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">✕</button></td></tr>';
   });
@@ -2018,7 +2029,7 @@ function renderLogs(){
     const descCell=formatLogDescCell(l);
     tableRows+='<tr class="'+dayCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(l.tipo)+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
       '<td class="log-col-desc">'+descCell+'</td>'+
@@ -2070,7 +2081,7 @@ function toggleDecisionRow(prov){
 function renderDecisionPanel(resumen,regs){
   const el=document.getElementById('chart-decisiones');
   if(!el)return;
-  if(!resumen.length){el.innerHTML='<div class="empty">Sin proveedores con movimientos</div>';return;}
+  if(!resumen.length){el.innerHTML='<div class="empty">Sin clientes con movimientos</div>';return;}
   const sorts=[{k:'pendiente',l:'Mayor deuda'},{k:'facturado',l:'Más facturado'},{k:'cobrado',l:'Menos % cobrado'},{k:'reciente',l:'Factura reciente'}];
   const toolbar='<div class="decision-toolbar"><span>Ordenar:</span>'+sorts.map(s=>'<button type="button" class="decision-sort'+(analisisSortDecision===s.k?' active':'')+'" onclick="setDecisionSort(\''+s.k+'\')">'+s.l+'</button>').join('')+'</div>';
   const rows=sortDecisionRows(buildDecisionRows(resumen,regs),analisisSortDecision);
@@ -2093,7 +2104,7 @@ function renderDecisionPanel(resumen,regs){
     if(open)tbody+='<tr class="decision-detail-row"><td colspan="5"><div class="decision-detail-inner">'+det+'</div></td></tr>';
   });
   el.innerHTML=toolbar+'<div class="table-wrap"><table class="decision-table"><thead><tr>'+
-    '<th>Proveedor</th><th class="num">Facturado</th><th class="num">% cobrado</th><th class="num">Pendiente</th><th class="num">Días</th>'+
+    '<th>Cliente</th><th class="num">Facturado</th><th class="num">% cobrado</th><th class="num">Pendiente</th><th class="num">Días</th>'+
     '</tr></thead><tbody>'+tbody+'</tbody></table></div>';
 }
 function getCurrentTrendWeekIndex(weekData){
@@ -2282,19 +2293,19 @@ async function agregarProveedor(){
   const prevP=state.proveedores.slice();
   if(!state.proveedores.some(x=>x.toUpperCase()===nombre)){state.proveedores.push(nombre);state.proveedores.sort((a,b)=>a.localeCompare(b,'es'));}
   saveAndRender();document.getElementById('new-prov').value='';
-  try{const res=await apiPost({action:'addProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Agregado: '+nombre);toast('✓ Proveedor agregado',false,true);scheduleQuietSync();}
+  try{const res=await apiPost({action:'addProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Agregado: '+nombre);toast('✓ Cliente agregado',false,true);scheduleQuietSync();}
   catch(e){state.proveedores=prevP;saveAndRender();toastError(e);}
 }
 async function eliminarProveedor(nombre){
-  if(!confirm('¿Eliminar proveedor "'+nombre+'"?'))return;
+  if(!confirm('¿Eliminar cliente "'+nombre+'"?'))return;
   const prevR=state.registros.slice(),prevP=state.proveedores.slice();
   state.proveedores=state.proveedores.filter(p=>p!==nombre);saveAndRender();
-  try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Proveedor eliminado');scheduleQuietSync();}
+  try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Cliente eliminado');scheduleQuietSync();}
   catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
 }
 function renderProvManager(){
   const el=document.getElementById('prov-manager-list');
-  if(!state.proveedores.length){el.innerHTML='<div class="empty">Sin proveedores</div>';return;}
+  if(!state.proveedores.length){el.innerHTML='<div class="empty">Sin clientes</div>';return;}
   el.innerHTML=state.proveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
 function renderAll(){
