@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.62
+    ESTADO DE CUENTA  |  Versión 2.64
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.64
      ============================================================ -->
 <html lang="es">
 <head>
@@ -42,7 +43,12 @@ body{
 .header-dot{width:10px;height:10px;background:var(--cyan);border-radius:50%;box-shadow:0 0 12px rgba(0,180,216,.7);flex-shrink:0;}
 .header-title{font-size:15px;font-weight:600;letter-spacing:.02em;}
 .header-right{display:flex;align-items:center;gap:12px;}
-.header-version{font-size:10px;color:rgba(255,255,255,.75);font-family:var(--mono);background:rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15);}
+.header-version,.header-version:link,.header-version:visited{font-size:10px;color:rgba(255,255,255,.85);font-family:var(--mono);background:rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15);text-decoration:none;display:inline-block;}
+.header-version:hover{color:#fff;background:rgba(255,255,255,.22);}
+.release-url-box{margin-top:14px;padding:12px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;font-size:12px;}
+.release-url-box .release-url-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px;}
+.release-url-box a{word-break:break-all;font-family:var(--mono);font-size:11px;color:var(--blue);}
+.release-url-box .btn{margin-top:8px;}
 .header-sync{font-size:11px;color:rgba(255,255,255,.65);font-family:var(--mono);}
 .btn-mobile{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;cursor:pointer;color:#e2e8f0;font-size:18px;}
 .btn-mobile:hover{background:rgba(255,255,255,.2);}
@@ -638,8 +644,23 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.62";
+const APP_VERSION = "2.64";
+const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
+const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
+function getAppReleaseUrl(){return 'https://raw.githubusercontent.com/'+RAW_HTML_REPO+'/'+RAW_HTML_BRANCH+'/index.HTML?v='+APP_VERSION;}
+function bindAppVersionLink(){
+  const url=getAppReleaseUrl();
+  const badge=document.getElementById('app-version');
+  if(badge){badge.href=url;badge.textContent='v'+APP_VERSION;badge.title='Descargar HTML v'+APP_VERSION;}
+  const link=document.getElementById('app-release-url');
+  if(link){link.href=url;link.textContent=url;}
+}
+async function copyAppReleaseUrl(){
+  const url=getAppReleaseUrl();
+  try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
+  catch(e){toast(url,false,true);}
+}
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
@@ -649,7 +670,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
 <header class="header">
   <div class="header-brand"><span class="header-dot"></span><span class="header-title">Estado de Cuenta</span></div>
   <div class="header-right">
-    <span class="header-version" id="app-version"></span>
+    <a class="header-version" id="app-version" href="#" target="_blank" rel="noopener" title="Abrir HTML de esta versión">v—</a>
     <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
@@ -692,8 +713,8 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <input type="hidden" id="f-proveedor" value="">
             </div>
             <div class="form-row-duo" id="f-litros-row">
-              <div class="form-group"><label>Precio x litro ($)<span class="label-long"> · máx. 99.99</span></label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="00.00" autocomplete="off" maxlength="6"></div>
-              <div class="form-group"><label>Litros<span class="label-long"> · máx. 99.99</span></label><input type="text" id="f-litros" inputmode="decimal" placeholder="00.00" autocomplete="off" maxlength="6"></div>
+              <div class="form-group"><label id="f-precio-litro-label" for="f-precio-litro">Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="15.50" autocomplete="off" maxlength="6"></div>
+              <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="50,000.00" autocomplete="off"></div>
             </div>
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
@@ -800,6 +821,11 @@ const APLICA_KEY  = "pagos_v1_aplica";
         <div class="card-body">
           <div class="add-prov-row"><input type="text" id="new-prov" placeholder="Nombre del cliente" style="flex:1"><button class="btn btn-primary" onclick="agregarProveedor()">Agregar</button></div>
           <div id="prov-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
+          <div class="release-url-box" id="release-url-box">
+            <div class="release-url-lbl">Enlace HTML · versión actual</div>
+            <a id="app-release-url" href="#" target="_blank" rel="noopener"></a>
+            <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl()">Copiar enlace</button>
+          </div>
         </div>
       </div>
     </div>
@@ -821,7 +847,8 @@ let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('app-version').textContent = 'v' + APP_VERSION;
+  bindAppVersionLink();
+  syncLitrosPrecioLabels();
   document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
   document.getElementById('f-monto').addEventListener('input', onMontoInput);
   document.getElementById('f-monto').addEventListener('blur',  onMontoBlur);
@@ -1238,7 +1265,14 @@ function setSelectBtn(btn,inputId){
   document.getElementById(inputId).value=btn.dataset.val;
   if(inputId==='f-tipo'||inputId==='f-proveedor')updateRegistrarAplicaUI();
 }
+function syncLitrosPrecioLabels(){
+  const lp=document.getElementById('f-precio-litro-label');
+  const ll=document.getElementById('f-litros-label');
+  if(lp)lp.textContent='Precio x litro ($)';
+  if(ll)ll.textContent='Litros';
+}
 function updateRegistrarLitrosUI(){
+  syncLitrosPrecioLabels();
   const page=document.getElementById('page-registrar');
   const tipo=String(document.getElementById('f-tipo').value||'');
   const show=tipo==='factura';
@@ -1289,11 +1323,25 @@ function parsePrecioLitro(str){const s=String(str||'').trim();if(!s||s==='.')ret
 function formatPrecioLitroDisplay(n){const v=parsePrecioLitro(n);if(isNaN(v))return'';return(Math.round(v*100)/100).toFixed(2);}
 function sanitizeLitrosTyping(raw){
   let s=String(raw||'').replace(/[^\d.,]/g,'');
-  const dotIdx=s.indexOf('.');
-  if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}
-  let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'');
+  const plain=s.replace(/,/g,'');
+  const dotIdx=plain.indexOf('.');
+  if(dotIdx===-1){
+    const d=plain.replace(/\D/g,'');
+    if(d.length>5){
+      const ip=d.slice(0,5),dec=d.slice(5,7);
+      const wc=ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+      return dec?wc+'.'+dec:wc+'.';
+    }
+    if(d.length===5){
+      const wc=d.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+      return wc+'.';
+    }
+  }
+  const dotIdx2=s.indexOf('.');
+  if(dotIdx2!==-1){s=s.slice(0,dotIdx2+1)+s.slice(dotIdx2+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}
+  let ip=(dotIdx2===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'');
   const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');
-  if(dotIdx===-1)return wc;
+  if(dotIdx2===-1)return wc;
   const hasTrailingDot=s.endsWith('.');
   const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';
   if(hasTrailingDot&&dec==='')return wc+'.';
@@ -2337,7 +2385,9 @@ async function eliminarProveedor(nombre){
   catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
 }
 function renderProvManager(){
+  bindAppVersionLink();
   const el=document.getElementById('prov-manager-list');
+  if(!el)return;
   if(!state.proveedores.length){el.innerHTML='<div class="empty">Sin clientes</div>';return;}
   el.innerHTML=state.proveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
