@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.61
+    ESTADO DE CUENTA  |  Versión 2.62
      ============================================================ -->
 <html lang="es">
 <head>
@@ -638,7 +638,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.61";
+const APP_VERSION = "2.62";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWiaRIztiRokSsIcdjHQTtzMMhMW6XZo-vQR7x0xm0ZBP8qMaSnH/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -1251,26 +1251,59 @@ function updateRegistrarLitrosUI(){
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
-function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitize22Typing(el.value);updateMontoFromLitros();}
-function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parse22(el.value);if(!isNaN(n)&&el.value.trim())el.value=format22Display(n);updateMontoFromLitros();}
-function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitize22Typing(el.value);updateMontoFromLitros();}
-function onLitrosBlur(){const el=document.getElementById('f-litros'),n=parse22(el.value);if(!isNaN(n)&&el.value.trim())el.value=format22Display(n);updateMontoFromLitros();}
-function sanitize22Typing(raw){
+const LITROS_AVISO_MIN=10000;
+function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizePrecioLitroTyping(el.value);updateMontoFromLitros();}
+function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parsePrecioLitro(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatPrecioLitroDisplay(n);updateMontoFromLitros();}
+function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
+function onLitrosBlur(){
+  const el=document.getElementById('f-litros'),n=parseLitros(el.value);
+  if(isNaN(n)||!el.value.trim()){updateMontoFromLitros();return;}
+  if(n>0&&n<LITROS_AVISO_MIN){
+    if(!confirm('Los litros suelen ser 10,000 o más (ej. 30,000.59).\n\n¿Confirmas usar '+formatLitrosDisplay(n)+'?')){
+      el.value='';
+      updateMontoFromLitros();
+      return;
+    }
+  }
+  el.value=formatLitrosDisplay(n);
+  updateMontoFromLitros();
+}
+function sanitizePrecioLitroTyping(raw){
   let s=String(raw||'').replace(/[^\d.]/g,'');
+  if(s.indexOf('.')===-1){
+    const d=s.replace(/\D/g,'');
+    if(d.length===2)s=d+'.';
+    else if(d.length>2)s=d.slice(0,2)+'.'+d.slice(2,4);
+    else s=d;
+  }
   const dotIdx=s.indexOf('.');
   if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}
-  let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/\D/g,'').slice(0,2);
-  if(dotIdx===-1)return ip;
+  let ip=(s.includes('.')?s.split('.')[0]:s).replace(/\D/g,'').slice(0,2);
+  if(!s.includes('.'))return ip.length===2?ip+'.':ip;
   const hasTrailingDot=s.endsWith('.');
-  const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';
+  const dec=s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2);
   if(hasTrailingDot&&dec==='')return ip+'.';
   return ip+'.'+dec;
 }
-function parse22(str){const s=String(str||'').trim();if(!s||s==='.')return NaN;const n=parseFloat(s);if(isNaN(n))return NaN;return Math.min(99.99,Math.max(0,n));}
-function format22Display(n){const v=parse22(n);if(isNaN(v))return'';return(Math.round(v*100)/100).toFixed(2);}
+function parsePrecioLitro(str){const s=String(str||'').trim();if(!s||s==='.')return NaN;const n=parseFloat(s);if(isNaN(n))return NaN;return Math.min(99.99,Math.max(0,n));}
+function formatPrecioLitroDisplay(n){const v=parsePrecioLitro(n);if(isNaN(v))return'';return(Math.round(v*100)/100).toFixed(2);}
+function sanitizeLitrosTyping(raw){
+  let s=String(raw||'').replace(/[^\d.,]/g,'');
+  const dotIdx=s.indexOf('.');
+  if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}
+  let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'');
+  const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  if(dotIdx===-1)return wc;
+  const hasTrailingDot=s.endsWith('.');
+  const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';
+  if(hasTrailingDot&&dec==='')return wc+'.';
+  return wc+'.'+dec;
+}
+function parseLitros(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
+function formatLitrosDisplay(n){const v=parseFloat(n);if(isNaN(v))return'';const f=(Math.round(v*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
 function updateMontoFromLitros(){
-  const pn=parse22(document.getElementById('f-precio-litro').value);
-  const ln=parse22(document.getElementById('f-litros').value);
+  const pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
+  const ln=parseLitros(document.getElementById('f-litros').value);
   if(isNaN(pn)||isNaN(ln)||pn<=0||ln<=0)return;
   document.getElementById('f-monto').value=formatMontoDisplay(pn*ln);
   updateRegistrarAplicaResumen();
