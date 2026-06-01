@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.64
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.64
+    ESTADO DE CUENTA  |  Versión 2.65
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.65
      ============================================================ -->
 <html lang="es">
 <head>
@@ -223,8 +223,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-abonar-box{padding:8px;background:#fff8e6;border-bottom:1px solid var(--amber-border);font-size:10px;}
 .prov-abonar-box .btn-sm{margin-top:6px;margin-right:4px;}
 #f-factura-group .f-aplica-multi{display:none;}
-#f-factura-group.registrar-modo-pago .f-factura-input{display:none;}
 #f-factura-group.registrar-modo-pago .f-aplica-multi{display:block;}
+#page-registrar.registrar-modo-pago .form-factura-num .f-factura-input{display:none;}
 .registrar-fact-list{border:1px solid var(--border);border-radius:10px;max-height:220px;overflow-y:auto;background:#fafbfd;}
 .registrar-fact-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;user-select:none;}
 .registrar-fact-item:last-child{border-bottom:none;}
@@ -644,7 +644,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.64";
+const APP_VERSION = "2.65";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -713,23 +713,30 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <input type="hidden" id="f-proveedor" value="">
             </div>
             <div class="form-row-duo" id="f-litros-row">
-              <div class="form-group"><label id="f-precio-litro-label" for="f-precio-litro">Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="15.50" autocomplete="off" maxlength="6"></div>
-              <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="50,000.00" autocomplete="off"></div>
+              <div class="form-group"><label id="f-precio-litro-label" for="f-precio-litro">Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="" autocomplete="off" maxlength="6"></div>
+              <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
-              <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="0.00" autocomplete="off"></div>
+              <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
+            </div>
+            <div class="form-row-duo form-fact-concept-row">
+              <div class="form-group form-factura-num">
+                <label id="f-factura-label">Núm. factura</label>
+                <input type="text" id="f-factura" class="f-factura-input" placeholder="" autocomplete="off">
+              </div>
+              <div class="form-group">
+                <label>Concepto</label>
+                <input type="text" id="f-concepto" placeholder="" autocomplete="off">
+              </div>
             </div>
             <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
-              <label id="f-factura-label">Núm. factura</label>
-              <input type="text" id="f-factura" class="f-factura-input" placeholder="Ej: FAC-001">
               <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
                 <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
                 <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
               </div>
               <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca una o más facturas pendientes. Si el pago excede lo seleccionado, podrás agregar otras o confirmar dos veces al guardar.</span>
             </div>
-            <div class="form-group"><label>Concepto</label><input type="text" id="f-concepto" placeholder="Descripción breve"></div>
           </div>
           <div class="form-actions">
             <button class="btn" onclick="clearForm()">Limpiar</button>
@@ -1184,7 +1191,9 @@ function updateRegistrarAplicaUI(){
   const tipo=document.getElementById('f-tipo').value,prov=document.getElementById('f-proveedor').value;
   const modoPago=isTipoPago({tipo})&&!!prov;
   const prevSel=new Set(getRegistrarFacturasSeleccionadas());
+  const pageReg=document.getElementById('page-registrar');
   wrap.classList.toggle('registrar-modo-pago',modoPago);
+  if(pageReg)pageReg.classList.toggle('registrar-modo-pago',modoPago);
   if(hint)hint.style.display=modoPago?'block':'none';
   if(!modoPago){
     lbl.textContent='Núm. factura';
