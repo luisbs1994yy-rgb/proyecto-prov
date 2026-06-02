@@ -1,5 +1,5 @@
 /**
- * ESTADO DE CUENTA - Google Apps Script (compatible con index.HTML v2.68+)
+ * ESTADO DE CUENTA - Google Apps Script (compatible con index.HTML v2.73+)
  *
  * Columna Registros: aplicaFacturaId = id del registro FACTURA al que se abona un PAGO.
  * Columna Registros: producto = Etanol / Nafta / Regular (solo Factura).
@@ -123,6 +123,8 @@ function route_(action, payload) {
 
     case 'setPrecioProducto':
       return setPrecioProducto_(payload.data || {});
+    case 'setPreciosProductos':
+      return setPreciosProductos_(payload.data || {});
 
     default:
       return { ok: false, error: 'Acción no soportada: ' + action };
@@ -356,6 +358,11 @@ function setPrecioProducto_(data) {
     updatedAt: new Date().toISOString()
   };
 
+  if (precio === '') {
+    if (rowNum > 0) sh.deleteRow(rowNum);
+    return { ok: true, precio: { cliente: cliente, proveedor: cliente, producto: producto, precio: '' } };
+  }
+
   if (rowNum > 0) {
     Object.keys(payload).forEach((k) => {
       const col = map[k.toLowerCase()];
@@ -366,6 +373,22 @@ function setPrecioProducto_(data) {
   }
 
   return { ok: true, precio: { cliente: cliente, proveedor: cliente, producto: producto, precio: precio } };
+}
+
+function setPreciosProductos_(data) {
+  const list = Array.isArray(data.precios) ? data.precios : [];
+  if (!list.length) return { ok: false, error: 'Lista de precios requerida' };
+
+  const saved = [];
+  list.forEach((item) => {
+    const res = setPrecioProducto_(item || {});
+    if (!res || res.ok === false) {
+      throw new Error(res && res.error ? res.error : 'No se pudo guardar precio');
+    }
+    saved.push(res.precio);
+  });
+
+  return { ok: true, precios: getPreciosProductos_().precios, saved: saved.length };
 }
 
 function normalizeProducto_(producto) {
