@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.78
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.78
+    ESTADO DE CUENTA  |  Versión 2.79
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.79
      ============================================================ -->
 <html lang="es">
 <head>
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.78";
+const APP_VERSION = "2.79";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -791,7 +791,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <span class="totales-summary-label">Saldo total</span>
             <span class="totales-summary-value" id="k-total">—</span>
           </div>
-          <button type="button" class="btn-screenshot screen-capture-hide" id="btn-captura-totales" onclick="capturarTotales()">📷 Compartir</button>
+          <button type="button" class="btn-screenshot screen-capture-hide" id="btn-captura-totales" onclick="capturarTotales()">📋 Copiar foto</button>
         </div>
 
         <!-- Quitado: "Por proveedor" -->
@@ -1602,15 +1602,6 @@ function renderTotales(){
     });
   }
 }
-function loadScriptOnce(src){
-  return new Promise((resolve,reject)=>{
-    if(document.querySelector('script[data-src="'+src+'"]')){resolve();return;}
-    const s=document.createElement('script');
-    s.src=src;s.async=true;s.dataset.src=src;
-    s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar generador de imagen'));
-    document.head.appendChild(s);
-  });
-}
 function canvasToBlob(canvas){
   return new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
 }
@@ -1622,45 +1613,83 @@ function downloadBlob(blob,name){
   a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
 }
+function drawRoundRect(ctx,x,y,w,h,r){
+  const rr=Math.min(r,w/2,h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr,y);
+  ctx.lineTo(x+w-rr,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+rr);
+  ctx.lineTo(x+w,y+h-rr);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-rr,y+h);
+  ctx.lineTo(x+rr,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-rr);
+  ctx.lineTo(x,y+rr);
+  ctx.quadraticCurveTo(x,y,x+rr,y);
+  ctx.closePath();
+}
+function drawFitText(ctx,text,x,y,maxWidth){
+  let t=String(text||'');
+  while(t.length>2&&ctx.measureText(t).width>maxWidth)t=t.slice(0,-1);
+  if(t!==String(text||''))t=t.slice(0,-1)+'…';
+  ctx.fillText(t,x,y);
+}
+function buildTotalesCanvas(){
+  const resumen=resumenProveedoresActivos(state.registros);
+  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
+  const rows=resumen.slice(0,10);
+  const w=560,pad=18,headerH=78,rowH=42,gap=7;
+  const h=pad*2+headerH+gap+rows.length*(rowH+gap);
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#eef1f6';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#ffffff';
+  drawRoundRect(ctx,8,8,w-16,h-16,18);ctx.fill();
+  const grad=ctx.createLinearGradient(8,8,w-8,8);
+  grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
+  ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
+  ctx.fillStyle='#d1d5db';ctx.font='700 14px IBM Plex Sans, Arial';ctx.letterSpacing='2px';
+  ctx.fillText('SALDO TOTAL',pad+8,43);
+  ctx.fillStyle='#ffffff';ctx.font='700 28px IBM Plex Mono, monospace';ctx.textAlign='right';
+  ctx.fillText(fmt(sumSaldos),w-pad-8,48);
+  ctx.textAlign='left';
+  let y=8+headerH+gap;
+  rows.forEach(r=>{
+    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
+    ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
+    ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
+    ctx.fillStyle='#1a1c2c';ctx.font='700 17px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawFitText(ctx,r.proveedor,pad+14,y+27,190);
+    ctx.fillStyle=r.saldo<=0?'#047857':'#b45309';ctx.font='700 17px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(fmt(Math.abs(r.saldo)),w-pad-92,y+27);
+    ctx.fillStyle='#6b7280';ctx.font='500 15px IBM Plex Mono, monospace';
+    ctx.fillText(pct+'%',w-pad-14,y+27);
+    y+=rowH+gap;
+  });
+  return canvas;
+}
 async function capturarTotales(){
   const btn=document.getElementById('btn-captura-totales');
-  const target=document.getElementById('totales-captura');
-  if(!target)return;
   const prev=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='Capturando...';}
+  if(btn){btn.disabled=true;btn.textContent='Copiando...';}
   try{
-    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
-    document.body.classList.add('capture-mode');
-    await new Promise(r=>setTimeout(r,80));
-    const canvas=await html2canvas(target,{backgroundColor:'#ffffff',scale:Math.min(3,window.devicePixelRatio||2),useCORS:true});
-    document.body.classList.remove('capture-mode');
+    const canvas=buildTotalesCanvas();
     const blob=await canvasToBlob(canvas);
     if(!blob)throw new Error('No se pudo crear imagen');
-    const file=new File([blob],'estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png',{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
-      await navigator.share({files:[file],title:'Estado de cuenta',text:'Estado de cuenta'});
-      toast('Imagen lista para compartir',false,true);
-    }else if(navigator.clipboard&&window.ClipboardItem){
+    if(navigator.clipboard&&window.ClipboardItem){
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
       toast('Imagen copiada · pégala en WhatsApp',false,true);
     }else{
-      downloadBlob(blob,file.name);
-      toast('Imagen descargada · compártela en WhatsApp',false,true);
+      downloadBlob(blob,'estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png');
+      toast('No se pudo copiar; imagen descargada',false,true);
     }
   }catch(e){
-    document.body.classList.remove('capture-mode');
-    try{
-      const target=document.getElementById('totales-captura');
-      if(target&&window.html2canvas){
-        const canvas=await html2canvas(target,{backgroundColor:'#ffffff',scale:2});
-        const blob=await canvasToBlob(canvas);
-        if(blob){downloadBlob(blob,'estado-cuenta.png');toast('Imagen descargada',false,true);return;}
-      }
-    }catch{}
-    toastError(e);
+    const canvas=buildTotalesCanvas();
+    const blob=await canvasToBlob(canvas);
+    if(blob){downloadBlob(blob,'estado-cuenta.png');toast('No se pudo copiar; imagen descargada',false,true);}
+    else toastError(e);
   }finally{
-    document.body.classList.remove('capture-mode');
-    if(btn){btn.disabled=false;btn.textContent=prev||'📷 Compartir';}
+    if(btn){btn.disabled=false;btn.textContent=prev||'📋 Copiar foto';}
   }
 }
 function toggleDesglose(e,proveedor,btn){
