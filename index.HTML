@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.82
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.82
+    ESTADO DE CUENTA  |  Versión 2.83
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.83
      ============================================================ -->
 <html lang="es">
 <head>
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.82";
+const APP_VERSION = "2.83";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1615,6 +1615,26 @@ function downloadBlob(blob,name){
   a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
 }
+function isMobileLike(){return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
+function buildTotalesText(){
+  const resumen=resumenProveedoresActivos(state.registros);
+  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
+  const lines=['SALDO TOTAL: '+fmt(sumSaldos),''];
+  resumen.slice(0,10).forEach(r=>{
+    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
+    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
+    lines.push(r.proveedor+' | '+fmt(saldoDisplay)+' | '+pct+'%');
+  });
+  return lines.join('\n');
+}
+async function copyTotalesTextFallback(){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    await navigator.clipboard.writeText(buildTotalesText());
+    toast('Tu celular no permite pegar foto; copié resumen en texto',false,true);
+  }else{
+    toast('Este celular no permite copiar foto desde navegador',true);
+  }
+}
 function drawRoundRect(ctx,x,y,w,h,r){
   const rr=Math.min(r,w/2,h/2);
   ctx.beginPath();
@@ -1688,11 +1708,17 @@ async function capturarTotales(){
     if(navigator.clipboard&&window.ClipboardItem){
       await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
       toast('Imagen copiada · pégala en WhatsApp',false,true);
+    }else if(isMobileLike()){
+      await copyTotalesTextFallback();
     }else{
       downloadBlob(blob,'estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png');
       toast('No se pudo copiar; imagen descargada',false,true);
     }
   }catch(e){
+    if(isMobileLike()){
+      await copyTotalesTextFallback();
+      return;
+    }
     const canvas=buildTotalesCanvas();
     const blob=await canvasToBlob(canvas);
     if(blob){downloadBlob(blob,'estado-cuenta.png');toast('No se pudo copiar; imagen descargada',false,true);}
