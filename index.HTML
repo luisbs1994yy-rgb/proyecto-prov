@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.88
-     Descarga: (ver APP_VERSION en el archivo)
+    ESTADO DE CUENTA  |  Versión 2.90
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.90
      ============================================================ -->
 <html lang="es">
 <head>
@@ -51,6 +51,9 @@ body{
 .release-url-actions .btn-open-release{flex:1;min-width:140px;justify-content:center;text-align:center;text-decoration:none;display:inline-flex;align-items:center;padding:10px 14px;font-weight:700;}
 .release-url-box .release-url-link{display:block;word-break:break-all;font-family:var(--mono);font-size:10px;color:var(--blue);text-decoration:underline;padding:6px 0;touch-action:manipulation;}
 .release-url-box .release-url-hint{font-size:11px;color:var(--text-muted);margin:0;}
+.app-version-stamp{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);margin:0 0 10px;padding:8px 10px;background:#e8f0fe;border:1px solid var(--blue-border);border-radius:8px;}
+.app-version-stamp.warn{background:#fff8e6;border-color:var(--amber-border);color:var(--amber-text);}
+.app-version-stamp a{color:inherit;font-weight:700;}
 .header-sync{font-size:11px;color:rgba(255,255,255,.65);font-family:var(--mono);}
 .btn-mobile{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;cursor:pointer;color:#e2e8f0;font-size:18px;}
 .btn-mobile:hover{background:rgba(255,255,255,.2);}
@@ -679,11 +682,13 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.88";
+const APP_VERSION = "2.90";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
-function getAppReleaseUrl(){return 'https://raw.githubusercontent.com/'+RAW_HTML_REPO+'/'+RAW_HTML_BRANCH+'/index.HTML?v='+APP_VERSION;}
+function getAppReleaseUrl(){
+  return 'https://raw.githubusercontent.com/'+RAW_HTML_REPO+'/'+RAW_HTML_BRANCH+'/index.HTML?v='+APP_VERSION+'&build='+APP_VERSION.replace('.','');
+}
 function openAppReleaseUrl(e){
   if(e&&e.preventDefault)e.preventDefault();
   window.location.assign(getAppReleaseUrl());
@@ -715,6 +720,19 @@ function bindAppVersionLink(){
   if(hint){
     hint.innerHTML='Un toque en <strong>v'+APP_VERSION+'</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.';
   }
+  const stamp=document.getElementById('app-version-stamp');
+  const urlV=(typeof location!=='undefined'&&location.search)?new URLSearchParams(location.search).get('v'):'';
+  if(stamp){
+    if(urlV&&urlV!==APP_VERSION){
+      stamp.className='app-version-stamp warn';
+      const qv=String(urlV).replace(/[<>&"']/g,'');
+      stamp.innerHTML='⚠️ El enlace dice <strong>v'+qv+'</strong> pero este archivo es <strong>v'+APP_VERSION+'</strong>. Toca <a href="'+url+'" onclick="openAppReleaseUrl(event)">Abrir v'+APP_VERSION+'</a> o vuelve a pegar el HTML completo en Apps Script.';
+    }else{
+      stamp.className='app-version-stamp';
+      stamp.textContent='Versión de este archivo: v'+APP_VERSION;
+    }
+  }
+  if(typeof document!=='undefined')document.title='Estado de Cuenta v'+APP_VERSION;
 }
 async function copyAppReleaseUrl(e){
   if(e&&e.stopPropagation)e.stopPropagation();
@@ -907,6 +925,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <div class="add-prov-row"><input type="text" id="new-prov" placeholder="Nombre del cliente" style="flex:1"><button class="btn btn-primary" onclick="agregarProveedor()">Agregar</button></div>
           <div id="prov-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
           <div class="release-url-box" id="release-url-box">
+            <p class="app-version-stamp" id="app-version-stamp">Versión de este archivo: v…</p>
             <div class="release-url-lbl">Actualizar app · versión actual</div>
             <div class="release-url-actions">
               <a class="btn btn-primary btn-open-release" id="btn-open-release" href="#">Abrir</a>
@@ -1663,7 +1682,11 @@ function isIOSLike(){return /iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
 function buildTotalesText(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  const lines=['SALDO TOTAL: '+fmt(sumSaldos),''];
+  const lines=[
+    'ESTADO DE CUENTA',
+    'Saldo total · '+fmt(sumSaldos),
+    ''
+  ];
   resumen.slice(0,10).forEach(r=>{
     const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
@@ -1758,10 +1781,12 @@ function buildTotalesCanvas(){
   const grad=ctx.createLinearGradient(8,8,w-8,8);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
+  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
+  ctx.fillText('ESTADO DE CUENTA',pad+5,26);
   ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
-  ctx.fillText('SALDO TOTAL',pad+5,34);
+  ctx.fillText('Saldo total',pad+5,40);
   ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(sumSaldos),w-pad-5,38);
+  ctx.fillText(fmt(sumSaldos),w-pad-5,40);
   ctx.textAlign='left';
   let y=8+headerH+gap;
   rows.forEach(r=>{
