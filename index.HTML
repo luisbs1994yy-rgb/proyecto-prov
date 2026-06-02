@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.86
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86
+    ESTADO DE CUENTA  |  Versión 2.87
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87
      ============================================================ -->
 <html lang="es">
 <head>
@@ -415,8 +415,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-summary-main{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;}
 .totales-summary-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);white-space:nowrap;}
 .totales-summary-value{font-family:var(--mono);font-size:18px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
-.btn-screenshot{font-size:10px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap;}
-.btn-screenshot:hover{background:rgba(255,255,255,.22);}
+.btn-screenshot{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
+.btn-screenshot:hover{background:rgba(255,255,255,.32);}
 .totales-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .btn-captura-movil{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
 .btn-captura-movil:active{background:rgba(255,255,255,.32);}
@@ -522,7 +522,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-main { flex: 1 1 auto; gap: 6px; }
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
-  #page-totales .btn-screenshot { font-size: 8px; padding: 5px 7px; }
+  #page-totales .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
@@ -679,7 +679,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.86";
+const APP_VERSION = "2.87";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -728,7 +728,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <header class="header">
   <div class="header-brand"><span class="header-dot"></span><span class="header-title">Estado de Cuenta</span></div>
   <div class="header-right">
-    <a class="header-version" id="app-version" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86" title="Abrir app v2.86 (un toque)">v2.86</a>
+    <a class="header-version" id="app-version" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87" title="Abrir app v2.87 (un toque)">v2.87</a>
     <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
@@ -823,7 +823,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               <span class="totales-summary-value" id="k-total">—</span>
             </div>
             <div class="totales-actions screen-capture-hide">
-              <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()">📋 Copiar foto</button>
+              <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()" title="Copiar foto">📋</button>
               <button type="button" class="btn-captura-movil" id="btn-captura-movil" onclick="capturarPantallaMovil()" title="Guardar foto (solo saldos)">📷</button>
             </div>
           </div>
@@ -903,11 +903,11 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <div class="release-url-box" id="release-url-box">
             <div class="release-url-lbl">Actualizar app · versión actual</div>
             <div class="release-url-actions">
-              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86">Abrir v2.86</a>
+              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87">Abrir v2.87</a>
               <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl(event)">Copiar enlace</button>
             </div>
-            <a class="release-url-link" id="app-release-url" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86"></a>
-            <p class="release-url-hint">Un toque en <strong>v2.86</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.</p>
+            <a class="release-url-link" id="app-release-url" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87"></a>
+            <p class="release-url-hint">Un toque en <strong>v2.87</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.</p>
           </div>
         </div>
       </div>
@@ -1809,7 +1809,7 @@ async function capturarPantallaMovil(){
 async function capturarTotales(){
   const btn=document.getElementById('btn-captura-totales');
   const prev=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='Copiando...';}
+  if(btn){btn.disabled=true;btn.textContent='…';}
   try{
     const canvas=buildTotalesCanvas();
     const blob=await canvasToBlob(canvas);
@@ -1831,7 +1831,7 @@ async function capturarTotales(){
     }
     toastError(e);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=prev||'📋 Copiar foto';}
+    if(btn){btn.disabled=false;btn.textContent=prev||'📋';}
   }
 }
 function toggleDesglose(e,proveedor,btn){
