@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.72
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.72
+    ESTADO DE CUENTA  |  Versión 2.73
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.73
      ============================================================ -->
 <html lang="es">
 <head>
@@ -642,22 +642,23 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .producto-btn-group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
 .producto-btn-group .btn-select{padding:8px 6px;font-size:11px;text-align:center;}
 .precios-grid{display:grid;gap:8px;}
-.precio-row{display:grid;grid-template-columns:minmax(120px,1.2fr) repeat(3,minmax(80px,1fr)) minmax(76px,.55fr);gap:6px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;}
+.precio-actions{display:flex;justify-content:flex-end;margin-bottom:10px;}
+.precio-row{display:grid;grid-template-columns:minmax(120px,1.2fr) repeat(3,minmax(80px,1fr));gap:6px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;}
 .precio-row-head{background:#eef2f7;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
 .precio-client{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);word-break:break-word;}
 .precio-input{width:100%;font-family:var(--mono);font-size:11px;text-align:center;padding:6px 6px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);}
 .precio-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
-.precio-input.saving{background:var(--amber-bg);border-color:var(--amber-border);}
-.precio-save-btn{padding:6px 8px;font-size:10px;border-radius:8px;width:100%;}
+.precio-save-btn{padding:7px 14px;font-size:11px;border-radius:8px;}
 @media (max-width: 640px){
   .producto-btn-group{gap:4px;}
   .producto-btn-group .btn-select{font-size:9px;padding:7px 4px;}
   .precios-grid{gap:5px;}
-  .precio-row{grid-template-columns:minmax(62px,1fr) repeat(3,minmax(48px,.9fr)) minmax(44px,.65fr);gap:3px;padding:5px 5px;border-radius:8px;}
+  .precio-actions{margin-bottom:8px;}
+  .precio-actions .precio-save-btn{width:100%;font-size:10px;padding:7px 8px;}
+  .precio-row{grid-template-columns:minmax(62px,1fr) repeat(3,minmax(48px,.9fr));gap:3px;padding:5px 5px;border-radius:8px;}
   .precio-row-head{display:none;}
   .precio-client{text-align:left;font-size:9px;line-height:1.15;}
   .precio-input{font-size:9px;padding:4px 3px;border-radius:6px;}
-  .precio-save-btn{font-size:7px;padding:4px 3px;border-radius:6px;}
   .precio-cell::before{content:attr(data-label);display:block;font-size:6px;font-weight:700;text-transform:uppercase;color:var(--text-faint);margin-bottom:1px;text-align:center;line-height:1;}
 }
 </style>
@@ -665,7 +666,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.72";
+const APP_VERSION = "2.73";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2496,7 +2497,8 @@ function renderPreciosManager(){
   const el=document.getElementById('precios-list');
   if(!el)return;
   if(!state.proveedores.length){el.innerHTML='<div class="empty">Agrega clientes primero.</div>';return;}
-  let html='<div class="precios-grid"><div class="precio-row precio-row-head"><div>Cliente</div>'+PRODUCTOS.map(p=>'<div>'+esc(p)+'</div>').join('')+'<div>Guardar</div></div>';
+  let html='<div class="precio-actions"><button type="button" class="btn btn-primary precio-save-btn" id="btn-save-precios" onclick="guardarTodosPrecios(this)">Guardar precios</button></div>'+
+    '<div class="precios-grid"><div class="precio-row precio-row-head"><div>Cliente</div>'+PRODUCTOS.map(p=>'<div>'+esc(p)+'</div>').join('')+'</div>';
   state.proveedores.forEach(prov=>{
     html+='<div class="precio-row"><div class="precio-client">'+esc(prov)+'</div>';
     PRODUCTOS.forEach(prod=>{
@@ -2505,47 +2507,48 @@ function renderPreciosManager(){
       const id=precioInputId(prov,prod);
       html+='<div class="precio-cell" data-label="'+esc(prod)+'"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"></div>';
     });
-    html+='<div class="precio-cell" data-label="Guardar"><button type="button" class="btn btn-primary precio-save-btn" onclick="guardarPreciosCliente(\''+esc(prov)+'\',this)">Guardar</button></div></div>';
+    html+='</div>';
   });
   html+='</div><div class="hint-text" style="margin-top:10px">Al registrar Factura: elige cliente + producto y se cargará este precio automáticamente. Puedes cambiarlo manualmente si hace falta.</div>';
   el.innerHTML=html;
 }
 function precioInputId(prov,prod){return 'precio_'+String(prov+'_'+prod).replace(/[^a-zA-Z0-9_]/g,'_');}
 function onPrecioListaInput(el){el.value=sanitizePrecioLitroTyping(el.value);}
-async function guardarPrecioProducto(prov,producto,el,opts){
-  const n=parsePrecioLitro(el.value);
-  if(el.value.trim()&&isNaN(n)){toast('Precio inválido',true);el.value='';return;}
+function collectPreciosFromUI(){
+  const precios=[];
+  for(const prov of state.proveedores){
+    for(const producto of PRODUCTOS){
+      const el=document.getElementById(precioInputId(prov,producto));
+      if(!el)continue;
+      const raw=String(el.value||'').trim();
+      const n=parsePrecioLitro(raw);
+      if(raw&&isNaN(n))throw new Error('Precio inválido en '+prov+' · '+producto);
+      const precio=isNaN(n)?'':n;
+      if(!isNaN(n))el.value=formatPrecioLitroDisplay(n);
+      precios.push({proveedor:prov,cliente:prov,producto,precio});
+    }
+  }
+  return precios;
+}
+async function guardarTodosPrecios(btn){
+  const prevLabel=btn?btn.textContent:'';
   const prev=state.precios.slice();
-  const precio=isNaN(n)?NaN:n;
-  if(!isNaN(precio))el.value=formatPrecioLitroDisplay(precio);
-  el.classList.add('saving');
+  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
   try{
-    const res=await apiPost({action:'setPrecioProducto',data:{proveedor:prov,cliente:prov,producto,precio:isNaN(precio)?'':precio}});
+    const precios=collectPreciosFromUI();
+    const res=await apiPost({action:'setPreciosProductos',data:{precios}});
     if(res&&res.error)throw new Error(res.error);
-    upsertPrecioProductoLocal(prov,producto,precio);
+    state.precios=normalizePreciosList(precios.filter(p=>p.precio!==''&&p.precio!=null));
+    savePreciosLocal(state.precios);
     saveAndRender();
-    if(!opts||!opts.silent)toast('Precio guardado',false,true);
+    toast('Precios guardados en Sheets',false,true);
   }catch(e){
     state.precios=prev;
     savePreciosLocal(prev);
     saveAndRender();
-    toast('No se guardó: actualiza Apps Script para Lista de precios',true);
-    throw e;
-  }finally{el.classList.remove('saving');}
-}
-async function guardarPreciosCliente(prov,btn){
-  const prevLabel=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='...';}
-  try{
-    for(const prod of PRODUCTOS){
-      const el=document.getElementById(precioInputId(prov,prod));
-      if(el)await guardarPrecioProducto(prov,prod,el,{silent:true});
-    }
-    toast('Precios guardados: '+prov,false,true);
-  }catch(e){
-    // guardarPrecioProducto ya muestra el error.
+    toastError(e);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=prevLabel||'Guardar';}
+    if(btn){btn.disabled=false;btn.textContent=prevLabel||'Guardar precios';}
   }
 }
 function renderProvManager(){
