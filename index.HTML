@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.73
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.73
+    ESTADO DE CUENTA  |  Versión 2.75
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.75
      ============================================================ -->
 <html lang="es">
 <head>
@@ -666,7 +666,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.73";
+const APP_VERSION = "2.75";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -683,7 +683,7 @@ async function copyAppReleaseUrl(){
   try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
   catch(e){toast(url,false,true);}
 }
-const GAS_URL     = "https://script.google.com/macros/s/AKfycbwPcQLTVAeKug5-1wBNvqm70sA6a9HCYSO4LHNTrmdZMCXbO6K4CdmMrUp_YNoG9xnc/exec";
+const GAS_URL     = "https://script.google.com/macros/s/AKfycbxpGmwxFOvl7e01b1rmfmHnLIg0ABcgw2MUMVOqhGUksfCsqDl0DLhS20wupaOlGaTn/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const APLICA_KEY  = "pagos_v1_aplica";
@@ -2537,7 +2537,14 @@ async function guardarTodosPrecios(btn){
   try{
     const precios=collectPreciosFromUI();
     const res=await apiPost({action:'setPreciosProductos',data:{precios}});
-    if(res&&res.error)throw new Error(res.error);
+    if(res&&res.error){
+      if(/setPreciosProductos|Acci[oó]n no soportada/i.test(String(res.error))){
+        for(const p of precios){
+          const r=await apiPost({action:'setPrecioProducto',data:p});
+          if(r&&r.error)throw new Error(r.error);
+        }
+      }else throw new Error(res.error);
+    }
     state.precios=normalizePreciosList(precios.filter(p=>p.precio!==''&&p.precio!=null));
     savePreciosLocal(state.precios);
     saveAndRender();
