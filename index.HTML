@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.85
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.85
+    ESTADO DE CUENTA  |  Versión 2.86
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86
      ============================================================ -->
 <html lang="es">
 <head>
@@ -43,12 +43,14 @@ body{
 .header-dot{width:10px;height:10px;background:var(--cyan);border-radius:50%;box-shadow:0 0 12px rgba(0,180,216,.7);flex-shrink:0;}
 .header-title{font-size:15px;font-weight:600;letter-spacing:.02em;}
 .header-right{display:flex;align-items:center;gap:12px;}
-.header-version,.header-version:link,.header-version:visited{font-size:10px;color:rgba(255,255,255,.85);font-family:var(--mono);background:rgba(255,255,255,.12);padding:4px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15);text-decoration:none;display:inline-block;}
+.header-version,.header-version:link,.header-version:visited{font-size:10px;color:rgba(255,255,255,.95);font-family:var(--mono);background:rgba(255,255,255,.12);padding:8px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.15);text-decoration:none;display:inline-flex;align-items:center;min-height:36px;touch-action:manipulation;-webkit-tap-highlight-color:rgba(255,255,255,.2);}
 .header-version:hover{color:#fff;background:rgba(255,255,255,.22);}
 .release-url-box{margin-top:14px;padding:12px;background:#f8fafc;border:1px solid var(--border);border-radius:10px;font-size:12px;}
-.release-url-box .release-url-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px;}
-.release-url-box a{word-break:break-all;font-family:var(--mono);font-size:11px;color:var(--blue);}
-.release-url-box .btn{margin-top:8px;}
+.release-url-box .release-url-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:8px;}
+.release-url-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.release-url-actions .btn-open-release{flex:1;min-width:140px;justify-content:center;text-align:center;text-decoration:none;display:inline-flex;align-items:center;padding:10px 14px;font-weight:700;}
+.release-url-box .release-url-link{display:block;word-break:break-all;font-family:var(--mono);font-size:10px;color:var(--blue);text-decoration:underline;padding:6px 0;touch-action:manipulation;}
+.release-url-box .release-url-hint{font-size:11px;color:var(--text-muted);margin:0;}
 .header-sync{font-size:11px;color:rgba(255,255,255,.65);font-family:var(--mono);}
 .btn-mobile{display:none;align-items:center;justify-content:center;width:36px;height:36px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;cursor:pointer;color:#e2e8f0;font-size:18px;}
 .btn-mobile:hover{background:rgba(255,255,255,.2);}
@@ -677,22 +679,43 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.85";
+const APP_VERSION = "2.86";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
-const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
+const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 function getAppReleaseUrl(){return 'https://raw.githubusercontent.com/'+RAW_HTML_REPO+'/'+RAW_HTML_BRANCH+'/index.HTML?v='+APP_VERSION;}
+function openAppReleaseUrl(e){
+  if(e&&e.preventDefault)e.preventDefault();
+  window.location.assign(getAppReleaseUrl());
+}
 function bindAppVersionLink(){
   const url=getAppReleaseUrl();
   const badge=document.getElementById('app-version');
-  if(badge){badge.href=url;badge.textContent='v'+APP_VERSION;badge.title='Descargar HTML v'+APP_VERSION;}
+  if(badge){
+    badge.href=url;
+    badge.textContent='v'+APP_VERSION;
+    badge.title='Abrir app v'+APP_VERSION+' (un toque)';
+    badge.removeAttribute('target');
+    badge.onclick=function(ev){openAppReleaseUrl(ev);};
+  }
+  const openBtn=document.getElementById('btn-open-release');
+  if(openBtn){
+    openBtn.href=url;
+    openBtn.textContent='Abrir v'+APP_VERSION;
+    openBtn.onclick=function(ev){openAppReleaseUrl(ev);};
+  }
   const link=document.getElementById('app-release-url');
-  if(link){link.href=url;link.textContent=url;}
+  if(link){
+    link.href=url;
+    link.textContent=url;
+    link.onclick=function(ev){openAppReleaseUrl(ev);};
+  }
 }
-async function copyAppReleaseUrl(){
+async function copyAppReleaseUrl(e){
+  if(e&&e.stopPropagation)e.stopPropagation();
   const url=getAppReleaseUrl();
   try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
-  catch(e){toast(url,false,true);}
+  catch(_){toast(url,false,true);}
 }
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbxpGmwxFOvl7e01b1rmfmHnLIg0ABcgw2MUMVOqhGUksfCsqDl0DLhS20wupaOlGaTn/exec";
 const CACHE_KEY   = "pagos_v1_cache";
@@ -705,7 +728,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <header class="header">
   <div class="header-brand"><span class="header-dot"></span><span class="header-title">Estado de Cuenta</span></div>
   <div class="header-right">
-    <a class="header-version" id="app-version" href="#" target="_blank" rel="noopener" title="Abrir HTML de esta versión">v—</a>
+    <a class="header-version" id="app-version" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86" title="Abrir app v2.86 (un toque)">v2.86</a>
     <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
@@ -878,9 +901,13 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <div class="add-prov-row"><input type="text" id="new-prov" placeholder="Nombre del cliente" style="flex:1"><button class="btn btn-primary" onclick="agregarProveedor()">Agregar</button></div>
           <div id="prov-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
           <div class="release-url-box" id="release-url-box">
-            <div class="release-url-lbl">Enlace HTML · versión actual</div>
-            <a id="app-release-url" href="#" target="_blank" rel="noopener"></a>
-            <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl()">Copiar enlace</button>
+            <div class="release-url-lbl">Actualizar app · versión actual</div>
+            <div class="release-url-actions">
+              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86">Abrir v2.86</a>
+              <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl(event)">Copiar enlace</button>
+            </div>
+            <a class="release-url-link" id="app-release-url" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.86"></a>
+            <p class="release-url-hint">Un toque en <strong>v2.86</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.</p>
           </div>
         </div>
       </div>
