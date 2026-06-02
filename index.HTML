@@ -1736,9 +1736,7 @@ async function copyTotalesTextFallback(){
   return ok;
 }
 async function capturarTotalesMobile(blob){
-  const shareLine=getTotalesHeaderLine();
   if(!isIOSLike()&&await copyImageToClipboard(blob,3000)){
-    try{await copyTextRobust(shareLine);}catch(_){}
     toast('Imagen copiada · pégala en WhatsApp',false,true);
     return;
   }
