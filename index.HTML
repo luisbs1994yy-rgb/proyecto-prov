@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.75
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.75
+    ESTADO DE CUENTA  |  Versión 2.76
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.76
      ============================================================ -->
 <html lang="es">
 <head>
@@ -666,7 +666,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.75";
+const APP_VERSION = "2.76";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2505,7 +2505,7 @@ function renderPreciosManager(){
       const found=getPrecioProducto(prov,prod);
       const val=found?formatPrecioLitroDisplay(found.precio):'';
       const id=precioInputId(prov,prod);
-      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"></div>';
+      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" data-original="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"></div>';
     });
     html+='</div>';
   });
@@ -2513,13 +2513,14 @@ function renderPreciosManager(){
   el.innerHTML=html;
 }
 function precioInputId(prov,prod){return 'precio_'+String(prov+'_'+prod).replace(/[^a-zA-Z0-9_]/g,'_');}
-function onPrecioListaInput(el){el.value=sanitizePrecioLitroTyping(el.value);}
+function onPrecioListaInput(el){el.value=sanitizePrecioLitroTyping(el.value);el.dataset.dirty=String((el.value||'').trim()!==(el.dataset.original||'').trim());}
 function collectPreciosFromUI(){
   const precios=[];
   for(const prov of state.proveedores){
     for(const producto of PRODUCTOS){
       const el=document.getElementById(precioInputId(prov,producto));
       if(!el)continue;
+      if(el.dataset.dirty!=='true')continue;
       const raw=String(el.value||'').trim();
       const n=parsePrecioLitro(raw);
       if(raw&&isNaN(n))throw new Error('Precio inválido en '+prov+' · '+producto);
@@ -2536,6 +2537,7 @@ async function guardarTodosPrecios(btn){
   if(btn){btn.disabled=true;btn.textContent='Guardando...';}
   try{
     const precios=collectPreciosFromUI();
+    if(!precios.length){toast('No hay cambios por guardar',false,true);return;}
     const res=await apiPost({action:'setPreciosProductos',data:{precios}});
     if(res&&res.error){
       if(/setPreciosProductos|Acci[oó]n no soportada/i.test(String(res.error))){
@@ -2546,6 +2548,7 @@ async function guardarTodosPrecios(btn){
       }else throw new Error(res.error);
     }
     state.precios=normalizePreciosList(precios.filter(p=>p.precio!==''&&p.precio!=null));
+    state.precios=normalizePreciosList((prev||[]).filter(old=>!precios.some(p=>precioKey(p.proveedor,p.producto)===precioKey(old.proveedor,old.producto))).concat(state.precios));
     savePreciosLocal(state.precios);
     saveAndRender();
     toast('Precios guardados en Sheets',false,true);
