@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.84
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.84
+    ESTADO DE CUENTA  |  Versión 2.85
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.85
      ============================================================ -->
 <html lang="es">
 <head>
@@ -415,7 +415,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-summary-value{font-family:var(--mono);font-size:18px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
 .btn-screenshot{font-size:10px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap;}
 .btn-screenshot:hover{background:rgba(255,255,255,.22);}
+.totales-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.btn-captura-movil{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
+.btn-captura-movil:active{background:rgba(255,255,255,.32);}
+.totales-shot-zone{flex:1;min-width:0;}
 .capture-mode .screen-capture-hide{display:none!important;}
+.capture-mode #totales-shot-zone .desglose-btn{display:none!important;}
 /* === FIN COMPACTO === */
 
 .totales-panel .card-header{padding:10px 14px;}
@@ -516,6 +521,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
   #page-totales .btn-screenshot { font-size: 8px; padding: 5px 7px; }
+  #page-totales .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-totales .totales-actions { gap: 5px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
@@ -670,7 +677,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.84";
+const APP_VERSION = "2.85";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -786,16 +793,19 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 
     <div class="page active" id="page-totales">
       <div class="card totales-panel" id="totales-captura">
-        <div class="totales-summary">
-          <div class="totales-summary-main">
-            <span class="totales-summary-label">Saldo total</span>
-            <span class="totales-summary-value" id="k-total">—</span>
+        <div id="totales-shot-zone" class="totales-shot-zone">
+          <div class="totales-summary">
+            <div class="totales-summary-main">
+              <span class="totales-summary-label">Saldo total</span>
+              <span class="totales-summary-value" id="k-total">—</span>
+            </div>
+            <div class="totales-actions screen-capture-hide">
+              <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()">📋 Copiar foto</button>
+              <button type="button" class="btn-captura-movil" id="btn-captura-movil" onclick="capturarPantallaMovil()" title="Guardar foto (solo saldos)">📷</button>
+            </div>
           </div>
-          <button type="button" class="btn-screenshot screen-capture-hide" id="btn-captura-totales" onclick="capturarTotales()">📋 Copiar foto</button>
+          <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
         </div>
-
-        <!-- Quitado: "Por proveedor" -->
-        <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
 
@@ -1738,6 +1748,36 @@ function buildTotalesCanvas(){
     y+=rowH+gap;
   });
   return canvas;
+}
+async function capturarPantallaMovil(){
+  const btn=document.getElementById('btn-captura-movil');
+  const panel=document.getElementById('totales-captura');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  if(panel)panel.classList.add('capture-mode');
+  try{
+    const canvas=buildTotalesCanvas();
+    const blob=await canvasToBlob(canvas);
+    if(!blob)throw new Error('No se pudo crear imagen');
+    const name='estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png';
+    const file=new File([blob],name,{type:'image/png'});
+    if(navigator.share&&navigator.canShare){
+      try{
+        const payload={files:[file],title:'Estado de cuenta'};
+        if(navigator.canShare(payload)){
+          await navigator.share(payload);
+          toast('Elige WhatsApp para enviar la foto',false,true);
+          return;
+        }
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(blob,name);
+    toast('Foto guardada (solo saldos) · Galería o WhatsApp',false,true);
+  }catch(e){toastError(e);}
+  finally{
+    if(panel)panel.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📷';}
+  }
 }
 async function capturarTotales(){
   const btn=document.getElementById('btn-captura-totales');
