@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.80
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.80
+    ESTADO DE CUENTA  |  Versión 2.81
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.81
      ============================================================ -->
 <html lang="es">
 <head>
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.80";
+const APP_VERSION = "2.81";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1639,7 +1639,7 @@ function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   const rows=resumen.slice(0,10);
-  const w=430,pad=14,headerH=60,rowH=34,gap=5;
+  const w=360,pad=12,headerH=58,rowH=32,gap=5;
   const h=pad*2+headerH+gap+rows.length*(rowH+gap);
   const canvas=document.createElement('canvas');
   canvas.width=w;canvas.height=h;
@@ -1650,10 +1650,10 @@ function buildTotalesCanvas(){
   const grad=ctx.createLinearGradient(8,8,w-8,8);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
-  ctx.fillStyle='#d1d5db';ctx.font='700 11px IBM Plex Sans, Arial';
-  ctx.fillText('SALDO TOTAL',pad+6,34);
-  ctx.fillStyle='#ffffff';ctx.font='700 22px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(sumSaldos),w-pad-6,39);
+  ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
+  ctx.fillText('SALDO TOTAL',pad+5,34);
+  ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
+  ctx.fillText(fmt(sumSaldos),w-pad-5,38);
   ctx.textAlign='left';
   let y=8+headerH+gap;
   rows.forEach(r=>{
@@ -1662,12 +1662,14 @@ function buildTotalesCanvas(){
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
     ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
     ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
-    ctx.fillStyle='#1a1c2c';ctx.font='700 14px IBM Plex Mono, monospace';ctx.textAlign='left';
-    drawFitText(ctx,r.proveedor,pad+10,y+22,130);
-    ctx.fillStyle=isZero?'#047857':'#b91c1c';ctx.font='700 14px IBM Plex Mono, monospace';ctx.textAlign='right';
-    ctx.fillText(fmt(saldoDisplay),w-pad-58,y+22);
-    ctx.fillStyle='#6b7280';ctx.font='500 12px IBM Plex Mono, monospace';
-    ctx.fillText(pct+'%',w-pad-8,y+22);
+    const innerX=pad+10, innerW=w-pad*2-20;
+    const nameW=118, pctW=42, amountW=innerW-nameW-pctW;
+    ctx.fillStyle='#1a1c2c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawFitText(ctx,r.proveedor,innerX,y+21,nameW);
+    ctx.fillStyle=isZero?'#047857':'#b91c1c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(fmt(saldoDisplay),innerX+nameW+(amountW/2),y+21);
+    ctx.fillStyle='#6b7280';ctx.font='500 10px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(pct+'%',innerX+innerW,y+21);
     y+=rowH+gap;
   });
   return canvas;
