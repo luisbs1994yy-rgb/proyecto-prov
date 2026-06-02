@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.77
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.77
+    ESTADO DE CUENTA  |  Versión 2.78
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.78
      ============================================================ -->
 <html lang="es">
 <head>
@@ -413,6 +413,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-summary-main{display:flex;align-items:baseline;gap:10px;flex:1;min-width:0;}
 .totales-summary-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);white-space:nowrap;}
 .totales-summary-value{font-family:var(--mono);font-size:18px;font-weight:600;line-height:1.1;flex:1;text-align:right;word-break:break-word;}
+.btn-screenshot{font-size:10px;padding:6px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.12);color:#fff;cursor:pointer;font-weight:700;white-space:nowrap;}
+.btn-screenshot:hover{background:rgba(255,255,255,.22);}
+.capture-mode .screen-capture-hide{display:none!important;}
 /* === FIN COMPACTO === */
 
 .totales-panel .card-header{padding:10px 14px;}
@@ -509,9 +512,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .table-wrap { overflow-x: visible; -webkit-overflow-scrolling: touch; }
   #page-totales .page-title { display: none; }
   #page-totales .totales-summary { padding: 8px 10px; gap: 2px 8px; }
-  #page-totales .totales-summary-main { flex: 1 1 100%; gap: 6px; }
+  #page-totales .totales-summary-main { flex: 1 1 auto; gap: 6px; }
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
+  #page-totales .btn-screenshot { font-size: 8px; padding: 5px 7px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
@@ -666,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.77";
+const APP_VERSION = "2.78";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -781,12 +785,13 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
 
     <div class="page active" id="page-totales">
-      <div class="card totales-panel">
+      <div class="card totales-panel" id="totales-captura">
         <div class="totales-summary">
           <div class="totales-summary-main">
             <span class="totales-summary-label">Saldo total</span>
             <span class="totales-summary-value" id="k-total">—</span>
           </div>
+          <button type="button" class="btn-screenshot screen-capture-hide" id="btn-captura-totales" onclick="capturarTotales()">📷 Compartir</button>
         </div>
 
         <!-- Quitado: "Por proveedor" -->
@@ -1595,6 +1600,67 @@ function renderTotales(){
     document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>{
       b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor);
     });
+  }
+}
+function loadScriptOnce(src){
+  return new Promise((resolve,reject)=>{
+    if(document.querySelector('script[data-src="'+src+'"]')){resolve();return;}
+    const s=document.createElement('script');
+    s.src=src;s.async=true;s.dataset.src=src;
+    s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar generador de imagen'));
+    document.head.appendChild(s);
+  });
+}
+function canvasToBlob(canvas){
+  return new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
+}
+function downloadBlob(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+}
+async function capturarTotales(){
+  const btn=document.getElementById('btn-captura-totales');
+  const target=document.getElementById('totales-captura');
+  if(!target)return;
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Capturando...';}
+  try{
+    await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    document.body.classList.add('capture-mode');
+    await new Promise(r=>setTimeout(r,80));
+    const canvas=await html2canvas(target,{backgroundColor:'#ffffff',scale:Math.min(3,window.devicePixelRatio||2),useCORS:true});
+    document.body.classList.remove('capture-mode');
+    const blob=await canvasToBlob(canvas);
+    if(!blob)throw new Error('No se pudo crear imagen');
+    const file=new File([blob],'estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+      await navigator.share({files:[file],title:'Estado de cuenta',text:'Estado de cuenta'});
+      toast('Imagen lista para compartir',false,true);
+    }else if(navigator.clipboard&&window.ClipboardItem){
+      await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);
+      toast('Imagen copiada · pégala en WhatsApp',false,true);
+    }else{
+      downloadBlob(blob,file.name);
+      toast('Imagen descargada · compártela en WhatsApp',false,true);
+    }
+  }catch(e){
+    document.body.classList.remove('capture-mode');
+    try{
+      const target=document.getElementById('totales-captura');
+      if(target&&window.html2canvas){
+        const canvas=await html2canvas(target,{backgroundColor:'#ffffff',scale:2});
+        const blob=await canvasToBlob(canvas);
+        if(blob){downloadBlob(blob,'estado-cuenta.png');toast('Imagen descargada',false,true);return;}
+      }
+    }catch{}
+    toastError(e);
+  }finally{
+    document.body.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📷 Compartir';}
   }
 }
 function toggleDesglose(e,proveedor,btn){
