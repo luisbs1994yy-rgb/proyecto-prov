@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.79
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.79
+    ESTADO DE CUENTA  |  Versión 2.80
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.80
      ============================================================ -->
 <html lang="es">
 <head>
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.79";
+const APP_VERSION = "2.80";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1584,11 +1584,13 @@ function renderTotales(){
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
   let rows='';
   resumen.forEach(r=>{
+    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
+    const isZero=saldoDisplay===0;
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
-    const color=r.saldo<=0?'color:var(--green-text)':'color:var(--amber-text)';
+    const color=isZero?'color:var(--green-text)':'color:var(--red-text)';
     rows+='<tr>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600;word-break:break-word">'+esc(r.proveedor)+'</td>'+
-      '<td class="amount" style="'+color+'">'+fmt(Math.abs(r.saldo))+'</td>'+
+      '<td class="amount" style="'+color+'">'+fmt(saldoDisplay)+'</td>'+
       '<td class="pct-cell">'+pct+'%</td>'+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
       '</tr>';
@@ -1637,7 +1639,7 @@ function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   const rows=resumen.slice(0,10);
-  const w=560,pad=18,headerH=78,rowH=42,gap=7;
+  const w=430,pad=14,headerH=60,rowH=34,gap=5;
   const h=pad*2+headerH+gap+rows.length*(rowH+gap);
   const canvas=document.createElement('canvas');
   canvas.width=w;canvas.height=h;
@@ -1648,22 +1650,24 @@ function buildTotalesCanvas(){
   const grad=ctx.createLinearGradient(8,8,w-8,8);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
-  ctx.fillStyle='#d1d5db';ctx.font='700 14px IBM Plex Sans, Arial';ctx.letterSpacing='2px';
-  ctx.fillText('SALDO TOTAL',pad+8,43);
-  ctx.fillStyle='#ffffff';ctx.font='700 28px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(sumSaldos),w-pad-8,48);
+  ctx.fillStyle='#d1d5db';ctx.font='700 11px IBM Plex Sans, Arial';
+  ctx.fillText('SALDO TOTAL',pad+6,34);
+  ctx.fillStyle='#ffffff';ctx.font='700 22px IBM Plex Mono, monospace';ctx.textAlign='right';
+  ctx.fillText(fmt(sumSaldos),w-pad-6,39);
   ctx.textAlign='left';
   let y=8+headerH+gap;
   rows.forEach(r=>{
+    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
+    const isZero=saldoDisplay===0;
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
     ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
     ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
-    ctx.fillStyle='#1a1c2c';ctx.font='700 17px IBM Plex Mono, monospace';ctx.textAlign='left';
-    drawFitText(ctx,r.proveedor,pad+14,y+27,190);
-    ctx.fillStyle=r.saldo<=0?'#047857':'#b45309';ctx.font='700 17px IBM Plex Mono, monospace';ctx.textAlign='right';
-    ctx.fillText(fmt(Math.abs(r.saldo)),w-pad-92,y+27);
-    ctx.fillStyle='#6b7280';ctx.font='500 15px IBM Plex Mono, monospace';
-    ctx.fillText(pct+'%',w-pad-14,y+27);
+    ctx.fillStyle='#1a1c2c';ctx.font='700 14px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawFitText(ctx,r.proveedor,pad+10,y+22,130);
+    ctx.fillStyle=isZero?'#047857':'#b91c1c';ctx.font='700 14px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(fmt(saldoDisplay),w-pad-58,y+22);
+    ctx.fillStyle='#6b7280';ctx.font='500 12px IBM Plex Mono, monospace';
+    ctx.fillText(pct+'%',w-pad-8,y+22);
     y+=rowH+gap;
   });
   return canvas;
