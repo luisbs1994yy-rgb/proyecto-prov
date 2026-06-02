@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.81
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.81
+    ESTADO DE CUENTA  |  Versión 2.82
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.82
      ============================================================ -->
 <html lang="es">
 <head>
@@ -670,7 +670,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.81";
+const APP_VERSION = "2.82";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1639,11 +1639,14 @@ function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   const rows=resumen.slice(0,10);
-  const w=360,pad=12,headerH=58,rowH=32,gap=5;
+  const w=360,pad=12,headerH=58,rowH=32,gap=5,scale=3;
   const h=pad*2+headerH+gap+rows.length*(rowH+gap);
   const canvas=document.createElement('canvas');
-  canvas.width=w;canvas.height=h;
+  canvas.width=w*scale;canvas.height=h*scale;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
   const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.imageSmoothingEnabled=false;
   ctx.fillStyle='#eef1f6';ctx.fillRect(0,0,w,h);
   ctx.fillStyle='#ffffff';
   drawRoundRect(ctx,8,8,w-16,h-16,18);ctx.fill();
