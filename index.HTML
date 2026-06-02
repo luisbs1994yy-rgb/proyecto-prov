@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.65
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.65
+    ESTADO DE CUENTA  |  Versión 2.66
+     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/fix-logs-6dc7/index.HTML?v=2.66
      ============================================================ -->
 <html lang="es">
 <head>
@@ -104,7 +104,7 @@ textarea{resize:vertical;min-height:60px;}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
 .form-row-duo{display:contents;}
 #page-registrar #f-litros-row{display:none;}
-#page-registrar.modo-factura #f-litros-row{display:contents;}
+#page-registrar.modo-factura #f-litros-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;grid-column:1/-1;}
 #page-registrar #f-proveedor-group.prov-btn-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;width:100%;}
 #page-registrar #f-proveedor-group.prov-btn-grid .btn-select{
   flex:0 0 calc((100% - 18px) / 7);max-width:calc((100% - 18px) / 7);min-width:0;margin:0;
@@ -470,7 +470,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   }
   #page-registrar.modo-factura #f-litros-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     grid-column: 1 / -1;
   }
@@ -639,12 +639,29 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 @media (min-width: 641px) { .sidebar-overlay { display: none !important; } }
 .sidebar-overlay { display: none; position: fixed; inset: 0; top: 60px; background: rgba(26,28,44,.4); z-index: 39; }
 .sidebar-overlay.open { display: block; }
+.producto-btn-group{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;}
+.producto-btn-group .btn-select{padding:8px 6px;font-size:11px;text-align:center;}
+.precios-grid{display:grid;gap:10px;}
+.precio-row{display:grid;grid-template-columns:minmax(120px,1.2fr) repeat(3,minmax(90px,1fr));gap:8px;align-items:center;padding:10px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;}
+.precio-row-head{background:#eef2f7;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
+.precio-client{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);word-break:break-word;}
+.precio-input{width:100%;font-family:var(--mono);font-size:12px;text-align:center;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);}
+.precio-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
+.precio-input.saving{background:var(--amber-bg);border-color:var(--amber-border);}
+@media (max-width: 640px){
+  .producto-btn-group{gap:4px;}
+  .producto-btn-group .btn-select{font-size:9px;padding:7px 4px;}
+  .precio-row{grid-template-columns:1fr;gap:6px;padding:9px;}
+  .precio-row-head{display:none;}
+  .precio-client{text-align:center;}
+  .precio-cell::before{content:attr(data-label);display:block;font-size:8px;font-weight:700;text-transform:uppercase;color:var(--text-faint);margin-bottom:2px;text-align:center;}
+}
 </style>
 </head>
 <body>
 
 <script>
-const APP_VERSION = "2.65";
+const APP_VERSION = "2.66";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/fix-logs-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -665,6 +682,8 @@ const GAS_URL     = "https://script.google.com/macros/s/AKfycbzxPS_wyu63BTd0OWia
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const APLICA_KEY  = "pagos_v1_aplica";
+const PRECIOS_KEY = "pagos_v1_precios_productos";
+const PRODUCTOS   = ["Etano","Nafta","Regular"];
 </script>
 
 <header class="header">
@@ -688,6 +707,7 @@ const APLICA_KEY  = "pagos_v1_aplica";
     </div>
     <div class="nav-section">
       <div class="nav-label">Config</div>
+      <div class="nav-item" onclick="navTo('precios',this)"><span class="nav-icon">$</span> Lista de precios</div>
       <div class="nav-item" onclick="navTo('config',this)"><span class="nav-icon">⚙</span> Clientes</div>
     </div>
   </nav>
@@ -713,6 +733,15 @@ const APLICA_KEY  = "pagos_v1_aplica";
               <input type="hidden" id="f-proveedor" value="">
             </div>
             <div class="form-row-duo" id="f-litros-row">
+              <div class="form-group">
+                <label>Producto</label>
+                <div class="btn-group producto-btn-group" id="f-producto-group">
+                  <button class="btn-select" data-val="Etano" onclick="setSelectBtn(this,'f-producto')">Etano</button>
+                  <button class="btn-select" data-val="Nafta" onclick="setSelectBtn(this,'f-producto')">Nafta</button>
+                  <button class="btn-select" data-val="Regular" onclick="setSelectBtn(this,'f-producto')">Regular</button>
+                </div>
+                <input type="hidden" id="f-producto" value="">
+              </div>
               <div class="form-group"><label id="f-precio-litro-label" for="f-precio-litro">Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="" autocomplete="off" maxlength="6"></div>
               <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
@@ -837,12 +866,25 @@ const APLICA_KEY  = "pagos_v1_aplica";
       </div>
     </div>
 
+    <div class="page" id="page-precios">
+      <div class="page-title">Lista de precios</div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Precios por cliente y producto</span>
+          <span class="hint-text" style="font-weight:400">Etano · Nafta · Regular</span>
+        </div>
+        <div class="card-body">
+          <div id="precios-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
+        </div>
+      </div>
+    </div>
+
   </main>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-let state = { registros:[], proveedores:[] };
+let state = { registros:[], proveedores:[], precios:[] };
 let logsMemory = [];
 let syncTimer = null, desgloseOpen = false;
 let desgloseSort = { col: 'fecha', dir: 'desc' };
@@ -865,7 +907,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-litros').addEventListener('blur', onLitrosBlur);
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
-    try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
+    try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; state.precios=normalizePreciosList(d.precios||loadPreciosLocal()); mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
@@ -881,7 +923,7 @@ function saveAndRender(){
   const map={};
   state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
   saveAplicaMap(map);
-  localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores}));
+  localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores,precios:state.precios}));
   renderAll();
 }
 function isPageActive(page){const el=document.getElementById('page-'+page);return !!el&&el.classList.contains('active');}
@@ -1019,7 +1061,7 @@ function navTo(page,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');el.classList.add('active');
   if(page==='totales')renderTotales();if(page==='logs')renderLogs();
-  if(page==='config')renderProvManager();if(page==='analisis')renderAnalisis();
+  if(page==='config')renderProvManager();if(page==='precios')renderPreciosManager();if(page==='analisis')renderAnalisis();
   if(page==='registrar')updateRegistrarAplicaUI();
 }
 
@@ -1065,6 +1107,30 @@ function mergeProveedoresList(apiList,regs){
   if(!list.length)list=proveedoresFromRegistros(regs);
   return[...new Set(list)].sort((a,b)=>a.localeCompare(b,'es'));
 }
+function precioKey(proveedor,producto){return String(proveedor||'').trim().toUpperCase()+'|'+String(producto||'').trim().toUpperCase();}
+function normalizePreciosList(list){
+  const map={};
+  (Array.isArray(list)?list:[]).forEach(x=>{
+    const proveedor=String(x.proveedor||x.cliente||'').trim();
+    const producto=String(x.producto||'').trim();
+    const precio=parsePrecioLitro(x.precio);
+    if(!proveedor||!producto||isNaN(precio))return;
+    map[precioKey(proveedor,producto)]={proveedor,producto,precio};
+  });
+  return Object.values(map).sort((a,b)=>a.proveedor.localeCompare(b.proveedor,'es')||a.producto.localeCompare(b.producto,'es'));
+}
+function loadPreciosLocal(){try{return normalizePreciosList(JSON.parse(localStorage.getItem(PRECIOS_KEY)||'[]'));}catch{return[];}}
+function savePreciosLocal(list){try{localStorage.setItem(PRECIOS_KEY,JSON.stringify(normalizePreciosList(list)));}catch(e){console.warn(e);}}
+function getPrecioProducto(proveedor,producto){
+  const key=precioKey(proveedor,producto);
+  return (state.precios||[]).find(p=>precioKey(p.proveedor,p.producto)===key);
+}
+function upsertPrecioProductoLocal(proveedor,producto,precio){
+  const list=(state.precios||[]).filter(p=>precioKey(p.proveedor,p.producto)!==precioKey(proveedor,producto));
+  if(!isNaN(precio)&&precio>0)list.push({proveedor,producto,precio});
+  state.precios=normalizePreciosList(list);
+  savePreciosLocal(state.precios);
+}
 function loadAplicaMap(){try{return JSON.parse(localStorage.getItem(APLICA_KEY)||'{}');}catch{return {};}}
 function saveAplicaMap(map){try{localStorage.setItem(APLICA_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}}
 function normalizeRegistro(r){
@@ -1080,6 +1146,8 @@ function updateStateFromSheetData(d){
   state.registros=(d.registros||[]).map(normalizeRegistro);
   mergeAplicaIntoRegs();
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
+  state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
+  savePreciosLocal(state.precios);
   if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
@@ -1261,9 +1329,17 @@ async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);
 async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store'});return parseJSON(r);}
 async function apiPost(body){const r=await fetch(GAS_URL+'?'+cacheBustParam(),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),cache:'no-store'});return parseJSON(r);}
 async function loadLogsFromSheets(){try{const d=await api('getLogs');if(d.error)throw new Error(d.error);saveLogs(mergeLogsPreservingDetails(Array.isArray(d.logs)?d.logs:[]));if(isPageActive('logs'))renderLogs();}catch(e){console.warn(e);}}
+async function loadPreciosFromSheets(){
+  try{
+    const d=await api('getPreciosProductos');
+    if(d.error)throw new Error(d.error);
+    const list=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||[]);
+    if(list.length){state.precios=list;savePreciosLocal(list);saveAndRender();}
+  }catch(e){console.warn('precios productos local',e);}
+}
 async function loadAll(){
   setSyncStatus('Sincronizando…',true);
-  try{const d=await api('getAll');if(d.error)throw new Error(d.error);updateStateFromSheetData(d);saveAndRender();if(!Array.isArray(d.logs))loadLogsFromSheets();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
+  try{const d=await api('getAll');if(d.error)throw new Error(d.error);updateStateFromSheetData(d);saveAndRender();if(!Array.isArray(d.logs))loadLogsFromSheets();if(!Array.isArray(d.precios)&&!Array.isArray(d.preciosProductos)&&!Array.isArray(d.listaPrecios))loadPreciosFromSheets();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
   catch(e){if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else setSyncStatus('Caché · sin red');}
 }
 function setSyncStatus(msg,loading=false){const el=document.getElementById('sync-status');el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg;}
@@ -1272,7 +1348,8 @@ function setSelectBtn(btn,inputId){
   btn.parentElement.querySelectorAll('.btn-select').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(inputId).value=btn.dataset.val;
-  if(inputId==='f-tipo'||inputId==='f-proveedor')updateRegistrarAplicaUI();
+  if(inputId==='f-tipo'||inputId==='f-proveedor'){updateRegistrarAplicaUI();if(inputId==='f-proveedor')applyPrecioProductoDefault(true);}
+  if(inputId==='f-producto')applyPrecioProductoDefault();
 }
 function syncLitrosPrecioLabels(){
   const lp=document.getElementById('f-precio-litro-label');
@@ -1287,9 +1364,25 @@ function updateRegistrarLitrosUI(){
   const show=tipo==='factura';
   if(page)page.classList.toggle('modo-factura',show);
   if(!show){
-    const pl=document.getElementById('f-precio-litro'),lt=document.getElementById('f-litros');
+    const pl=document.getElementById('f-precio-litro'),lt=document.getElementById('f-litros'),prod=document.getElementById('f-producto');
     if(pl)pl.value='';
     if(lt)lt.value='';
+    if(prod)prod.value='';
+    document.querySelectorAll('#f-producto-group .btn-select').forEach(b=>b.classList.remove('active'));
+  }else applyPrecioProductoDefault(false);
+}
+function applyPrecioProductoDefault(overwrite=true){
+  const tipo=document.getElementById('f-tipo').value;
+  if(tipo!=='factura')return;
+  const prov=document.getElementById('f-proveedor').value;
+  const producto=document.getElementById('f-producto').value;
+  const inp=document.getElementById('f-precio-litro');
+  if(!prov||!producto||!inp)return;
+  if(!overwrite&&String(inp.value||'').trim())return;
+  const found=getPrecioProducto(prov,producto);
+  if(found){
+    inp.value=formatPrecioLitroDisplay(found.precio);
+    updateMontoFromLitros();
   }
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();}
@@ -1328,7 +1421,7 @@ function sanitizePrecioLitroTyping(raw){
   if(hasTrailingDot&&dec==='')return ip+'.';
   return ip+'.'+dec;
 }
-function parsePrecioLitro(str){const s=String(str||'').trim();if(!s||s==='.')return NaN;const n=parseFloat(s);if(isNaN(n))return NaN;return Math.min(99.99,Math.max(0,n));}
+function parsePrecioLitro(str){const s=String(str||'').trim();if(!s||s==='.')return NaN;const n=parseFloat(s);if(isNaN(n))return NaN;return Math.min(100-0.01,Math.max(0,n));}
 function formatPrecioLitroDisplay(n){const v=parsePrecioLitro(n);if(isNaN(v))return'';return(Math.round(v*100)/100).toFixed(2);}
 function sanitizeLitrosTyping(raw){
   let s=String(raw||'').replace(/[^\d.,]/g,'');
@@ -1380,8 +1473,10 @@ async function persistPagoRegistro({fecha,prov,tipo,monto,factura,concepto,aplic
 async function guardarRegistro(){
   const prov=document.getElementById('f-proveedor').value,tipo=document.getElementById('f-tipo').value,
         montoNum=parseMonto(document.getElementById('f-monto').value),fecha=document.getElementById('f-fecha').value,
-        factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim();
+        factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim(),
+        producto=document.getElementById('f-producto').value.trim();
   if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, cliente, fecha y monto',true);return;}
+  if(isTipoFactura({tipo})&&!producto){toast('Selecciona producto: Etano, Nafta o Regular',true);return;}
   const btn=document.getElementById('btn-save');
   if(isTipoPago({tipo})){
     const selectedIds=getRegistrarFacturasSeleccionadas();
@@ -1426,9 +1521,9 @@ async function guardarRegistro(){
   }
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''}});
+    const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''}});
     if(res.error)throw new Error(res.error);
-    state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
+    state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''});
     addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
     saveAndRender();clearForm();toast('✓ Guardado',false,true);
     setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
@@ -1454,12 +1549,12 @@ async function eliminarRegistro(id,btn){
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
 function clearForm(){
-  ['f-proveedor','f-factura','f-concepto','f-monto','f-precio-litro','f-litros'].forEach(id=>document.getElementById(id).value='');
+  ['f-proveedor','f-factura','f-concepto','f-monto','f-precio-litro','f-litros','f-producto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-tipo').value='';
   const list=document.getElementById('f-aplica-facturas-list');if(list)list.innerHTML='';
   const resumen=document.getElementById('f-aplica-resumen');if(resumen)resumen.innerHTML='';
   const btn=document.getElementById('btn-save');if(btn)btn.classList.remove('btn-locked');
-  document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select,#f-producto-group .btn-select').forEach(b=>b.classList.remove('active'));
   updateRegistrarAplicaUI();
 }
 function renderProvSelect(){
@@ -2393,6 +2488,43 @@ async function eliminarProveedor(nombre){
   try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Cliente eliminado');scheduleQuietSync();}
   catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
 }
+function renderPreciosManager(){
+  const el=document.getElementById('precios-list');
+  if(!el)return;
+  if(!state.proveedores.length){el.innerHTML='<div class="empty">Agrega clientes primero.</div>';return;}
+  let html='<div class="precios-grid"><div class="precio-row precio-row-head"><div>Cliente</div>'+PRODUCTOS.map(p=>'<div>'+esc(p)+'</div>').join('')+'</div>';
+  state.proveedores.forEach(prov=>{
+    html+='<div class="precio-row"><div class="precio-client">'+esc(prov)+'</div>';
+    PRODUCTOS.forEach(prod=>{
+      const found=getPrecioProducto(prov,prod);
+      const val=found?formatPrecioLitroDisplay(found.precio):'';
+      const id='precio_'+String(prov+'_'+prod).replace(/[^a-zA-Z0-9_]/g,'_');
+      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)" onblur="guardarPrecioProducto(\''+esc(prov)+'\',\''+esc(prod)+'\',this)"></div>';
+    });
+    html+='</div>';
+  });
+  html+='</div><div class="hint-text" style="margin-top:10px">Al registrar Factura: elige cliente + producto y se cargará este precio automáticamente. Puedes cambiarlo manualmente si hace falta.</div>';
+  el.innerHTML=html;
+}
+function onPrecioListaInput(el){el.value=sanitizePrecioLitroTyping(el.value);}
+async function guardarPrecioProducto(prov,producto,el){
+  const n=parsePrecioLitro(el.value);
+  if(el.value.trim()&&isNaN(n)){toast('Precio inválido',true);el.value='';return;}
+  const prev=state.precios.slice();
+  const precio=isNaN(n)?NaN:n;
+  if(!isNaN(precio))el.value=formatPrecioLitroDisplay(precio);
+  el.classList.add('saving');
+  upsertPrecioProductoLocal(prov,producto,precio);
+  saveAndRender();
+  try{
+    const res=await apiPost({action:'setPrecioProducto',data:{proveedor:prov,cliente:prov,producto,precio:isNaN(precio)?'':precio}});
+    if(res&&res.error)throw new Error(res.error);
+    toast('Precio guardado',false,true);
+  }catch(e){
+    console.warn('precio local',e);
+    toast('Precio guardado local · falta actualizar Apps Script',false,true);
+  }finally{el.classList.remove('saving');}
+}
 function renderProvManager(){
   bindAppVersionLink();
   const el=document.getElementById('prov-manager-list');
@@ -2402,6 +2534,7 @@ function renderProvManager(){
 }
 function renderAll(){
   renderProvSelect();renderTotales();renderProvManager();
+  if(isPageActive('precios'))renderPreciosManager();
   if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisis();
 }
 </script>
