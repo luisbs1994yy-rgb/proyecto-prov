@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.87
-     Descarga: https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87
+    ESTADO DE CUENTA  |  Versión 2.88
+     Descarga: (ver APP_VERSION en el archivo)
      ============================================================ -->
 <html lang="es">
 <head>
@@ -679,7 +679,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.87";
+const APP_VERSION = "2.88";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -708,7 +708,12 @@ function bindAppVersionLink(){
   if(link){
     link.href=url;
     link.textContent=url;
+    link.title='Abrir v'+APP_VERSION;
     link.onclick=function(ev){openAppReleaseUrl(ev);};
+  }
+  const hint=document.getElementById('release-url-hint');
+  if(hint){
+    hint.innerHTML='Un toque en <strong>v'+APP_VERSION+'</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.';
   }
 }
 async function copyAppReleaseUrl(e){
@@ -728,12 +733,13 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <header class="header">
   <div class="header-brand"><span class="header-dot"></span><span class="header-title">Estado de Cuenta</span></div>
   <div class="header-right">
-    <a class="header-version" id="app-version" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87" title="Abrir app v2.87 (un toque)">v2.87</a>
+    <a class="header-version" id="app-version" href="#">v…</a>
     <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
   </div>
 </header>
+<script>bindAppVersionLink();</script>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileMenu()"></div>
 <div class="layout">
   <nav class="sidebar" id="sidebar">
@@ -903,11 +909,11 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <div class="release-url-box" id="release-url-box">
             <div class="release-url-lbl">Actualizar app · versión actual</div>
             <div class="release-url-actions">
-              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87">Abrir v2.87</a>
+              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="#">Abrir</a>
               <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl(event)">Copiar enlace</button>
             </div>
-            <a class="release-url-link" id="app-release-url" href="https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.87"></a>
-            <p class="release-url-hint">Un toque en <strong>v2.87</strong> arriba, en <strong>Abrir</strong> o en el enlace azul carga la versión nueva.</p>
+            <a class="release-url-link" id="app-release-url" href="#">…</a>
+            <p class="release-url-hint" id="release-url-hint"></p>
           </div>
         </div>
       </div>
