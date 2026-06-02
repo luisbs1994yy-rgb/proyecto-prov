@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.90
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.90
+    ESTADO DE CUENTA  |  Versión 2.91
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.91
      ============================================================ -->
 <html lang="es">
 <head>
@@ -682,7 +682,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.90";
+const APP_VERSION = "2.91";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -934,6 +934,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <a class="release-url-link" id="app-release-url" href="#">…</a>
             <p class="release-url-hint" id="release-url-hint"></p>
           </div>
+          <script>bindAppVersionLink();</script>
         </div>
       </div>
     </div>
@@ -1679,14 +1680,17 @@ function downloadBlob(blob,name){
 }
 function isMobileLike(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');}
 function isIOSLike(){return /iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
+function getTotalesSaldoTotal(){
+  const resumen=resumenProveedoresActivos(state.registros);
+  return resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
+}
+function getTotalesHeaderLine(){
+  return 'ESTADO DE CUENTA · Saldo total '+fmt(getTotalesSaldoTotal());
+}
 function buildTotalesText(){
   const resumen=resumenProveedoresActivos(state.registros);
-  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  const lines=[
-    'ESTADO DE CUENTA',
-    'Saldo total · '+fmt(sumSaldos),
-    ''
-  ];
+  const sumSaldos=getTotalesSaldoTotal();
+  const lines=[getTotalesHeaderLine(),''];
   resumen.slice(0,10).forEach(r=>{
     const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
@@ -1732,7 +1736,9 @@ async function copyTotalesTextFallback(){
   return ok;
 }
 async function capturarTotalesMobile(blob){
+  const shareLine=getTotalesHeaderLine();
   if(!isIOSLike()&&await copyImageToClipboard(blob,3000)){
+    try{await copyTextRobust(shareLine);}catch(_){}
     toast('Imagen copiada · pégala en WhatsApp',false,true);
     return;
   }
@@ -1821,7 +1827,8 @@ async function capturarPantallaMovil(){
     const file=new File([blob],name,{type:'image/png'});
     if(navigator.share&&navigator.canShare){
       try{
-        const payload={files:[file],title:'Estado de cuenta'};
+        const shareHeader=getTotalesHeaderLine();
+        const payload={files:[file],title:shareHeader,text:buildTotalesText()};
         if(navigator.canShare(payload)){
           await navigator.share(payload);
           toast('Elige WhatsApp para enviar la foto',false,true);
