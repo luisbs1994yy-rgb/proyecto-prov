@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.91
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.91
+    ESTADO DE CUENTA  |  Versión 2.93
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.93
      ============================================================ -->
 <html lang="es">
 <head>
@@ -682,7 +682,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.91";
+const APP_VERSION = "2.93";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1684,20 +1684,18 @@ function getTotalesSaldoTotal(){
   const resumen=resumenProveedoresActivos(state.registros);
   return resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
 }
-function getTotalesHeaderLine(){
-  return 'ESTADO DE CUENTA · Saldo total '+fmt(getTotalesSaldoTotal());
+function formatTotalesCopiaFecha(d){
+  const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  let h=d.getHours(),min=d.getMinutes();
+  const ampm=h>=12?'pm':'am';
+  h=h%12;if(h===0)h=12;
+  return DIAS[d.getDay()]+' '+d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear()+' '+h+':'+String(min).padStart(2,'0')+ampm;
 }
 function buildTotalesText(){
-  const resumen=resumenProveedoresActivos(state.registros);
-  const sumSaldos=getTotalesSaldoTotal();
-  const lines=[getTotalesHeaderLine(),''];
-  resumen.slice(0,10).forEach(r=>{
-    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
-    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
-    lines.push(r.proveedor+' | '+fmt(saldoDisplay)+' | '+pct+'%');
-  });
-  return lines.join('\n');
+  return 'Saldo total '+fmt(getTotalesSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
 }
+function getTotalesHeaderLine(){return buildTotalesText();}
 function copyTextLegacy(text){
   const ta=document.createElement('textarea');
   ta.value=text;
