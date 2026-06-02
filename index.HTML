@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.88
+    ESTADO DE CUENTA  |  Versión 2.89
      Descarga: (ver APP_VERSION en el archivo)
      ============================================================ -->
 <html lang="es">
@@ -679,7 +679,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.88";
+const APP_VERSION = "2.89";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1663,7 +1663,11 @@ function isIOSLike(){return /iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
 function buildTotalesText(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  const lines=['SALDO TOTAL: '+fmt(sumSaldos),''];
+  const lines=[
+    'ESTADO DE CUENTA',
+    'Saldo total · '+fmt(sumSaldos),
+    ''
+  ];
   resumen.slice(0,10).forEach(r=>{
     const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
     const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
@@ -1758,10 +1762,12 @@ function buildTotalesCanvas(){
   const grad=ctx.createLinearGradient(8,8,w-8,8);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
+  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
+  ctx.fillText('ESTADO DE CUENTA',pad+5,26);
   ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
-  ctx.fillText('SALDO TOTAL',pad+5,34);
+  ctx.fillText('Saldo total',pad+5,40);
   ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(sumSaldos),w-pad-5,38);
+  ctx.fillText(fmt(sumSaldos),w-pad-5,40);
   ctx.textAlign='left';
   let y=8+headerH+gap;
   rows.forEach(r=>{
