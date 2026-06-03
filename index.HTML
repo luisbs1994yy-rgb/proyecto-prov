@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.02
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.02
+    ESTADO DE CUENTA  |  Versión 3.03
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.03
      ============================================================ -->
 <html lang="es">
 <head>
@@ -449,6 +449,14 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .bitacora-rango-actions{display:flex;gap:8px;}
 .bitacora-rango-actions .btn{flex:1;}
 .bitacora-rango-actions .btn-primary{flex:1.2;}
+.bitacora-share-overlay{display:none;position:fixed;inset:0;z-index:2200;background:rgba(26,28,44,.65);padding:14px;box-sizing:border-box;align-items:center;justify-content:center;}
+.bitacora-share-overlay.open{display:flex;}
+.bitacora-share-popup{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-md);width:100%;max-width:420px;max-height:92vh;overflow:auto;padding:14px;}
+.bitacora-share-popup h3{font-size:14px;font-weight:700;color:var(--navy);margin:0 0 10px;}
+.bitacora-share-preview{width:100%;height:auto;border-radius:10px;border:1px solid var(--border);display:block;margin-bottom:12px;max-height:50vh;object-fit:contain;background:#f8fafc;}
+.bitacora-share-actions{display:flex;flex-direction:column;gap:8px;}
+.bitacora-share-actions .btn-wa{background:#25d366;color:#fff;border:none;font-weight:700;}
+.bitacora-share-hint{font-size:11px;color:var(--text-muted);margin:0 0 10px;line-height:1.4;}
 .logs-filters{display:flex;flex-wrap:wrap;gap:8px 10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--border);align-items:flex-end;}
 .logs-filters label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);display:flex;flex-direction:column;gap:3px;min-width:0;}
 .logs-filters input[type=date],.logs-filters select{padding:8px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--mono);background:#fff;min-width:0;}
@@ -724,7 +732,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.02";
+const APP_VERSION = "3.03";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1047,6 +1055,18 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="bitacora-rango-actions">
       <button type="button" class="btn" onclick="closeBitacoraRangoModal()">Cancelar</button>
       <button type="button" class="btn btn-primary" id="btn-bitacora-generar" onclick="generarBitacoraWhatsapp()">📷 Generar foto</button>
+    </div>
+  </div>
+</div>
+<div class="bitacora-share-overlay" id="bitacora-share-overlay" onclick="if(event.target===this)closeBitacoraSharePreview()">
+  <div class="bitacora-share-popup" onclick="event.stopPropagation()">
+    <h3>Foto lista</h3>
+    <p class="bitacora-share-hint">Toca <strong>Enviar a WhatsApp</strong> para abrir el menú de compartir. Si no aparece, usa <strong>Guardar foto</strong>.</p>
+    <img class="bitacora-share-preview" id="bitacora-share-preview" alt="Vista previa bitácora">
+    <div class="bitacora-share-actions">
+      <button type="button" class="btn btn-wa" id="btn-bitacora-wa-share" onclick="enviarBitacoraWhatsappClick()">Enviar a WhatsApp</button>
+      <button type="button" class="btn btn-primary" onclick="guardarBitacoraPreviewClick()">Guardar foto</button>
+      <button type="button" class="btn" onclick="closeBitacoraSharePreview()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -1814,8 +1834,15 @@ function renderTotales(){
     });
   }
 }
-function canvasToBlob(canvas){
-  return new Promise(resolve=>canvas.toBlob(resolve,'image/png',1));
+let bitacoraPendingShare=null;
+function canvasToBlob(canvas,timeoutMs){
+  const ms=timeoutMs||18000;
+  return new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=b=>{if(done)return;done=true;clearTimeout(tid);resolve(b||null);};
+    const tid=setTimeout(()=>{if(!done){done=true;reject(new Error('La imagen tardó demasiado; prueba menos días'));}},ms);
+    try{canvas.toBlob(b=>finish(b),'image/png',0.92);}catch(e){clearTimeout(tid);reject(e);}
+  });
 }
 function downloadBlob(blob,name){
   const a=document.createElement('a');
@@ -2052,8 +2079,8 @@ function getBitacoraCanvasExtra(l){
 }
 function getBitacoraWideLayout(rowData){
   const mcv=document.createElement('canvas').getContext('2d');
-  const dateW=74,tipoW=62,gap=4;
-  let maxClient=72,maxPl=34,maxLit=44,maxMonto=86;
+  const dateW=76,tipoW=64,gap=5;
+  let maxClient=76,maxPl=36,maxLit=46,maxMonto=90;
   rowData.forEach(r=>{
     mcv.font='700 14px IBM Plex Sans, Arial';
     maxClient=Math.max(maxClient,mcv.measureText(r.cliente||'').width);
@@ -2063,7 +2090,7 @@ function getBitacoraWideLayout(rowData){
     mcv.font='700 13px IBM Plex Mono, monospace';
     if(r.monto)maxMonto=Math.max(maxMonto,mcv.measureText(r.monto).width);
   });
-  const clientW=Math.min(118,Math.ceil(maxClient)+8);
+  const clientW=Math.min(132,Math.ceil(maxClient)+10);
   const plW=Math.ceil(maxPl)+10;
   const litW=Math.ceil(maxLit)+10;
   const montoW=Math.ceil(maxMonto)+10;
@@ -2072,15 +2099,18 @@ function getBitacoraWideLayout(rowData){
   return{dateW,tipoW,clientW,plW,litW,montoW,gap,contentW,xNums};
 }
 function getBitacoraCanvasWidth(logs,desde,hasta,layout){
-  if(layout)return layout.contentW+36;
+  if(layout)return layout.contentW+56;
   const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
   if(n>6)return 420;
   return 360;
 }
-function getBitacoraCanvasScale(w,wide){
-  if(wide)return 6;
-  if(w>=420)return 4;
-  return 3;
+function getBitacoraExportScale(w,h,wide){
+  if(!wide)return w>=420?4:3;
+  const targetW=2800;
+  let s=Math.min(5,Math.max(4,Math.round(targetW/w)));
+  if(h*s>11000)s=Math.max(3,Math.floor(11000/h));
+  if(w*h*s*s>9e6)s=Math.max(3,Math.floor(Math.sqrt(9e6/(w*h))));
+  return s;
 }
 function shouldUseBitacoraWideLayout(logs,desde,hasta){
   const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
@@ -2306,11 +2336,11 @@ function buildBitacoraCanvas(logs,desde,hasta){
   const layout=wide?getBitacoraWideLayout(rowData):null;
   const w=getBitacoraCanvasWidth(logs,desde,hasta,layout);
   const pad=wide?12:10,headerH=wide?60:52,gap=wide?4:4,extraH=extra?24:0,summaryH=wide?54:50;
-  const scale=getBitacoraCanvasScale(w,wide);
   const rowHBase=wide?40:34;
   const rowHWithExtra=wide?52:40;
   const rowsH=rowData.reduce((acc,r)=>acc+(wide?(r.extra?rowHWithExtra:rowHBase):r.rowH)+gap,0);
   const h=pad*2+headerH+gap+rowsH+extraH+gap+summaryH;
+  const scale=getBitacoraExportScale(w,h,wide);
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2359,22 +2389,63 @@ function buildBitacoraCanvas(logs,desde,hasta){
   ctx.textAlign='left';
   return canvas;
 }
-async function shareBitacoraBlob(blob,name,desde,hasta,count){
-  const file=new File([blob],name,{type:'image/png'});
-  const titulo='Bitácora · '+fmtBitacoraRangoLabel(desde,hasta)+' · '+count+' mov.';
-  if(navigator.share&&navigator.canShare){
-    try{
-      const payload={files:[file],title:titulo};
-      if(navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp para enviar la foto',false,true);return true;}
-    }catch(e){if(e&&e.name==='AbortError')return true;}
+function closeBitacoraSharePreview(){
+  const ov=document.getElementById('bitacora-share-overlay');
+  if(ov)ov.classList.remove('open');
+  if(bitacoraPendingShare&&bitacoraPendingShare.url){
+    try{URL.revokeObjectURL(bitacoraPendingShare.url);}catch(_){}
   }
-  if(!isMobileLike()&&await copyImageToClipboard(blob,5000)){
-    toast('Imagen copiada · pégala en WhatsApp',false,true);
-    return true;
+  bitacoraPendingShare=null;
+}
+function showBitacoraSharePreview(blob,name,desde,hasta,count){
+  const url=URL.createObjectURL(blob);
+  bitacoraPendingShare={blob,name,desde,hasta,count,url};
+  const img=document.getElementById('bitacora-share-preview');
+  if(img)img.src=url;
+  document.getElementById('bitacora-share-overlay')?.classList.add('open');
+}
+function shareBitacoraFallback(p){
+  if(!p||!p.blob)return;
+  copyImageToClipboard(p.blob,8000).then(ok=>{
+    if(ok){toast('Imagen copiada · pégala en WhatsApp',false,true);return;}
+    downloadBlob(p.blob,p.name);
+    toast('Foto guardada · ábrela en Galería y compártela por WhatsApp',false,true);
+  });
+}
+function enviarBitacoraWhatsappClick(){
+  const p=bitacoraPendingShare;
+  if(!p||!p.blob){toast('Genera la foto primero',true);return;}
+  const file=new File([p.blob],p.name,{type:'image/png'});
+  const titulo='Bitácora · '+fmtBitacoraRangoLabel(p.desde,p.hasta)+' · '+p.count+' mov.';
+  if(navigator.share){
+    const payloads=[{files:[file],title:titulo},{files:[file]}];
+    for(let i=0;i<payloads.length;i++){
+      const payload=payloads[i];
+      if(!navigator.canShare||navigator.canShare(payload)){
+        navigator.share(payload).then(()=>{
+          toast('Elige WhatsApp en la lista',false,true);
+        }).catch(e=>{
+          if(e&&e.name==='AbortError')return;
+          shareBitacoraFallback(p);
+        });
+        return;
+      }
+    }
+    navigator.share({files:[file]}).then(()=>{
+      toast('Elige WhatsApp en la lista',false,true);
+    }).catch(e=>{
+      if(e&&e.name==='AbortError')return;
+      shareBitacoraFallback(p);
+    });
+    return;
   }
-  downloadBlob(blob,name);
-  toast(isMobileLike()?'Foto guardada · ábrela en WhatsApp':'Imagen descargada',false,true);
-  return true;
+  shareBitacoraFallback(p);
+}
+function guardarBitacoraPreviewClick(){
+  const p=bitacoraPendingShare;
+  if(!p||!p.blob){toast('Sin foto',true);return;}
+  downloadBlob(p.blob,p.name);
+  toast('Foto guardada · ábrela y compártela por WhatsApp',false,true);
 }
 async function generarBitacoraWhatsapp(){
   const btn=document.getElementById('btn-bitacora-generar');
@@ -2388,11 +2459,17 @@ async function generarBitacoraWhatsapp(){
   if(btn){btn.disabled=true;btn.textContent='Generando…';}
   try{
     const canvas=buildBitacoraCanvas(logs,r.desde,r.hasta);
-    const blob=await canvasToBlob(canvas);
-    if(!blob)throw new Error('No se pudo crear imagen');
+    const blob=await canvasToBlob(canvas,20000);
+    if(!blob)throw new Error('No se pudo crear la imagen; prueba un rango más corto');
     const name='bitacora-'+toDateInputValue(r.desde)+'_'+toDateInputValue(r.hasta)+'.png';
-    await shareBitacoraBlob(blob,name,r.desde,r.hasta,logs.length);
     closeBitacoraRangoModal();
+    showBitacoraSharePreview(blob,name,r.desde,r.hasta,logs.length);
+    if(!isMobileLike()&&!navigator.share){
+      downloadBlob(blob,name);
+      toast('Imagen descargada',false,true);
+    }else{
+      toast('Toca «Enviar a WhatsApp» en la pantalla siguiente',false,true);
+    }
   }catch(e){toastError(e);}
   finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷 Generar foto';}}
 }
