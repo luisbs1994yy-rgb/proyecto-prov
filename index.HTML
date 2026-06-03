@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.94
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.94
+    ESTADO DE CUENTA  |  Versión 2.96
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.96
      ============================================================ -->
 <html lang="es">
 <head>
@@ -206,12 +206,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
-#logs-list .log-col-fecha{width:17%;text-align:left;}
-#logs-list .log-col-tipo{width:13%;text-align:center;}
-#logs-list .log-col-fact{width:13%;text-align:left;}
-#logs-list .log-col-conc{width:17%;text-align:left;}
-#logs-list .log-col-desc{width:34%;text-align:left;}
-#logs-list .log-col-act{width:6%;text-align:center;vertical-align:middle;}
+#logs-list .log-col-fecha{width:12%;text-align:left;}
+#logs-list .log-col-tipo{width:10%;text-align:center;}
+#logs-list .log-col-fact{width:9%;text-align:left;}
+#logs-list .log-col-pl{width:9%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
+#logs-list .log-col-lit{width:11%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
+#logs-list .log-col-conc{width:12%;text-align:left;}
+#logs-list .log-col-desc{width:25%;text-align:left;}
+#logs-list .log-col-act{width:5%;text-align:center;vertical-align:middle;}
+#logs-list .log-col-pl.log-empty,#logs-list .log-col-lit.log-empty{color:var(--text-faint);}
 #logs-list .log-col-desc,#logs-list .log-col-conc,#logs-list .log-col-fact{white-space:normal;word-break:break-word;overflow:visible;}
 #logs-list .log-col-tipo .badge{white-space:normal;line-height:1.15;}
 #logs-list .log-day-a td{background:#e8f4fc;}
@@ -630,8 +633,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
   #logs-list .log-col-fecha { width: 14%; }
   #logs-list .log-col-tipo { width: 11%; }
-  #logs-list .log-col-fact, #logs-list .log-col-conc { display: none; }
-  #logs-list .log-col-desc { width: 69%; }
+  #logs-list .log-col-conc { display: none; }
+  #logs-list .log-col-fact { width: 10%; }
+  #logs-list .log-col-pl { width: 12%; font-size: 7px; }
+  #logs-list .log-col-lit { width: 14%; font-size: 7px; }
+  #logs-list .log-col-desc { width: 48%; }
   #logs-list .log-col-act { width: 6%; }
   #logs-list .log-time { font-size: 8px; line-height: 1.2; }
   #logs-list .log-hora { font-size: 7px; }
@@ -705,7 +711,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.94";
+const APP_VERSION = "2.96";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1262,7 +1268,14 @@ function saveAplicaMap(map){try{localStorage.setItem(APLICA_KEY,JSON.stringify(m
 function normalizeRegistro(r){
   const map=loadAplicaMap();
   const id=String(r.id||'');
-  return Object.assign({},r,{aplicaFacturaId:String(r.aplicaFacturaId||map[id]||'').trim()});
+  const pl=parsePrecioLitro(r.precioLitro);
+  const lt=parseLitros(r.litros);
+  return Object.assign({},r,{
+    aplicaFacturaId:String(r.aplicaFacturaId||map[id]||'').trim(),
+    producto:String(r.producto||'').trim(),
+    precioLitro:isNaN(pl)?'':pl,
+    litros:isNaN(lt)?'':lt
+  });
 }
 function mergeAplicaIntoRegs(){
   const map=loadAplicaMap();
@@ -1647,10 +1660,15 @@ async function guardarRegistro(){
   }
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''}});
+    const pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
+    const ln=parseLitros(document.getElementById('f-litros').value);
+    const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
+    if(!isNaN(pn))regData.precioLitro=pn;
+    if(!isNaN(ln))regData.litros=ln;
+    const res=await apiPost({action:'addRegistro',data:regData});
     if(res.error)throw new Error(res.error);
-    state.registros.push({id:res.id,fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''});
-    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id);
+    state.registros.push({id:res.id,...regData});
+    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id,{producto,precioLitro:pn,litros:ln});
     saveAndRender();clearForm();toast('✓ Guardado',false,true);
     setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
@@ -2013,6 +2031,35 @@ function filterLogsByRange(logs,desde,hasta){
     return t>=t0&&t<=t1;
   }));
 }
+function getLogMontoNum(l){
+  const b=parseDescBasics(l.descripcion);
+  if(b&&!isNaN(b.monto))return b.monto;
+  const parts=String(l.descripcion||'').split(' · ');
+  for(let i=1;i<parts.length;i++){
+    const s=parts[i].replace(/[^\d.,-]/g,'').replace(/,/g,'');
+    const n=parseFloat(s);
+    if(!isNaN(n)&&n>0)return n;
+  }
+  return 0;
+}
+function summarizeBitacoraLogs(logs){
+  let facturado=0,pagado=0;
+  logs.forEach(l=>{
+    const t=String(l.tipo||'').toLowerCase();
+    const m=getLogMontoNum(l);
+    if(!m)return;
+    if(t.includes('factura'))facturado+=m;
+    else if(t.includes('pago'))pagado+=m;
+  });
+  return{facturado,pagado};
+}
+function getBitacoraResumenLabels(desde,hasta){
+  const hoy=toDateInputValue(startOfDay(new Date()));
+  const d0=toDateInputValue(desde),d1=toDateInputValue(hasta);
+  if(d0===d1&&d0===hoy)return{fact:'Facturado hoy',pago:'Pagado hoy'};
+  if(d0===d1)return{fact:'Facturado',pago:'Pagado'};
+  return{fact:'Facturado total',pago:'Pagado total'};
+}
 function getLogRowData(l){
   const d=parseLogDate(l);
   const tipo=String(escTipoDisplay(l.tipo)||'').toUpperCase();
@@ -2031,7 +2078,14 @@ function getLogRowData(l){
   if(d)hora=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
   const fecha=d?(d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')):'—';
   const extra=[factura,concepto].filter(Boolean).join(' · ');
-  return{fecha,hora,tipo,cliente,monto,extra};
+  let precioLitro='',litros='',rowH=34;
+  const fd=getLogFacturaDetalle(l);
+  if(fd){
+    if(!isNaN(fd.precioLitro)&&fd.precioLitro>0)precioLitro=formatPrecioLitroDisplay(fd.precioLitro);
+    if(!isNaN(fd.litros)&&fd.litros>0)litros=formatLitrosDisplay(fd.litros);
+    if(precioLitro||litros)rowH=40;
+  }
+  return{fecha,hora,tipo,cliente,monto,extra,precioLitro,litros,rowH};
 }
 function logTipoCanvasStyle(tipo){
   const t=String(tipo||'').toUpperCase();
@@ -2044,8 +2098,12 @@ function logTipoCanvasStyle(tipo){
 function buildBitacoraCanvas(logs,desde,hasta){
   const rows=logs.slice(0,BITACORA_CANVAS_MAX_FILAS);
   const extra=logs.length-rows.length;
-  const w=360,pad=10,headerH=52,rowH=34,gap=4,footH=extra?22:0,scale=3;
-  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+footH;
+  const resumen=summarizeBitacoraLogs(logs);
+  const lbl=getBitacoraResumenLabels(desde,hasta);
+  const rowData=rows.map(l=>getLogRowData(l));
+  const w=360,pad=10,headerH=52,gap=4,extraH=extra?22:0,summaryH=46,scale=3;
+  const rowsH=rowData.reduce((acc,r)=>acc+r.rowH+gap,0);
+  const h=pad*2+headerH+gap+rowsH+extraH+gap+summaryH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2066,7 +2124,8 @@ function buildBitacoraCanvas(logs,desde,hasta){
   ctx.textAlign='left';
   let y=6+headerH+gap;
   rows.forEach((l,i)=>{
-    const r=getLogRowData(l);
+    const r=rowData[i];
+    const rowH=r.rowH;
     const st=logTipoCanvasStyle(r.tipo);
     const bg=i%2===0?'#f8fafc':'#fff';
     ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
@@ -2075,20 +2134,25 @@ function buildBitacoraCanvas(logs,desde,hasta){
     ctx.fillText(r.fecha,pad+6,y+13);
     ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Mono, monospace';
     ctx.fillText(r.hora,pad+6,y+24);
-    const bx=pad+52;
-    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+8,44,16,6);ctx.fill();
-    ctx.fillStyle=st.fg;ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
-    ctx.fillText(st.lbl,bx+22,y+19);
+    const bx=pad+48;
+    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+6,40,14,5);ctx.fill();
+    ctx.fillStyle=st.fg;ctx.font='700 6px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText(st.lbl,bx+20,y+16);
     ctx.textAlign='left';
-    const cx=bx+50;
-    ctx.fillStyle='#1a1c2c';ctx.font='700 10px IBM Plex Sans, Arial';
-    drawFitText(ctx,r.cliente,cx,y+14,w-pad-cx-4);
+    const cx=bx+46;
+    ctx.fillStyle='#1a1c2c';ctx.font='700 9px IBM Plex Sans, Arial';
+    drawFitText(ctx,r.cliente,cx,y+13,w-pad-cx-72);
     if(r.monto){
       ctx.fillStyle='#1e40af';ctx.font='700 9px IBM Plex Mono, monospace';ctx.textAlign='right';
-      ctx.fillText(r.monto,w-pad-6,y+14);
+      ctx.fillText(r.monto,w-pad-6,y+13);
       ctx.textAlign='left';
     }
-    if(r.extra){
+    if(r.precioLitro||r.litros){
+      ctx.fillStyle='#475569';ctx.font='600 7px IBM Plex Mono, monospace';
+      const plTxt=r.precioLitro?('$'+r.precioLitro+'/L'):'';
+      const liTxt=r.litros?(r.litros+' L'):'';
+      drawFitText(ctx,[plTxt,liTxt].filter(Boolean).join('  '),cx,y+26,w-pad-cx-8);
+    }else if(r.extra){
       ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Sans, Arial';
       drawFitText(ctx,r.extra,cx,y+26,w-pad-cx-6);
     }
@@ -2098,7 +2162,22 @@ function buildBitacoraCanvas(logs,desde,hasta){
     ctx.fillStyle='#94a3b8';ctx.font='600 9px IBM Plex Sans, Arial';ctx.textAlign='center';
     ctx.fillText('… y '+extra+' movimiento'+(extra!==1?'s':'')+' más',w/2,y+14);
     ctx.textAlign='left';
+    y+=extraH+gap;
+  }else{
+    y+=gap;
   }
+  const sy=y;
+  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.fill();
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.stroke();
+  const colW=(w-pad*2-16)/2,mid=pad+8+colW;
+  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText(lbl.fact,pad+8,sy+14);
+  ctx.fillText(lbl.pago,mid+4,sy+14);
+  ctx.fillStyle='#1e40af';ctx.font='700 11px IBM Plex Mono, monospace';
+  ctx.fillText(fmt(resumen.facturado),pad+8,sy+32);
+  ctx.fillStyle='#0d7a3e';
+  ctx.fillText(fmt(resumen.pagado),mid+4,sy+32);
+  ctx.textAlign='left';
   return canvas;
 }
 async function shareBitacoraBlob(blob,name,desde,hasta,count){
@@ -2587,7 +2666,17 @@ function parseLogExtraFields(log){
 }
 function normalizeLog(log,prev={}){
   const parsed=parseLogExtraFields(log);
-  return{...log,factura:String(parsed.factura||prev.factura||'').trim(),concepto:String(parsed.concepto||prev.concepto||'').trim()};
+  const meta=parseLogLitrosMeta(log.descripcion);
+  const pl=parsePrecioLitro(log.precioLitro!=null?log.precioLitro:prev.precioLitro);
+  const lt=parseLitros(log.litros!=null?log.litros:prev.litros);
+  return{
+    ...log,
+    factura:String(parsed.factura||prev.factura||'').trim(),
+    concepto:String(parsed.concepto||prev.concepto||'').trim(),
+    producto:String(log.producto||meta.producto||prev.producto||'').trim(),
+    precioLitro:isNaN(pl)?(isNaN(meta.precioLitro)?'':meta.precioLitro):pl,
+    litros:isNaN(lt)?(isNaN(meta.litros)?'':meta.litros):lt
+  };
 }
 function mergeLogsPreservingDetails(incomingLogs){
   const prevMap={};
@@ -2595,7 +2684,64 @@ function mergeLogsPreservingDetails(incomingLogs){
   return (incomingLogs||[]).map(raw=>{const key=raw.localId||raw.id||'';return normalizeLog(raw,key?prevMap[key]:undefined);});
 }
 function cleanLogDescripcion(descripcion){
-  return String(descripcion||'').replace(/\s*·\s*Factura:\s*[^·]+/i,'').replace(/\s*·\s*Concepto:\s*.+$/i,'').trim();
+  return String(descripcion||'')
+    .replace(/\s*·\s*Factura:\s*[^·]+/gi,'')
+    .replace(/\s*·\s*Concepto:\s*.+$/i,'')
+    .replace(/\s*·\s*P\/L:\s*[^·]+/gi,'')
+    .replace(/\s*·\s*Litros:\s*[^·]+/gi,'')
+    .replace(/\s*·\s*Prod:\s*[^·]+/gi,'')
+    .trim();
+}
+function parseLogLitrosMeta(desc){
+  const s=String(desc||'');
+  const mp=s.match(/(?:^|·)\s*P\/L:\s*([0-9.,]+)/i);
+  const ml=s.match(/(?:^|·)\s*Litros:\s*([0-9.,]+)/i);
+  const mprod=s.match(/(?:^|·)\s*Prod:\s*([^·]+)/i);
+  let precioLitro=NaN,litros=NaN,producto='';
+  if(mp){const n=parsePrecioLitro(mp[1]);if(!isNaN(n))precioLitro=n;}
+  if(ml){const n=parseLitros(ml[1]);if(!isNaN(n))litros=n;}
+  if(mprod)producto=String(mprod[1]||'').trim();
+  return{precioLitro,litros,producto};
+}
+function isLogFactura(l){return String(l.tipo||'').toLowerCase().includes('factura');}
+function getLogFacturaDetalle(l){
+  if(!isLogFactura(l))return null;
+  const meta=parseLogLitrosMeta(l.descripcion);
+  let precioLitro=parsePrecioLitro(l.precioLitro);
+  if(isNaN(precioLitro)&&!isNaN(meta.precioLitro))precioLitro=meta.precioLitro;
+  let litros=parseLitros(l.litros);
+  if(isNaN(litros)&&!isNaN(meta.litros))litros=meta.litros;
+  let producto=String(l.producto||meta.producto||'').trim();
+  const regs=findRegistrosForLog(l);
+  if(regs.length){
+    const r=regs[0];
+    const rp=parsePrecioLitro(r.precioLitro);
+    const rl=parseLitros(r.litros);
+    if(!isNaN(rp))precioLitro=rp;
+    if(!isNaN(rl))litros=rl;
+    if(!producto)producto=String(r.producto||'').trim();
+  }
+  const monto=getLogMontoNum(l);
+  if((isNaN(litros)||litros<=0)&&!isNaN(precioLitro)&&precioLitro>0&&monto>0)
+    litros=Math.round((monto/precioLitro)*100)/100;
+  if((isNaN(precioLitro)||precioLitro<=0)&&producto){
+    const b=parseDescBasics(l.descripcion);
+    if(b&&b.proveedor){
+      const pf=getPrecioProducto(b.proveedor,producto);
+      if(pf&&!isNaN(parsePrecioLitro(pf.precio)))precioLitro=parsePrecioLitro(pf.precio);
+    }
+  }
+  return{precioLitro,litros,producto};
+}
+function fmtLogPrecioLitroCell(l){
+  const d=getLogFacturaDetalle(l);
+  if(!d||isNaN(d.precioLitro)||d.precioLitro<=0)return{html:'—',empty:true};
+  return{html:esc(formatPrecioLitroDisplay(d.precioLitro)),empty:false};
+}
+function fmtLogLitrosCell(l){
+  const d=getLogFacturaDetalle(l);
+  if(!d||isNaN(d.litros)||d.litros<=0)return{html:'—',empty:true};
+  return{html:esc(formatLitrosDisplay(d.litros)),empty:false};
 }
 function parseDescBasics(descripcion){
   const clean=cleanLogDescripcion(descripcion);
@@ -2709,15 +2855,26 @@ async function deleteLogsRemote_(logsToRemove){
 function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];return logsMemory;}catch{return logsMemory;}}
 function saveLogs(logs){logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
 function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
-function addLog(tipo,descripcion,factura='',concepto='',registroId=''){
+function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
   const logs=getLogs().slice(),now=new Date();
   const facturaSafe=String(factura||'').trim();
   const conceptoSafe=String(concepto||'').trim();
   const regIdSafe=String(registroId||'').trim();
-  const descWithMeta=String(descripcion||'').trim()+
+  const ex=extra&&typeof extra==='object'?extra:{};
+  const producto=String(ex.producto||'').trim();
+  const pn=parsePrecioLitro(ex.precioLitro);
+  const ln=parseLitros(ex.litros);
+  let descWithMeta=String(descripcion||'').trim()+
     (facturaSafe?' · Factura: '+facturaSafe:'')+
     (conceptoSafe?' · Concepto: '+conceptoSafe:'');
-  const log={tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)};
+  if(!isNaN(pn))descWithMeta+=' · P/L: '+formatPrecioLitroDisplay(pn);
+  if(!isNaN(ln))descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
+  if(producto)descWithMeta+=' · Prod: '+producto;
+  const log={
+    tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,
+    producto,precioLitro:isNaN(pn)?'':pn,litros:isNaN(ln)?'':ln,
+    fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
+  };
   logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);syncLogToSheets(log);if(isPageActive('logs'))renderLogs();
 }
 async function eliminarLog(localId){
@@ -2758,10 +2915,14 @@ function renderLogs(){
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concepto=esc(String(l.concepto||l.detalle||'').trim());
     const descCell=formatLogDescCell(l);
+    const plCell=fmtLogPrecioLitroCell(l);
+    const litCell=fmtLogLitrosCell(l);
     tableRows+='<tr class="'+dayCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
+      '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
+      '<td class="log-col-lit'+(litCell.empty?' log-empty':'')+'">'+litCell.html+'</td>'+
       '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
       '<td class="log-col-desc">'+descCell+'</td>'+
       '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
@@ -2770,6 +2931,7 @@ function renderLogs(){
   el.innerHTML=
     '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
       '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
+      '<th class="log-col-pl">P/L</th><th class="log-col-lit">Litros</th>'+
       '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
 }
