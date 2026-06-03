@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.93
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.93
+    ESTADO DE CUENTA  |  Versión 2.94
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.94
      ============================================================ -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="app-version" id="meta-app-version" content="">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
@@ -426,6 +427,28 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-shot-zone{flex:1;min-width:0;}
 .capture-mode .screen-capture-hide{display:none!important;}
 .capture-mode #totales-shot-zone .desglose-btn{display:none!important;}
+.logs-header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.btn-bitacora-share{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--border);background:var(--blue-soft);color:var(--blue);cursor:pointer;font-size:17px;line-height:1;}
+.btn-bitacora-share:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.bitacora-rango-overlay{display:none;position:fixed;inset:0;z-index:2100;background:rgba(26,28,44,.55);padding:12px;box-sizing:border-box;align-items:center;justify-content:center;}
+.bitacora-rango-overlay.open{display:flex;}
+.bitacora-rango-popup{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-md);width:100%;max-width:400px;max-height:min(92vh,640px);overflow:auto;padding:14px;}
+.bitacora-rango-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px;}
+.bitacora-rango-head h3{font-size:14px;font-weight:700;color:var(--navy);margin:0;}
+.bitacora-rango-close{border:none;background:#f1f5f9;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;}
+.bitacora-rango-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.bitacora-preset{flex:1 1 calc(50% - 4px);min-width:0;padding:10px 8px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;color:var(--navy);}
+.bitacora-preset.active{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);}
+.bitacora-rango-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.bitacora-rango-dates label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);display:flex;flex-direction:column;gap:4px;}
+.bitacora-rango-dates input[type=date]{padding:10px;border:1px solid var(--border);border-radius:10px;font-size:16px;font-family:var(--mono);}
+.bitacora-rango-hint{font-size:11px;color:var(--text-muted);margin:0 0 12px;line-height:1.4;}
+.bitacora-rango-actions{display:flex;gap:8px;}
+.bitacora-rango-actions .btn{flex:1;}
+.bitacora-rango-actions .btn-primary{flex:1.2;}
+@media (max-width:640px){
+  #page-logs .btn-bitacora-share{width:32px;height:32px;font-size:16px;}
+}
 /* === FIN COMPACTO === */
 
 .totales-panel .card-header{padding:10px 14px;}
@@ -682,7 +705,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.93";
+const APP_VERSION = "2.94";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -733,6 +756,8 @@ function bindAppVersionLink(){
     }
   }
   if(typeof document!=='undefined')document.title='Estado de Cuenta v'+APP_VERSION;
+  const meta=document.getElementById('meta-app-version');
+  if(meta)meta.setAttribute('content',APP_VERSION);
 }
 async function copyAppReleaseUrl(e){
   if(e&&e.stopPropagation)e.stopPropagation();
@@ -859,7 +884,12 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="page" id="page-logs">
       <div class="page-title">Bitácora</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Bitácora general</span></div>
+        <div class="card-header">
+          <span class="card-title">Bitácora general</span>
+          <div class="logs-header-actions">
+            <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal()" title="Foto de movimientos · WhatsApp">📷</button>
+          </div>
+        </div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -953,6 +983,29 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
 
   </main>
+</div>
+<div class="bitacora-rango-overlay" id="bitacora-rango-overlay" onclick="if(event.target===this)closeBitacoraRangoModal()">
+  <div class="bitacora-rango-popup" onclick="event.stopPropagation()">
+    <div class="bitacora-rango-head">
+      <h3>Bitácora · foto WhatsApp</h3>
+      <button type="button" class="bitacora-rango-close" onclick="closeBitacoraRangoModal()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="bitacora-rango-presets">
+      <button type="button" class="bitacora-preset active" data-preset="hoy" onclick="setBitacoraPreset('hoy')">Hoy</button>
+      <button type="button" class="bitacora-preset" data-preset="ayer" onclick="setBitacoraPreset('ayer')">Ayer</button>
+      <button type="button" class="bitacora-preset" data-preset="semana" onclick="setBitacoraPreset('semana')">Esta semana</button>
+      <button type="button" class="bitacora-preset" data-preset="mes" onclick="setBitacoraPreset('mes')">Este mes</button>
+    </div>
+    <div class="bitacora-rango-dates">
+      <label>Desde<input type="date" id="bitacora-desde" onchange="onBitacoraFechaChange()"></label>
+      <label>Hasta<input type="date" id="bitacora-hasta" onchange="onBitacoraFechaChange()"></label>
+    </div>
+    <p class="bitacora-rango-hint" id="bitacora-rango-hint">Selecciona el rango (máx. 30 días).</p>
+    <div class="bitacora-rango-actions">
+      <button type="button" class="btn" onclick="closeBitacoraRangoModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-bitacora-generar" onclick="generarBitacoraWhatsapp()">📷 Generar foto</button>
+    </div>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -1867,6 +1920,223 @@ async function capturarTotales(){
   }finally{
     if(btn){btn.disabled=false;btn.textContent=prev||'📋';}
   }
+}
+const BITACORA_RANGO_MAX_DIAS=30;
+const BITACORA_CANVAS_MAX_FILAS=48;
+let bitacoraPresetActivo='hoy';
+function toDateInputValue(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseDateInputValue(s){
+  if(!s||!/^\d{4}-\d{2}-\d{2}/.test(s))return null;
+  const d=new Date(s+'T12:00:00');
+  return isNaN(d.getTime())?null:d;
+}
+function startOfDay(d){const x=new Date(d);x.setHours(0,0,0,0);return x;}
+function endOfDay(d){const x=new Date(d);x.setHours(23,59,59,999);return x;}
+function addDaysDate(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function startOfWeekMonday(d){
+  const x=startOfDay(d);
+  const wd=x.getDay();
+  x.setDate(x.getDate()-(wd===0?6:wd-1));
+  return x;
+}
+function getBitacoraPresetRange(preset){
+  const hoy=startOfDay(new Date());
+  if(preset==='hoy')return{desde:hoy,hasta:endOfDay(hoy)};
+  if(preset==='ayer'){const ay=addDaysDate(hoy,-1);return{desde:ay,hasta:endOfDay(ay)};}
+  if(preset==='semana')return{desde:startOfWeekMonday(hoy),hasta:endOfDay(hoy)};
+  if(preset==='mes')return{desde:new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0),hasta:endOfDay(hoy)};
+  return{desde:hoy,hasta:endOfDay(hoy)};
+}
+function diasEnRangoBitacora(desde,hasta){
+  return Math.round((endOfDay(hasta).getTime()-startOfDay(desde).getTime())/86400000)+1;
+}
+function fmtBitacoraRangoLabel(desde,hasta){
+  const ME=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const f=d=>d.getDate()+' '+ME[d.getMonth()]+' '+d.getFullYear();
+  if(toDateInputValue(desde)===toDateInputValue(hasta))return f(desde);
+  return f(desde)+' — '+f(hasta);
+}
+function readBitacoraRangoFromUI(){
+  const d0=parseDateInputValue(document.getElementById('bitacora-desde')?.value);
+  const d1=parseDateInputValue(document.getElementById('bitacora-hasta')?.value);
+  if(!d0||!d1)return null;
+  let desde=startOfDay(d0),hasta=endOfDay(d1);
+  if(desde.getTime()>hasta.getTime()){const t=desde;desde=startOfDay(d1);hasta=endOfDay(d0);}
+  return{desde,hasta};
+}
+function updateBitacoraRangoHint(){
+  const hint=document.getElementById('bitacora-rango-hint');
+  const r=readBitacoraRangoFromUI();
+  if(!hint||!r){if(hint)hint.textContent='Selecciona el rango (máx. 30 días).';return;}
+  const dias=diasEnRangoBitacora(r.desde,r.hasta);
+  const logs=filterLogsByRange(getLogs(),r.desde,r.hasta);
+  let msg=fmtBitacoraRangoLabel(r.desde,r.hasta)+' · '+dias+' día'+(dias!==1?'s':'')+' · '+logs.length+' movimiento'+(logs.length!==1?'s':'');
+  if(dias>BITACORA_RANGO_MAX_DIAS)msg+=' · ⚠️ Máximo '+BITACORA_RANGO_MAX_DIAS+' días';
+  hint.textContent=msg;
+}
+function setBitacoraPreset(preset){
+  bitacoraPresetActivo=preset;
+  document.querySelectorAll('.bitacora-preset').forEach(b=>b.classList.toggle('active',b.dataset.preset===preset));
+  const r=getBitacoraPresetRange(preset);
+  const elD=document.getElementById('bitacora-desde'),elH=document.getElementById('bitacora-hasta');
+  if(elD)elD.value=toDateInputValue(r.desde);
+  if(elH)elH.value=toDateInputValue(r.hasta);
+  updateBitacoraRangoHint();
+}
+function onBitacoraFechaChange(){
+  bitacoraPresetActivo='';
+  document.querySelectorAll('.bitacora-preset').forEach(b=>b.classList.remove('active'));
+  updateBitacoraRangoHint();
+}
+function openBitacoraRangoModal(){
+  setBitacoraPreset(bitacoraPresetActivo||'hoy');
+  document.getElementById('bitacora-rango-overlay')?.classList.add('open');
+}
+function closeBitacoraRangoModal(){
+  document.getElementById('bitacora-rango-overlay')?.classList.remove('open');
+}
+function sortLogsNewestFirst(logs){
+  return logs.slice().sort((a,b)=>{
+    const ta=parseLogDate(a),tb=parseLogDate(b);
+    const ma=ta?ta.getTime():0,mb=tb?tb.getTime():0;
+    return mb-ma;
+  });
+}
+function filterLogsByRange(logs,desde,hasta){
+  const t0=startOfDay(desde).getTime(),t1=endOfDay(hasta).getTime();
+  return sortLogsNewestFirst(logs.filter(l=>{
+    const d=parseLogDate(l);
+    if(!d)return false;
+    const t=d.getTime();
+    return t>=t0&&t<=t1;
+  }));
+}
+function getLogRowData(l){
+  const d=parseLogDate(l);
+  const tipo=String(escTipoDisplay(l.tipo)||'').toUpperCase();
+  const factura=String(l.factura||'').trim();
+  const concepto=String(l.concepto||'').trim();
+  const b=parseDescBasics(l.descripcion);
+  let cliente='',monto='';
+  if(b&&b.proveedor){
+    cliente=b.proveedor;
+    if(!isNaN(b.monto))monto=fmt(b.monto);
+  }else{
+    cliente=cleanLogDescripcion(l.descripcion).split(' · ')[0]||cleanLogDescripcion(l.descripcion);
+    if(tipo==='CLIENTE'||tipo==='ELIMINAR')cliente=cleanLogDescripcion(l.descripcion);
+  }
+  let hora='';
+  if(d)hora=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+  const fecha=d?(d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')):'—';
+  const extra=[factura,concepto].filter(Boolean).join(' · ');
+  return{fecha,hora,tipo,cliente,monto,extra};
+}
+function logTipoCanvasStyle(tipo){
+  const t=String(tipo||'').toUpperCase();
+  if(t.includes('PAGO'))return{bg:'#e6f7ed',fg:'#0d7a3e',lbl:'PAGO'};
+  if(t.includes('FACT'))return{bg:'#e8f0fe',fg:'#1e40af',lbl:'FACTURA'};
+  if(t.includes('CLIENT'))return{bg:'#fff8e6',fg:'#b45309',lbl:'CLIENTE'};
+  if(t.includes('ELIM'))return{bg:'#fef2f2',fg:'#b91c1c',lbl:'ELIM'};
+  return{bg:'#f1f5f9',fg:'#475569',lbl:(t||'—').slice(0,8)};
+}
+function buildBitacoraCanvas(logs,desde,hasta){
+  const rows=logs.slice(0,BITACORA_CANVAS_MAX_FILAS);
+  const extra=logs.length-rows.length;
+  const w=360,pad=10,headerH=52,rowH=34,gap=4,footH=extra?22:0,scale=3;
+  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+footH;
+  const canvas=document.createElement('canvas');
+  canvas.width=w*scale;canvas.height=h*scale;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#eef1f6';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#fff';drawRoundRect(ctx,6,6,w-12,h-12,14);ctx.fill();
+  const grad=ctx.createLinearGradient(6,6,w-6,6);
+  grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
+  ctx.fillStyle=grad;drawRoundRect(ctx,6,6,w-12,headerH,14);ctx.fill();
+  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
+  ctx.fillText('BITÁCORA',pad+4,22);
+  ctx.fillStyle='#fff';ctx.font='700 11px IBM Plex Sans, Arial';
+  drawFitText(ctx,fmtBitacoraRangoLabel(desde,hasta),pad+4,38,w-pad*2-8);
+  ctx.fillStyle='#d1d5db';ctx.font='500 9px IBM Plex Sans, Arial';ctx.textAlign='right';
+  ctx.fillText(logs.length+' mov.',w-pad-4,38);
+  ctx.textAlign='left';
+  let y=6+headerH+gap;
+  rows.forEach((l,i)=>{
+    const r=getLogRowData(l);
+    const st=logTipoCanvasStyle(r.tipo);
+    const bg=i%2===0?'#f8fafc':'#fff';
+    ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
+    ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
+    ctx.fillStyle='#64748b';ctx.font='600 8px IBM Plex Mono, monospace';
+    ctx.fillText(r.fecha,pad+6,y+13);
+    ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Mono, monospace';
+    ctx.fillText(r.hora,pad+6,y+24);
+    const bx=pad+52;
+    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+8,44,16,6);ctx.fill();
+    ctx.fillStyle=st.fg;ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText(st.lbl,bx+22,y+19);
+    ctx.textAlign='left';
+    const cx=bx+50;
+    ctx.fillStyle='#1a1c2c';ctx.font='700 10px IBM Plex Sans, Arial';
+    drawFitText(ctx,r.cliente,cx,y+14,w-pad-cx-4);
+    if(r.monto){
+      ctx.fillStyle='#1e40af';ctx.font='700 9px IBM Plex Mono, monospace';ctx.textAlign='right';
+      ctx.fillText(r.monto,w-pad-6,y+14);
+      ctx.textAlign='left';
+    }
+    if(r.extra){
+      ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Sans, Arial';
+      drawFitText(ctx,r.extra,cx,y+26,w-pad-cx-6);
+    }
+    y+=rowH+gap;
+  });
+  if(extra){
+    ctx.fillStyle='#94a3b8';ctx.font='600 9px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText('… y '+extra+' movimiento'+(extra!==1?'s':'')+' más',w/2,y+14);
+    ctx.textAlign='left';
+  }
+  return canvas;
+}
+async function shareBitacoraBlob(blob,name,desde,hasta,count){
+  const file=new File([blob],name,{type:'image/png'});
+  const titulo='Bitácora · '+fmtBitacoraRangoLabel(desde,hasta)+' · '+count+' mov.';
+  if(navigator.share&&navigator.canShare){
+    try{
+      const payload={files:[file],title:titulo};
+      if(navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp para enviar la foto',false,true);return true;}
+    }catch(e){if(e&&e.name==='AbortError')return true;}
+  }
+  if(!isMobileLike()&&await copyImageToClipboard(blob,5000)){
+    toast('Imagen copiada · pégala en WhatsApp',false,true);
+    return true;
+  }
+  downloadBlob(blob,name);
+  toast(isMobileLike()?'Foto guardada · ábrela en WhatsApp':'Imagen descargada',false,true);
+  return true;
+}
+async function generarBitacoraWhatsapp(){
+  const btn=document.getElementById('btn-bitacora-generar');
+  const r=readBitacoraRangoFromUI();
+  if(!r){toast('Elige fechas desde y hasta',true);return;}
+  const dias=diasEnRangoBitacora(r.desde,r.hasta);
+  if(dias>BITACORA_RANGO_MAX_DIAS){toast('Máximo '+BITACORA_RANGO_MAX_DIAS+' días de rango',true);return;}
+  const logs=filterLogsByRange(getLogs(),r.desde,r.hasta);
+  if(!logs.length){toast('No hay movimientos en ese rango',true);return;}
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='Generando…';}
+  try{
+    const canvas=buildBitacoraCanvas(logs,r.desde,r.hasta);
+    const blob=await canvasToBlob(canvas);
+    if(!blob)throw new Error('No se pudo crear imagen');
+    const name='bitacora-'+toDateInputValue(r.desde)+'_'+toDateInputValue(r.hasta)+'.png';
+    await shareBitacoraBlob(blob,name,r.desde,r.hasta,logs.length);
+    closeBitacoraRangoModal();
+  }catch(e){toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷 Generar foto';}}
 }
 function toggleDesglose(e,proveedor,btn){
   e.stopPropagation();
