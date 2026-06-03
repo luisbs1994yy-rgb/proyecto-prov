@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.09
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.09
+    ESTADO DE CUENTA  |  Versión 3.10
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.10
      ============================================================ -->
 <html lang="es">
 <head>
@@ -757,7 +757,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.09";
+const APP_VERSION = "3.10";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2099,8 +2099,8 @@ function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   const rows=resumen.slice(0,10);
-  const w=360,pad=12,headerH=58,rowH=32,gap=5,scale=3;
-  const h=pad*2+headerH+gap+rows.length*(rowH+gap);
+  const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=46,scale=3;
+  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+gap+footerH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2137,6 +2137,19 @@ function buildTotalesCanvas(){
     ctx.fillText(pct+'%',innerX+innerW,y+21);
     y+=rowH+gap;
   });
+  y+=gap;
+  const fy=y;
+  const footerW=w-pad*2;
+  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.fill();
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.stroke();
+  const fechaStr=formatTotalesCopiaFecha(new Date());
+  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText('Saldo total',pad+8,fy+13);
+  ctx.fillStyle='#1e40af';ctx.font='700 13px IBM Plex Mono, monospace';
+  ctx.fillText(fmt(sumSaldos),pad+8,fy+30);
+  ctx.fillStyle='#64748b';ctx.font='500 7px IBM Plex Sans, Arial';
+  drawFitText(ctx,fechaStr,pad+8,fy+42,footerW-16);
+  ctx.textAlign='left';
   return canvas;
 }
 async function capturarPantallaMovil(){
