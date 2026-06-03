@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.08
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.08
+    ESTADO DE CUENTA  |  Versión 3.09
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.09
      ============================================================ -->
 <html lang="es">
 <head>
@@ -206,15 +206,19 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
-#logs-list .log-col-fecha{width:12%;text-align:left;}
-#logs-list .log-col-tipo{width:10%;text-align:center;}
+#logs-list .log-col-fecha{width:20%;text-align:left;}
+#logs-list .log-col-tipo{width:9%;text-align:center;}
 #logs-list .log-col-fact{width:9%;text-align:left;}
-#logs-list .log-col-pl{width:9%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
-#logs-list .log-col-lit{width:11%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
-#logs-list .log-col-conc{width:11%;text-align:left;}
-#logs-list .log-col-com{width:12%;text-align:left;}
-#logs-list .log-col-desc{width:20%;text-align:left;}
+#logs-list .log-col-pl{width:8%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
+#logs-list .log-col-lit{width:10%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
+#logs-list .log-col-conc{width:10%;text-align:left;}
+#logs-list .log-col-com{width:14%;text-align:left;}
+#logs-list .log-col-desc{width:26%;text-align:left;}
 #logs-list .log-col-act{width:5%;text-align:center;vertical-align:middle;}
+#logs-list .logs-table .log-col-fact,#logs-list .logs-table .log-col-conc{display:none;}
+#logs-list .logs-table.logs-show-extra .log-col-fact,#logs-list .logs-table.logs-show-extra .log-col-conc{display:table-cell;}
+.log-fecha-bitacora{display:block;font-size:11px;font-weight:600;line-height:1.35;color:var(--navy);font-family:var(--mono);white-space:normal;word-break:break-word;}
+.log-fecha-bitacora .log-fecha-ampm{text-transform:lowercase;}
 #logs-list .log-inline-input{width:100%;min-width:0;padding:4px 5px;font-size:9px;border:1px solid var(--border);border-radius:6px;background:#fff;box-sizing:border-box;font-family:var(--font);}
 #logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
@@ -671,16 +675,18 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
   #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
   #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
-  #logs-list .log-col-fecha { width: 14%; }
-  #logs-list .log-col-tipo { width: 11%; }
-  #logs-list .log-col-conc { display: none; }
-  #logs-list .log-col-fact { width: 10%; }
-  #logs-list .log-col-pl { width: 12%; font-size: 7px; }
-  #logs-list .log-col-lit { width: 14%; font-size: 7px; }
-  #logs-list .log-col-desc { width: 48%; }
+  #logs-list .log-col-fecha { width: 28%; }
+  #logs-list .log-col-tipo { width: 10%; }
+  #logs-list .log-col-pl { width: 11%; font-size: 7px; }
+  #logs-list .log-col-lit { width: 12%; font-size: 7px; }
+  #logs-list .log-col-desc { width: 28%; }
+  #logs-list .log-col-com { width: 18%; }
   #logs-list .log-col-act { width: 6%; }
-  #logs-list .log-time { font-size: 8px; line-height: 1.2; }
-  #logs-list .log-hora { font-size: 7px; }
+  #logs-list .log-fecha-bitacora { font-size: 10px; }
+  #logs-list .logs-table .log-col-fact,
+  #logs-list .logs-table .log-col-conc { display: none; }
+  #logs-list .logs-table.logs-show-extra .log-col-fact,
+  #logs-list .logs-table.logs-show-extra .log-col-conc { display: table-cell; }
   #logs-list .badge { font-size: 6px !important; padding: 1px 3px !important; max-width: 100%; }
   #logs-list .log-desc-prov { font-size: 8px; }
   #logs-list .log-desc-monto { font-size: 7px; }
@@ -751,7 +757,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.08";
+const APP_VERSION = "3.09";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -961,6 +967,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </select>
           </label>
           <button type="button" class="btn" onclick="limpiarLogsFiltro()">Limpiar</button>
+          <button type="button" class="btn btn-sm" id="btn-logs-extra-cols" onclick="toggleLogsExtraCols()">+ Fact / Conc</button>
           <span class="logs-filter-count" id="logs-filter-count"></span>
         </div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
@@ -1107,6 +1114,7 @@ let analisisSortDecision = 'pendiente';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
 let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
+let logsShowExtraCols=false;
 
 document.addEventListener('DOMContentLoaded', () => {
   bindAppVersionLink();
@@ -1265,12 +1273,30 @@ function parseLogDate(l){
   }
   return null;
 }
-function fmtLogDisplayCompact(l){
+const LOG_DIAS_ES=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const LOG_MESES_ABR=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function getMexicoWeekday(d){
+  const w=new Intl.DateTimeFormat('es-MX',{timeZone:MX_TZ,weekday:'long'}).format(d);
+  return w?w.charAt(0).toUpperCase()+w.slice(1):'';
+}
+function fmtLogBitacoraFecha(l){
   const d=parseLogDate(l);
-  if(!d)return esc(getFechaDisplay(l));
+  if(!d)return '<span class="log-fecha-bitacora">'+esc(getFechaDisplay(l))+'</span>';
   const p=getMexicoParts(d);
-  const h=pad2(p.hour)+':'+pad2(p.minute);
-  return p.day+'/'+p.month+'<br><span class="log-hora">'+h+'</span>';
+  const dow=getMexicoWeekday(d);
+  const mes=LOG_MESES_ABR[p.month-1]||'';
+  const yy=String(p.year).slice(-2);
+  const hr=((p.hour%12)||12);
+  const ampm=p.hour>=12?'pm':'am';
+  const txt=dow+' '+p.day+' '+mes+' '+yy+' '+hr+':'+pad2(p.minute)+ampm;
+  return '<span class="log-fecha-bitacora">'+esc(txt)+'</span>';
+}
+function fmtLogDisplayCompact(l){return fmtLogBitacoraFecha(l);}
+function toggleLogsExtraCols(){
+  logsShowExtraCols=!logsShowExtraCols;
+  const btn=document.getElementById('btn-logs-extra-cols');
+  if(btn)btn.textContent=logsShowExtraCols?'− Fact / Conc':'+ Fact / Conc';
+  renderLogs();
 }
 function getLogDayKey(l){
   const d=parseLogDate(l);
@@ -3477,7 +3503,7 @@ function renderLogs(){
     const gIdx=getLogGrupoColorIdx(gid);
     if(gIdx>=0){rowCls='log-grupo-'+gIdx;hasGrupo=true;}
     const cls=logBadgeClass(l.tipo);
-    const dt=fmtLogDisplayCompact(l);
+    const dt=fmtLogBitacoraFecha(l);
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concVal=String(l.concepto||l.detalle||'').trim();
@@ -3494,17 +3520,18 @@ function renderLogs(){
       '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
       '<td class="log-col-lit'+(litCell.empty?' log-empty':'')+'">'+litCell.html+'</td>'+
       '<td class="log-col-conc">'+concInput+'</td>'+
-      '<td class="log-col-com">'+comInput+'</td>'+
       '<td class="log-col-desc">'+descCell+'</td>'+
+      '<td class="log-col-com">'+comInput+'</td>'+
       '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
   });
-  const hint=hasGrupo?'<p class="logs-grupo-hint">Mismo color = un solo pago aplicado a varias facturas. Los comentarios no salen en la foto WhatsApp.</p>':'';
+  const hint=hasGrupo?'<p class="logs-grupo-hint">Mismo color = un solo pago aplicado a varias facturas. Comentarios no salen en la foto WhatsApp.</p>':'';
+  const tblCls='logs-table'+(logsShowExtraCols?' logs-show-extra':'');
   el.innerHTML=hint+
-    '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
-      '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
-      '<th class="log-col-pl">P/L</th><th class="log-col-lit">Litros</th>'+
-      '<th class="log-col-conc">Conc.</th><th class="log-col-com">Comentario</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
+    '<div class="table-wrap"><table class="'+tblCls+'"><thead><tr>'+
+      '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th>'+
+      '<th class="log-col-fact">Fact.</th><th class="log-col-pl">P/L</th><th class="log-col-lit">Litros</th>'+
+      '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-com">Comentario</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
 }
 
