@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.18">
+<html lang="es" data-app-version="3.19">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.18';
+const APP_VERSION=getAppVersion()||'3.19';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -822,7 +822,7 @@ function bindAppVersionLink(){
   const htmlV=getAppVersion();
   if(stamp&&!htmlV){
     stamp.className='app-version-stamp warn';
-    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.18"';
+    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.19"';
   }
 }
 async function copyAppReleaseUrl(e){
@@ -2500,6 +2500,30 @@ function getBitacoraResumenLabels(desde,hasta){
   if(d0===d1)return{fact:'Facturado',pago:'Pagado'};
   return{fact:'Facturado total',pago:'Pagado total'};
 }
+function collapsePagoGruposForBitacoraFoto(logs){
+  const out=[];
+  const usedGrupo=new Set();
+  (logs||[]).forEach(l=>{
+    const gid=getLogPagoGrupoId(l);
+    const t=String(l.tipo||'').toLowerCase();
+    if(gid&&t.includes('pago')){
+      if(usedGrupo.has(gid))return;
+      usedGrupo.add(gid);
+      const group=logs.filter(x=>getLogPagoGrupoId(x)===gid);
+      const total=Math.round(group.reduce((acc,x)=>acc+getLogMontoNum(x),0)*100)/100;
+      const base=group[0];
+      const prov=(parseDescBasics(base.descripcion)||{}).proveedor||getLogClienteNombre(base)||'';
+      const merged={...base};
+      merged.descripcion=prov+' · '+fmt(total);
+      merged.factura='';
+      merged.concepto=group.length>1?(group.length+' facturas en un pago'):String(base.concepto||'').trim();
+      out.push(merged);
+      return;
+    }
+    out.push(l);
+  });
+  return out;
+}
 function getLogRowData(l){
   const d=parseLogDate(l);
   const tipo=String(escTipoDisplay(l.tipo)||'').toUpperCase();
@@ -2744,17 +2768,20 @@ async function generarBitacoraWhatsapp(){
   if(!r){toast('Elige fechas desde y hasta',true);return;}
   const dias=diasEnRangoBitacora(r.desde,r.hasta);
   if(dias>BITACORA_RANGO_MAX_DIAS){toast('Máximo '+BITACORA_RANGO_MAX_DIAS+' días de rango',true);return;}
-  const logs=getLogsBitacoraEnRango(r.desde,r.hasta);
-  if(!logs.length){toast('No hay movimientos vigentes en ese rango',true);return;}
+  const logsRaw=getLogsBitacoraEnRango(r.desde,r.hasta);
+  if(!logsRaw.length){toast('No hay movimientos vigentes en ese rango',true);return;}
+  const logsForInfer=logsRaw.map(l=>({...l}));
+  inferPagoGruposForDisplay(logsForInfer);
+  const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Generando…';}
   try{
-    const canvas=buildBitacoraCanvas(logs,r.desde,r.hasta);
+    const canvas=buildBitacoraCanvas(logsFoto,r.desde,r.hasta);
     const blob=await canvasToBlob(canvas,20000);
     if(!blob)throw new Error('No se pudo crear la imagen; prueba un rango más corto');
     const name='bitacora-'+toDateInputValue(r.desde)+'_'+toDateInputValue(r.hasta)+'.png';
     closeBitacoraRangoModal();
-    showBitacoraSharePreview(blob,name,r.desde,r.hasta,logs.length);
+    showBitacoraSharePreview(blob,name,r.desde,r.hasta,logsFoto.length);
     if(!isMobileLike()&&!navigator.share){
       downloadBlob(blob,name);
       toast('Imagen descargada',false,true);
