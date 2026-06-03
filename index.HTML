@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.17">
+<html lang="es" data-app-version="3.19">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.17';
+const APP_VERSION=getAppVersion()||'3.19';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -264,6 +264,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .registrar-fact-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;user-select:none;}
 .registrar-fact-item:last-child{border-bottom:none;}
 .registrar-fact-item:hover{background:var(--blue-soft);}
+.registrar-fact-item.registrar-fact-item-disabled{opacity:.5;cursor:not-allowed;}
+.registrar-fact-item.registrar-fact-item-disabled:hover{background:transparent;}
+.registrar-fact-item.registrar-fact-item-disabled input[type=checkbox]{cursor:not-allowed;}
 .registrar-fact-item input[type=checkbox]{margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer;}
 .registrar-fact-item .registrar-fact-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.35;}
 .registrar-aplica-resumen{margin-top:10px;font-size:12px;}
@@ -819,7 +822,7 @@ function bindAppVersionLink(){
   const htmlV=getAppVersion();
   if(stamp&&!htmlV){
     stamp.className='app-version-stamp warn';
-    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.15"';
+    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.19"';
   }
 }
 async function copyAppReleaseUrl(e){
@@ -1592,9 +1595,48 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
   });
   return{parts,remanente:resto>0.001?resto:0};
 }
-function onRegistrarFacturaSelChange(){
+function syncRegistrarFacturaCheckboxes(){
+  const list=document.getElementById('f-aplica-facturas-list');
+  if(!list)return;
+  const prov=document.getElementById('f-proveedor').value;
+  const montoNum=parseMonto(document.getElementById('f-monto').value);
+  const cbs=[...list.querySelectorAll('input[type=checkbox]')];
+  if(!prov||isNaN(montoNum)||montoNum<=0||!cbs.length){
+    cbs.forEach(cb=>{cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');});
+    return;
+  }
+  const ids=getRegistrarFacturasSeleccionadas();
+  if(!ids.length){
+    cbs.forEach(cb=>{cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');});
+    return;
+  }
+  const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
+  const cubierto=!!parts.length&&remanente<=0.001;
+  cbs.forEach(cb=>{
+    const dis=!cb.checked&&cubierto;
+    cb.disabled=dis;
+    cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',dis);
+  });
+}
+function onRegistrarFacturaSelChange(changedCb){
+  const prov=document.getElementById('f-proveedor').value;
+  const montoNum=parseMonto(document.getElementById('f-monto').value);
+  if(changedCb&&changedCb.checked&&prov&&!isNaN(montoNum)&&montoNum>0){
+    const list=document.getElementById('f-aplica-facturas-list');
+    const ids=list?[...list.querySelectorAll('input[type=checkbox]:checked')].filter(cb=>cb!==changedCb).map(cb=>String(cb.value||'').trim()).filter(Boolean):[];
+    if(ids.length){
+      const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
+      if(parts.length&&remanente<=0.001){
+        changedCb.checked=false;
+        toast('El monto ya queda cubierto con las facturas marcadas',true);
+        syncRegistrarFacturaCheckboxes();
+        return;
+      }
+    }
+  }
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
+  syncRegistrarFacturaCheckboxes();
 }
 function syncRegistrarFacturaRefs(){
   const inp=document.getElementById('f-factura');
@@ -1614,23 +1656,27 @@ function updateRegistrarAplicaResumen(){
   if(!isTipoPago({tipo})||!prov){
     resumen.innerHTML='';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   const ids=getRegistrarFacturasSeleccionadas();
   if(!ids.length){
     resumen.innerHTML='<span class="hint-text">Opcional: marca facturas para aplicar el pago antes de guardar.</span>';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   if(isNaN(montoNum)||montoNum<=0){
     resumen.innerHTML='<span class="hint-text">Ingresa el monto para ver cómo se distribuirá.</span>';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
   if(!parts.length){
     resumen.innerHTML='<span class="hint-text" style="color:var(--red-text)">Las facturas seleccionadas ya están saldadas.</span>';
     if(btn)btn.classList.add('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   let html='';
@@ -1646,6 +1692,7 @@ function updateRegistrarAplicaResumen(){
     html+='<div class="registrar-alloc-row warn"><span>Remanente sin asignar</span><span class="amount">'+fmt(remanente)+'</span></div>';
   }
   resumen.innerHTML=html;
+  syncRegistrarFacturaCheckboxes();
 }
 function confirmarRemanentePago(montoNum,aplicado,remanente,nFacturas){
   if(!confirm('El pago de '+fmt(montoNum)+' excede lo pendiente en las facturas seleccionadas.\n\nSe aplicará '+fmt(aplicado)+' a '+nFacturas+' factura(s).\nQuedarán '+fmt(remanente)+' sin asignar.\n\n¿Continuar? (1 de 2)'))return false;
@@ -1714,7 +1761,7 @@ function updateRegistrarAplicaUI(){
   }else{
     list.innerHTML=facts.map(f=>{
       const checked=prevSel.has(f.id)?' checked':'';
-      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'"'+checked+' onchange="onRegistrarFacturaSelChange()">'+
+      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'"'+checked+' onchange="onRegistrarFacturaSelChange(this)">'+
         '<span class="registrar-fact-meta">'+esc(facturaOptionLabel(f,pagos))+'</span></label>';
     }).join('');
   }
@@ -1821,7 +1868,7 @@ function applyPrecioProductoDefault(overwrite=true){
     updateMontoFromLitros();
   }
 }
-function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();}
+function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
 const LITROS_AVISO_MIN=10000;
 function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizePrecioLitroTyping(el.value);updateMontoFromLitros();}
@@ -2453,6 +2500,30 @@ function getBitacoraResumenLabels(desde,hasta){
   if(d0===d1)return{fact:'Facturado',pago:'Pagado'};
   return{fact:'Facturado total',pago:'Pagado total'};
 }
+function collapsePagoGruposForBitacoraFoto(logs){
+  const out=[];
+  const usedGrupo=new Set();
+  (logs||[]).forEach(l=>{
+    const gid=getLogPagoGrupoId(l);
+    const t=String(l.tipo||'').toLowerCase();
+    if(gid&&t.includes('pago')){
+      if(usedGrupo.has(gid))return;
+      usedGrupo.add(gid);
+      const group=logs.filter(x=>getLogPagoGrupoId(x)===gid);
+      const total=Math.round(group.reduce((acc,x)=>acc+getLogMontoNum(x),0)*100)/100;
+      const base=group[0];
+      const prov=(parseDescBasics(base.descripcion)||{}).proveedor||getLogClienteNombre(base)||'';
+      const merged={...base};
+      merged.descripcion=prov+' · '+fmt(total);
+      merged.factura='';
+      merged.concepto=group.length>1?(group.length+' facturas en un pago'):String(base.concepto||'').trim();
+      out.push(merged);
+      return;
+    }
+    out.push(l);
+  });
+  return out;
+}
 function getLogRowData(l){
   const d=parseLogDate(l);
   const tipo=String(escTipoDisplay(l.tipo)||'').toUpperCase();
@@ -2697,17 +2768,20 @@ async function generarBitacoraWhatsapp(){
   if(!r){toast('Elige fechas desde y hasta',true);return;}
   const dias=diasEnRangoBitacora(r.desde,r.hasta);
   if(dias>BITACORA_RANGO_MAX_DIAS){toast('Máximo '+BITACORA_RANGO_MAX_DIAS+' días de rango',true);return;}
-  const logs=getLogsBitacoraEnRango(r.desde,r.hasta);
-  if(!logs.length){toast('No hay movimientos vigentes en ese rango',true);return;}
+  const logsRaw=getLogsBitacoraEnRango(r.desde,r.hasta);
+  if(!logsRaw.length){toast('No hay movimientos vigentes en ese rango',true);return;}
+  const logsForInfer=logsRaw.map(l=>({...l}));
+  inferPagoGruposForDisplay(logsForInfer);
+  const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Generando…';}
   try{
-    const canvas=buildBitacoraCanvas(logs,r.desde,r.hasta);
+    const canvas=buildBitacoraCanvas(logsFoto,r.desde,r.hasta);
     const blob=await canvasToBlob(canvas,20000);
     if(!blob)throw new Error('No se pudo crear la imagen; prueba un rango más corto');
     const name='bitacora-'+toDateInputValue(r.desde)+'_'+toDateInputValue(r.hasta)+'.png';
     closeBitacoraRangoModal();
-    showBitacoraSharePreview(blob,name,r.desde,r.hasta,logs.length);
+    showBitacoraSharePreview(blob,name,r.desde,r.hasta,logsFoto.length);
     if(!isMobileLike()&&!navigator.share){
       downloadBlob(blob,name);
       toast('Imagen descargada',false,true);
