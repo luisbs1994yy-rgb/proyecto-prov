@@ -3238,6 +3238,8 @@ async function updateLogFecha(localId,dateVal,timeVal,rowEl){
   const logs=getLogs().slice();
   const l=logs.find(x=>(x.localId||x.id||'')===localId);
   if(!l)return;
+  const cur=getLogFechaInputValues(l);
+  if(cur.dateVal===dateVal&&cur.timeVal===timeVal)return;
   const prev={fecha:l.fecha,hora:l.hora,fechaHora:l.fechaHora,createdAt:l.createdAt};
   l.fecha=ts.fechaDate;
   l.hora=ts.hora;
