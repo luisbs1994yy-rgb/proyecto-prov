@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.00
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.00
+    ESTADO DE CUENTA  |  Versión 3.02
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.02
      ============================================================ -->
 <html lang="es">
 <head>
@@ -724,7 +724,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.01";
+const APP_VERSION = "3.02";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2044,41 +2044,41 @@ function getBitacoraPresetRange(preset){
   if(preset==='ultimos7')return{desde:addDaysDate(hoy,-6),hasta:endOfDay(hoy)};
   return{desde:hoy,hasta:endOfDay(hoy)};
 }
+function getBitacoraCanvasExtra(l){
+  const factura=String(l.factura||'').trim();
+  let concepto=String(l.concepto||'').trim();
+  concepto=concepto.replace(/\s*·?\s*P\/L:\s*[^·]+/gi,'').replace(/\s*·?\s*Litros:\s*[^·]+/gi,'').replace(/\s*·?\s*Prod:\s*[^·]+/gi,'').trim();
+  return [factura,concepto].filter(Boolean).join(' · ');
+}
 function getBitacoraWideLayout(rowData){
   const mcv=document.createElement('canvas').getContext('2d');
-  const dateW=68,tipoW=58,plW=56,litW=96,montoW=108,gap=5;
-  let maxClient=80,maxMontoW=90,maxExtra=0;
+  const dateW=74,tipoW=62,gap=4;
+  let maxClient=72,maxPl=34,maxLit=44,maxMonto=86;
   rowData.forEach(r=>{
-    mcv.font='700 13px IBM Plex Sans, Arial';
+    mcv.font='700 14px IBM Plex Sans, Arial';
     maxClient=Math.max(maxClient,mcv.measureText(r.cliente||'').width);
-    if(r.extra){
-      mcv.font='500 10px IBM Plex Sans, Arial';
-      maxExtra=Math.max(maxExtra,mcv.measureText(r.extra).width);
-    }
-    mcv.font='700 12px IBM Plex Mono, monospace';
-    if(r.monto)maxMontoW=Math.max(maxMontoW,mcv.measureText(r.monto).width);
-    if(r.precioLitro)maxMontoW=Math.max(maxMontoW,mcv.measureText('$'+r.precioLitro).width);
-    if(r.litros)maxMontoW=Math.max(maxMontoW,mcv.measureText(r.litros+' L').width);
+    mcv.font='600 12px IBM Plex Mono, monospace';
+    maxPl=Math.max(maxPl,mcv.measureText(r.precioLitro?'$'+r.precioLitro:'—').width);
+    maxLit=Math.max(maxLit,mcv.measureText(r.litros?r.litros+' L':'—').width);
+    mcv.font='700 13px IBM Plex Mono, monospace';
+    if(r.monto)maxMonto=Math.max(maxMonto,mcv.measureText(r.monto).width);
   });
-  const clientW=Math.min(168,Math.max(88,Math.ceil(Math.max(maxClient,maxExtra))+10));
-  const montoW=Math.max(montoW,Math.ceil(maxMontoW)+8);
+  const clientW=Math.min(118,Math.ceil(maxClient)+8);
+  const plW=Math.ceil(maxPl)+10;
+  const litW=Math.ceil(maxLit)+10;
+  const montoW=Math.ceil(maxMonto)+10;
   const contentW=dateW+gap+tipoW+gap+clientW+gap+plW+gap+litW+gap+montoW;
-  return{dateW,tipoW,clientW,plW,litW,montoW,gap,contentW};
+  const xNums=dateW+gap+tipoW+gap+clientW+gap;
+  return{dateW,tipoW,clientW,plW,litW,montoW,gap,contentW,xNums};
 }
 function getBitacoraCanvasWidth(logs,desde,hasta,layout){
-  if(layout){
-    const pad=12;
-    const tight=layout.contentW+pad*2+16;
-    const dias=diasEnRangoBitacora(desde,hasta);
-    const quality=dias>=2?28:dias>=1?16:0;
-    return Math.min(1180,Math.max(tight,tight+quality));
-  }
+  if(layout)return layout.contentW+36;
   const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
   if(n>6)return 420;
   return 360;
 }
-function getBitacoraCanvasScale(w){
-  if(w>=560)return 5;
+function getBitacoraCanvasScale(w,wide){
+  if(wide)return 6;
   if(w>=420)return 4;
   return 3;
 }
@@ -2196,7 +2196,7 @@ function getLogRowData(l){
   let hora='';
   if(d)hora=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
   const fecha=d?(d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')):'—';
-  const extra=[factura,concepto].filter(Boolean).join(' · ');
+  const extra=getBitacoraCanvasExtra(l);
   let precioLitro='',litros='',rowH=34;
   const fd=getLogFacturaDetalle(l);
   if(fd){
@@ -2215,12 +2215,13 @@ function logTipoCanvasStyle(tipo){
   return{bg:'#f1f5f9',fg:'#475569',lbl:(t||'—').slice(0,8)};
 }
 function drawBitacoraColHeaders(ctx,y,pad,layout){
-  const{dateW,tipoW,clientW,plW,litW,montoW,gap}=layout;
+  const{dateW,tipoW,clientW,plW,litW,montoW,gap,xNums}=layout;
   let x=pad+8;
-  ctx.fillStyle='#94a3b8';ctx.font='600 9px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillStyle='#94a3b8';ctx.font='600 10px IBM Plex Sans, Arial';ctx.textAlign='left';
   ctx.fillText('Fecha',x,y);x+=dateW+gap;
   ctx.fillText('Tipo',x,y);x+=tipoW+gap;
-  ctx.fillText('Cliente',x,y);x+=clientW+gap;
+  ctx.fillText('Cliente',x,y);
+  x=pad+8+xNums;
   ctx.textAlign='center';
   ctx.fillText('P/L',x+plW/2,y);x+=plW+gap;
   ctx.fillText('Litros',x+litW/2,y);x+=litW+gap;
@@ -2234,36 +2235,36 @@ function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout){
   ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
   ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
   if(wide&&layout){
-    const{dateW,tipoW,clientW,plW,litW,montoW,gap}=layout;
+    const{dateW,tipoW,clientW,plW,litW,montoW,gap,xNums}=layout;
     let x=pad+8;
-    const midY=y+Math.round(rowH/2)+1;
-    ctx.fillStyle='#64748b';ctx.font='600 11px IBM Plex Mono, monospace';ctx.textAlign='left';
+    const midY=r.extra?y+17:y+Math.round(rowH/2)+1;
+    ctx.fillStyle='#64748b';ctx.font='600 12px IBM Plex Mono, monospace';ctx.textAlign='left';
     ctx.fillText(r.fecha,x,y+16);
-    ctx.fillStyle='#94a3b8';ctx.font='500 10px IBM Plex Mono, monospace';
+    ctx.fillStyle='#94a3b8';ctx.font='500 11px IBM Plex Mono, monospace';
     ctx.fillText(r.hora,x,y+28);
     x+=dateW+gap;
-    ctx.fillStyle=st.bg;drawRoundRect(ctx,x,y+8,tipoW,22,6);ctx.fill();
+    ctx.fillStyle=st.bg;drawRoundRect(ctx,x,y+8,tipoW,24,6);ctx.fill();
     ctx.fillStyle=st.fg;ctx.font='700 9px IBM Plex Sans, Arial';ctx.textAlign='center';
-    ctx.fillText(st.lbl,x+tipoW/2,y+23);
+    ctx.fillText(st.lbl,x+tipoW/2,y+24);
     x+=tipoW+gap;
     ctx.textAlign='left';
-    ctx.fillStyle='#1a1c2c';ctx.font='700 13px IBM Plex Sans, Arial';
-    if(r.extra){
-      drawFitText(ctx,r.cliente,x,y+15,clientW);
-      ctx.fillStyle='#94a3b8';ctx.font='500 10px IBM Plex Sans, Arial';
-      drawFitText(ctx,r.extra,x,y+28,clientW);
-    }else{
-      drawFitText(ctx,r.cliente,x,midY,clientW);
-    }
-    x+=clientW+gap;
-    ctx.fillStyle='#475569';ctx.font='600 11px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillStyle='#1a1c2c';ctx.font='700 14px IBM Plex Sans, Arial';
+    drawFitText(ctx,r.cliente,x,midY,clientW);
+    x=pad+8+xNums;
+    ctx.fillStyle='#475569';ctx.font='600 12px IBM Plex Mono, monospace';ctx.textAlign='center';
     ctx.fillText(r.precioLitro?'$'+r.precioLitro:'—',x+plW/2,midY);
     x+=plW+gap;
     ctx.fillText(r.litros?r.litros+' L':'—',x+litW/2,midY);
     x+=litW+gap;
     if(r.monto){
-      ctx.fillStyle='#1e40af';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='right';
+      ctx.fillStyle='#1e40af';ctx.font='700 13px IBM Plex Mono, monospace';ctx.textAlign='right';
       ctx.fillText(r.monto,x+montoW,midY);
+    }
+    if(r.extra){
+      const xDesc=pad+8+dateW+gap+tipoW+gap;
+      const descW=w-pad-8-xDesc;
+      ctx.fillStyle='#94a3b8';ctx.font='500 10px IBM Plex Sans, Arial';ctx.textAlign='left';
+      drawFitText(ctx,r.extra,xDesc,y+rowH-9,descW);
     }
     ctx.textAlign='left';
     return;
@@ -2305,9 +2306,10 @@ function buildBitacoraCanvas(logs,desde,hasta){
   const layout=wide?getBitacoraWideLayout(rowData):null;
   const w=getBitacoraCanvasWidth(logs,desde,hasta,layout);
   const pad=wide?12:10,headerH=wide?60:52,gap=wide?4:4,extraH=extra?24:0,summaryH=wide?54:50;
-  const scale=getBitacoraCanvasScale(w);
-  const rowHBase=wide?42:34;
-  const rowsH=rowData.reduce((acc,r)=>acc+(wide?rowHBase+(r.extra?10:0):r.rowH)+gap,0);
+  const scale=getBitacoraCanvasScale(w,wide);
+  const rowHBase=wide?40:34;
+  const rowHWithExtra=wide?52:40;
+  const rowsH=rowData.reduce((acc,r)=>acc+(wide?(r.extra?rowHWithExtra:rowHBase):r.rowH)+gap,0);
   const h=pad*2+headerH+gap+rowsH+extraH+gap+summaryH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
@@ -2331,7 +2333,7 @@ function buildBitacoraCanvas(logs,desde,hasta){
   let y=6+headerH+gap;
   rows.forEach((l,i)=>{
     const r=rowData[i];
-    const rowH=wide?rowHBase+(r.extra?10:0):r.rowH;
+    const rowH=wide?(r.extra?rowHWithExtra:rowHBase):r.rowH;
     drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout);
     y+=rowH+gap;
   });
