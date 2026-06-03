@@ -256,6 +256,10 @@ function updateRegistro_(id, data) {
     const col = map.monto;
     if (col) sh.getRange(rowNum, col).setValue(toNum_(data.monto));
   }
+  if (Object.prototype.hasOwnProperty.call(data, 'fecha')) {
+    const col = map.fecha;
+    if (col) sh.getRange(rowNum, col).setValue(str_(data.fecha));
+  }
 
   return { ok: true, id: target };
 }
@@ -611,6 +615,15 @@ function updateLog_(localId, id, data) {
   }
   if (data.comentario !== undefined) {
     sh.getRange(targetRow, LOG_COL.comentario).setValue(str_(data.comentario));
+  }
+  if (data.fecha !== undefined) {
+    sh.getRange(targetRow, LOG_COL.fecha).setValue(str_(data.fecha));
+  }
+  if (data.hora !== undefined) {
+    sh.getRange(targetRow, LOG_COL.hora).setValue(str_(data.hora));
+  }
+  if (data.createdAt !== undefined) {
+    sh.getRange(targetRow, LOG_COL.createdAt).setValue(str_(data.createdAt));
   }
 
   return { ok: true };

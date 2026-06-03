@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.15">
+<html lang="es" data-app-version="3.16">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.15';
+const APP_VERSION=getAppVersion()||'3.16';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -226,6 +226,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-inline-input{width:100%;min-width:0;padding:4px 5px;font-size:9px;border:1px solid var(--border);border-radius:6px;background:#fff;box-sizing:border-box;font-family:var(--font);}
 #logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
+.log-fecha-edit{display:flex;flex-direction:column;gap:3px;min-width:0;}
+#logs-list .log-inline-date,#logs-list .log-inline-time{font-size:9px;padding:3px 4px;}
+#logs-list tr.saving-fecha .log-fecha-edit{opacity:.65;}
 .logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
 .logs-grupo-hint span{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle;border-left:3px solid;}
 #logs-list tr[class*="log-grupo-"] td{border-left-width:4px;border-left-style:solid;}
@@ -1287,6 +1290,46 @@ const LOG_MESES_ABR=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct'
 function getMexicoWeekday(d){
   const w=new Intl.DateTimeFormat('es-MX',{timeZone:MX_TZ,weekday:'long'}).format(d);
   return w?w.charAt(0).toUpperCase()+w.slice(1):'';
+}
+function getLogFechaInputValues(l){
+  const d=parseLogDate(l);
+  if(d){
+    const p=getMexicoParts(d);
+    return{dateVal:p.year+'-'+pad2(p.month)+'-'+pad2(p.day),timeVal:pad2(p.hour)+':'+pad2(p.minute)};
+  }
+  const fd=String(l.fecha||'').trim();
+  const iso=fd.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const hm=String(l.hora||'').match(/(\d{1,2}):(\d{2})/);
+  if(iso){
+    return{
+      dateVal:iso[1]+'-'+iso[2]+'-'+iso[3],
+      timeVal:hm?pad2(+hm[1])+':'+pad2(+hm[2]):'12:00'
+    };
+  }
+  return{dateVal:'',timeVal:''};
+}
+function buildLogFechaHoraFromInputs(dateVal,timeVal){
+  const dm=String(dateVal||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!dm)return null;
+  const tm=String(timeVal||'').match(/^(\d{2}):(\d{2})/);
+  const y=+dm[1],mo=+dm[2],d=+dm[3],h=tm?+tm[1]:12,mi=tm?+tm[2]:0;
+  const dt=mexicoWallToDate(y,mo,d,h,mi);
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return{
+    fecha:dm[1]+'-'+dm[2]+'-'+dm[3]+'T'+pad2(h)+':'+pad2(mi)+':00',
+    fechaDate:dm[1]+'-'+dm[2]+'-'+dm[3],
+    hora:pad2(h)+':'+pad2(mi),
+    fechaHora:d+' / '+MESES[mo-1]+' / '+y+'  '+dt.toLocaleTimeString('es-MX',{timeZone:MX_TZ,hour:'numeric',minute:'2-digit',hour12:true}),
+    createdAt:dt.toISOString()
+  };
+}
+function fmtLogFechaEditInputs(l){
+  const lid=esc(l.localId||l.id||'');
+  const v=getLogFechaInputValues(l);
+  return '<div class="log-fecha-edit">'+
+    '<input type="date" class="log-inline-input log-inline-date" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
+    '<input type="time" class="log-inline-input log-inline-time" value="'+escAttr(v.timeVal)+'" title="Hora (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
+    '</div>';
 }
 function fmtLogBitacoraFecha(l){
   const d=parseLogDate(l);
@@ -3182,6 +3225,51 @@ async function updateLogField(localId,field,value,inputEl){
     if(isPageActive('logs'))renderLogs();
   }
 }
+function updateLogFechaFromRow(localId,el){
+  const tr=el&&el.closest?el.closest('tr'):null;
+  if(!tr)return;
+  const dateIn=tr.querySelector('.log-inline-date');
+  const timeIn=tr.querySelector('.log-inline-time');
+  updateLogFecha(localId,dateIn?dateIn.value:'',timeIn?timeIn.value:'',tr);
+}
+async function updateLogFecha(localId,dateVal,timeVal,rowEl){
+  const ts=buildLogFechaHoraFromInputs(dateVal,timeVal);
+  if(!ts){toast('Elige fecha y hora válidas',true);return;}
+  const logs=getLogs().slice();
+  const l=logs.find(x=>(x.localId||x.id||'')===localId);
+  if(!l)return;
+  const prev={fecha:l.fecha,hora:l.hora,fechaHora:l.fechaHora,createdAt:l.createdAt};
+  l.fecha=ts.fechaDate;
+  l.hora=ts.hora;
+  l.fechaHora=ts.fechaHora;
+  l.createdAt=ts.createdAt;
+  const linked=findRegistrosForLog(l);
+  const prevRegFechas=linked.map(r=>({id:r.id,fecha:r.fecha}));
+  if(rowEl)rowEl.classList.add('saving-fecha');
+  saveLogs(logs);
+  try{
+    const res=await apiPost({action:'updateLog',localId:l.localId||'',id:l.id||'',data:{
+      fecha:ts.fechaDate,hora:ts.hora,createdAt:ts.createdAt
+    }});
+    if(res.error)throw new Error(res.error);
+    for(const reg of linked){
+      const ur=await apiPost({action:'updateRegistro',id:reg.id,data:{fecha:ts.fecha}});
+      if(ur&&ur.error)throw new Error(ur.error);
+      reg.fecha=ts.fecha;
+    }
+    if(linked.length)saveAndRender();
+    toast(linked.length?'Fecha actualizada en bitácora y cuenta':'Fecha actualizada',false,true);
+    scheduleQuietSync();
+  }catch(e){
+    l.fecha=prev.fecha;l.hora=prev.hora;l.fechaHora=prev.fechaHora;l.createdAt=prev.createdAt;
+    prevRegFechas.forEach(p=>{const r=state.registros.find(x=>x.id===p.id);if(r)r.fecha=p.fecha;});
+    saveLogs(logs);toastError(e);
+  }finally{
+    if(rowEl)rowEl.classList.remove('saving-fecha');
+    if(isPageActive('logs'))renderLogs();
+    refreshDesglosePopup();
+  }
+}
 function getDeletedLogKeys(){
   try{
     const raw=localStorage.getItem(DELETED_LOGS_KEY);
@@ -3586,7 +3674,7 @@ function renderLogs(){
     const gIdx=getLogGrupoColorIdx(gid);
     if(gIdx>=0){rowCls='log-grupo-'+gIdx;hasGrupo=true;}
     const cls=logBadgeClass(l.tipo);
-    const dt=fmtLogBitacoraFecha(l);
+    const dt=fmtLogFechaEditInputs(l);
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
     const concVal=String(l.concepto||l.detalle||'').trim();
