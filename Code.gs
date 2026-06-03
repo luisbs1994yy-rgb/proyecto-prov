@@ -1,5 +1,6 @@
 /**
- * ESTADO DE CUENTA - Google Apps Script (compatible con index.HTML v2.73+)
+ * ESTADO DE CUENTA  |  Versión 3.17
+ * Compatible con index.HTML v3.17+ (pegar HTML después del ID de implementación)
  *
  * Columna Registros: aplicaFacturaId = id del registro FACTURA al que se abona un PAGO.
  * Columna Registros: producto = Etanol / Nafta / Regular (solo Factura).
@@ -15,6 +16,8 @@
  * - Logs
  * - PreciosProductos
  */
+
+const APP_VERSION = '3.17';
 
 const SHEET_REGISTROS = 'Registros';
 const SHEET_PROVEEDORES = 'Proveedores';
