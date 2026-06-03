@@ -46,7 +46,9 @@ const LOG_COL = {
   localId: 7,
   factura: 8,
   concepto: 9,
-  registroId: 10
+  registroId: 10,
+  comentario: 11,
+  pagoGrupoId: 12
 };
 
 const LOG_HEADERS = [
@@ -59,7 +61,9 @@ const LOG_HEADERS = [
   'localId',
   'factura',
   'concepto',
-  'registroId'
+  'registroId',
+  'comentario',
+  'pagoGrupoId'
 ];
 
 function doGet(e) {
@@ -115,6 +119,8 @@ function route_(action, payload) {
       return addLog_(payload.data || {});
     case 'deleteLog':
       return deleteLog_(payload.localId, payload.id);
+    case 'updateLog':
+      return updateLog_(payload.localId, payload.id, payload.data || {});
 
     case 'addProveedor':
       return addProveedor_(payload.nombre);
@@ -515,7 +521,9 @@ function getLogs_() {
       localId: str_(row[LOG_COL.localId - 1]),
       factura: parsed.factura,
       concepto: parsed.concepto,
-      registroId: str_(row[LOG_COL.registroId - 1])
+      registroId: str_(row[LOG_COL.registroId - 1]),
+      comentario: str_(row[LOG_COL.comentario - 1]),
+      pagoGrupoId: str_(row[LOG_COL.pagoGrupoId - 1])
     };
 
     if (item.id || item.localId || item.descripcion || item.tipo) logs.push(item);
@@ -548,6 +556,8 @@ function addLog_(data) {
   const hora = str_(data.hora) || formatHora_(new Date(createdAt));
   const tipo = str_(data.tipo);
   const registroId = str_(data.registroId);
+  const comentario = str_(data.comentario);
+  const pagoGrupoId = str_(data.pagoGrupoId);
 
   // Escritura celda por celda (evita que factura/concepto queden vacíos en H/I)
   const nextRow = sh.getLastRow() + 1;
@@ -561,8 +571,49 @@ function addLog_(data) {
   sh.getRange(nextRow, LOG_COL.factura).setValue(facturaVal);
   sh.getRange(nextRow, LOG_COL.concepto).setValue(conceptoVal);
   sh.getRange(nextRow, LOG_COL.registroId).setValue(registroId);
+  sh.getRange(nextRow, LOG_COL.comentario).setValue(comentario);
+  sh.getRange(nextRow, LOG_COL.pagoGrupoId).setValue(pagoGrupoId);
 
   return { ok: true, id: id, factura: facturaVal, concepto: conceptoVal };
+}
+
+function updateLog_(localId, id, data) {
+  const sh = sheet_(SHEET_LOGS);
+  ensureLogsLayout_(sh);
+
+  const local = str_(localId);
+  const rowId = str_(id);
+  if (!local && !rowId) return { ok: false, error: 'localId o id requerido' };
+
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { ok: false, error: 'Log no encontrado' };
+
+  let targetRow = 0;
+  const valuesId = sh.getRange(2, LOG_COL.id, lastRow - 1, 1).getValues();
+  const valuesLocal = sh.getRange(2, LOG_COL.localId, lastRow - 1, 1).getValues();
+
+  for (let i = 0; i < valuesId.length; i++) {
+    const currId = str_(valuesId[i][0]);
+    const currLocal = str_(valuesLocal[i][0]);
+    if ((rowId && currId === rowId) || (local && currLocal === local)) {
+      targetRow = i + 2;
+      break;
+    }
+  }
+
+  if (!targetRow) return { ok: false, error: 'Log no encontrado' };
+
+  if (data.descripcion !== undefined) {
+    sh.getRange(targetRow, LOG_COL.descripcion).setValue(str_(data.descripcion));
+  }
+  if (data.concepto !== undefined) {
+    sh.getRange(targetRow, LOG_COL.concepto).setValue(str_(data.concepto));
+  }
+  if (data.comentario !== undefined) {
+    sh.getRange(targetRow, LOG_COL.comentario).setValue(str_(data.comentario));
+  }
+
+  return { ok: true };
 }
 
 function deleteLog_(localId, id) {
@@ -608,6 +659,8 @@ function ensureLogsLayout_(sh) {
     sh.getRange(1, LOG_COL.fecha).setValue('fecha');
     sh.getRange(1, LOG_COL.hora).setValue('hora');
     sh.getRange(1, LOG_COL.id).setValue('id');
+    sh.getRange(1, LOG_COL.comentario).setValue('comentario');
+    sh.getRange(1, LOG_COL.pagoGrupoId).setValue('pagoGrupoId');
   }
 
   sh.setFrozenRows(1);

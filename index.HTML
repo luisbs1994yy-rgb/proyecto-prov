@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.04
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.04
+    ESTADO DE CUENTA  |  Versión 3.06
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.06
      ============================================================ -->
 <html lang="es">
 <head>
@@ -211,9 +211,24 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-col-fact{width:9%;text-align:left;}
 #logs-list .log-col-pl{width:9%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
 #logs-list .log-col-lit{width:11%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
-#logs-list .log-col-conc{width:12%;text-align:left;}
-#logs-list .log-col-desc{width:25%;text-align:left;}
+#logs-list .log-col-conc{width:11%;text-align:left;}
+#logs-list .log-col-com{width:12%;text-align:left;}
+#logs-list .log-col-desc{width:20%;text-align:left;}
 #logs-list .log-col-act{width:5%;text-align:center;vertical-align:middle;}
+#logs-list .log-inline-input{width:100%;min-width:0;padding:4px 5px;font-size:9px;border:1px solid var(--border);border-radius:6px;background:#fff;box-sizing:border-box;font-family:var(--font);}
+#logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
+#logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
+.logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
+.logs-grupo-hint span{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle;border-left:3px solid;}
+#logs-list tr[class*="log-grupo-"] td{border-left-width:4px;border-left-style:solid;}
+#logs-list tr.log-grupo-0 td{background:#e3f2ef!important;border-left-color:#0d9488;}
+#logs-list tr.log-grupo-1 td{background:#ede9fe!important;border-left-color:#7c3aed;}
+#logs-list tr.log-grupo-2 td{background:#fef3c7!important;border-left-color:#d97706;}
+#logs-list tr.log-grupo-3 td{background:#fce7f3!important;border-left-color:#db2777;}
+#logs-list tr.log-grupo-4 td{background:#e0f2fe!important;border-left-color:#0284c7;}
+#logs-list tr.log-grupo-5 td{background:#ecfccb!important;border-left-color:#65a30d;}
+#logs-list tr.log-grupo-6 td{background:#ffedd5!important;border-left-color:#ea580c;}
+#logs-list tr.log-grupo-7 td{background:#f3e8ff!important;border-left-color:#9333ea;}
 #logs-list .log-col-pl.log-empty,#logs-list .log-col-lit.log-empty{color:var(--text-faint);}
 #logs-list .log-col-desc,#logs-list .log-col-conc,#logs-list .log-col-fact{white-space:normal;word-break:break-word;overflow:visible;}
 #logs-list .log-col-tipo .badge{white-space:normal;line-height:1.15;}
@@ -736,7 +751,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.04";
+const APP_VERSION = "3.06";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -796,7 +811,7 @@ async function copyAppReleaseUrl(e){
   try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
   catch(_){toast(url,false,true);}
 }
-const GAS_URL     = "https://script.google.com/macros/s/AKfycbxpGmwxFOvl7e01b1rmfmHnLIg0ABcgw2MUMVOqhGUksfCsqDl0DLhS20wupaOlGaTn/exec";
+const GAS_URL     = "https://script.google.com/macros/s/AKfycby-2CNqaGJ8ZYu7vO7A52p8lpRRACb7XpjRrulg2ZJFYq2iles-UjiwK8MN4_CI5fsD/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const APLICA_KEY  = "pagos_v1_aplica";
@@ -1559,6 +1574,40 @@ function confirmarRemanentePago(montoNum,aplicado,remanente,nFacturas){
   if(!confirm('Confirmación final: ¿Guardar con remanente de '+fmt(remanente)+' sin asignar? (2 de 2)'))return false;
   return true;
 }
+function confirmarPagoSinFacturas(prov,montoNum){
+  if(!confirm('Pago de '+fmt(montoNum)+' para '+prov+' SIN aplicar a ninguna factura.\n\n¿Continuar? (1 de 2)'))return false;
+  if(!confirm('Confirmación final: ¿Registrar el pago sin facturas? (2 de 2)'))return false;
+  return true;
+}
+function newPagoGrupoId(){return 'pg_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);}
+const PAGO_GRUPO_COLORS=8;
+function getLogPagoGrupoId(l){return String(l&&l.pagoGrupoId||l&&l._inferredGrupo||'').trim();}
+function getLogGrupoColorIdx(grupoId){
+  if(!grupoId)return -1;
+  let h=0;
+  for(let i=0;i<grupoId.length;i++)h=(h*31+grupoId.charCodeAt(i))>>>0;
+  return h%PAGO_GRUPO_COLORS;
+}
+function inferPagoGruposForDisplay(logs){
+  const buckets={};
+  logs.forEach(l=>{
+    if(getLogPagoGrupoId(l))return;
+    const t=String(l.tipo||'').toLowerCase();
+    if(!t.includes('pago'))return;
+    const b=parseDescBasics(l.descripcion);
+    if(!b||!b.proveedor)return;
+    const ts=Date.parse(l.createdAt||'')||0;
+    const key=b.proveedor+'|'+Math.floor(ts/10000);
+    if(!buckets[key])buckets[key]=[];
+    buckets[key].push(l);
+  });
+  Object.values(buckets).forEach(arr=>{
+    if(arr.length<2)return;
+    const gid='inf_'+String(arr[0].localId||arr[0].id||'').slice(0,24);
+    arr.forEach(l=>{l._inferredGrupo=gid;});
+  });
+}
+function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function updateRegistrarAplicaUI(){
   const wrap=document.getElementById('f-factura-group');
   const list=document.getElementById('f-aplica-facturas-list');
@@ -1802,14 +1851,16 @@ async function guardarRegistro(){
       try{
         const saved=[];
         let logIdx=0;
+        const pagoGrupoId=(parts.length>1||remanente>0.001)?newPagoGrupoId():'';
+        const logExtra=pagoGrupoId?{pagoGrupoId}:{}};
         for(const part of parts){
           const reg=await persistPagoRegistro({fecha,prov,tipo,monto:part.monto,factura:part.factura,concepto,aplicaFacturaId:part.facturaId});
           saved.push(reg);
-          await addLogAwait(tipo,prov+' · '+fmt(reg.monto),reg.factura||'',concepto,reg.id,{},logIdx++);
+          await addLogAwait(tipo,prov+' · '+fmt(reg.monto),reg.factura||'',concepto,reg.id,logExtra,logIdx++);
         }
         if(remanente>0.001){
           const remReg=await persistPagoRegistro({fecha,prov,tipo,monto:remanente,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''});
-          await addLogAwait(tipo,prov+' · '+fmt(remReg.monto),'',remReg.concepto||concepto,remReg.id,{},logIdx++);
+          await addLogAwait(tipo,prov+' · '+fmt(remReg.monto),'',remReg.concepto||concepto,remReg.id,logExtra,logIdx++);
         }
         saveAndRender();clearForm();
         if(remanente>0.001)toast('✓ Aplicado a '+parts.length+' factura(s) · Remanente '+fmt(remanente),false,true);
@@ -1819,6 +1870,7 @@ async function guardarRegistro(){
       finally{btn.disabled=false;btn.innerHTML='Guardar registro';btn.classList.remove('btn-locked');}
       return;
     }
+    if(!confirmarPagoSinFacturas(prov,montoNum))return;
     btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
     try{
       const reg=await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
@@ -3007,10 +3059,57 @@ function normalizeLog(log,prev={}){
     ...log,
     factura:String(parsed.factura||prev.factura||'').trim(),
     concepto:String(parsed.concepto||prev.concepto||'').trim(),
+    comentario:String(log.comentario!=null?log.comentario:prev.comentario||'').trim(),
+    pagoGrupoId:String(log.pagoGrupoId||prev.pagoGrupoId||'').trim(),
     producto:String(log.producto||meta.producto||prev.producto||'').trim(),
     precioLitro:isNaN(pl)?(isNaN(meta.precioLitro)?'':meta.precioLitro):pl,
     litros:isNaN(lt)?(isNaN(meta.litros)?'':meta.litros):lt
   };
+}
+function rebuildLogDescripcion(l){
+  const b=parseDescBasics(l.descripcion);
+  let base='';
+  if(b&&b.proveedor){
+    base=b.proveedor;
+    if(!isNaN(b.monto))base+=' · '+fmt(b.monto);
+  }else{
+    base=cleanLogDescripcion(l.descripcion).split(' · ')[0]||'';
+  }
+  const meta=parseLogLitrosMeta(l.descripcion);
+  let d=base;
+  if(l.factura)d+=' · Factura: '+String(l.factura).trim();
+  if(l.concepto)d+=' · Concepto: '+String(l.concepto).trim();
+  if(!isNaN(meta.precioLitro)&&meta.precioLitro>0)d+=' · P/L: '+formatPrecioLitroDisplay(meta.precioLitro);
+  if(!isNaN(meta.litros)&&meta.litros>0)d+=' · Litros: '+formatLitrosDisplay(meta.litros);
+  if(meta.producto)d+=' · Prod: '+meta.producto;
+  return d.trim();
+}
+async function updateLogField(localId,field,value,inputEl){
+  const logs=getLogs().slice();
+  const l=logs.find(x=>(x.localId||x.id||'')===localId);
+  if(!l)return;
+  const prevC=l.concepto,prevCo=l.comentario,prevD=l.descripcion;
+  if(field==='concepto'){
+    l.concepto=String(value||'').trim();
+    l.descripcion=rebuildLogDescripcion(l);
+  }else if(field==='comentario'){
+    l.comentario=String(value||'').trim();
+  }else return;
+  if(inputEl)inputEl.classList.add('saving');
+  saveLogs(logs);
+  try{
+    const res=await apiPost({action:'updateLog',localId:l.localId||'',id:l.id||'',data:{
+      concepto:l.concepto,comentario:l.comentario,descripcion:l.descripcion
+    }});
+    if(res.error)throw new Error(res.error);
+    toast('Bitácora actualizada',false,true);
+  }catch(e){
+    l.concepto=prevC;l.comentario=prevCo;l.descripcion=prevD;
+    saveLogs(logs);toastError(e);
+  }finally{
+    if(inputEl)inputEl.classList.remove('saving');
+    if(isPageActive('logs'))renderLogs();
+  }
 }
 function mergeLogsPreservingDetails(incomingLogs){
   const prevMap={};
@@ -3310,8 +3409,10 @@ function buildLogEntry(tipo,descripcion,factura,concepto,registroId,extra,offset
   const baseMs=ts?Date.parse(ts.createdAt):Date.now();
   const createdAt=new Date(baseMs+(offsetMs||0)).toISOString();
   const stamp=ts?ts.fechaHora:fmtLogFecha(new Date(createdAt));
+  const pagoGrupoId=String(ex.pagoGrupoId||'').trim();
   return{
     tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,
+    comentario:'',pagoGrupoId,
     producto,precioLitro:isNaN(pn)?'':pn,litros:isNaN(ln)?'':ln,
     fecha:ts?ts.fechaDate:'',hora:ts?ts.hora:'',fechaHora:stamp,createdAt,
     localId:'log_'+createdAt+'_'+Math.random().toString(36).slice(2)
@@ -3360,40 +3461,50 @@ async function eliminarLog(localId){
 function renderLogs(){
   const el=document.getElementById('logs-list');
   syncLogsFiltroUI();
-  const all=getLogs(),logs=getLogsFiltrados();
+  const all=getLogs(),logs=getLogsFiltrados().map(l=>({...l}));
   const cnt=document.getElementById('logs-filter-count');
   if(cnt)cnt.textContent=logs.length+' de '+all.length;
   if(!all.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
   if(!logs.length){el.innerHTML='<div class="empty">Ningún movimiento con estos filtros</div>';return;}
+  inferPagoGruposForDisplay(logs);
+  let hasGrupo=false;
   let tableRows='',lastDay='',dayIdx=0;
   logs.forEach(l=>{
     const dayKey=getLogDayKey(l)||'—';
     if(dayKey!==lastDay){dayIdx=1-dayIdx;lastDay=dayKey;}
-    const dayCls=dayIdx===0?'log-day-a':'log-day-b';
+    let rowCls=dayIdx===0?'log-day-a':'log-day-b';
+    const gid=getLogPagoGrupoId(l);
+    const gIdx=getLogGrupoColorIdx(gid);
+    if(gIdx>=0){rowCls='log-grupo-'+gIdx;hasGrupo=true;}
     const cls=logBadgeClass(l.tipo);
     const dt=fmtLogDisplayCompact(l);
     const lid=esc(l.localId||l.id||'');
     const factura=esc(String(l.factura||l.numFactura||l.numeroFactura||'').trim());
-    const concepto=esc(String(l.concepto||l.detalle||'').trim());
+    const concVal=String(l.concepto||l.detalle||'').trim();
+    const comVal=String(l.comentario||'').trim();
+    const concInput='<input type="text" class="log-inline-input" value="'+escAttr(concVal)+'" placeholder="Concepto…" onblur="updateLogField(\''+lid+'\',\'concepto\',this.value,this)">';
+    const comInput='<input type="text" class="log-inline-input" value="'+escAttr(comVal)+'" placeholder="Comentario (solo bitácora)…" onblur="updateLogField(\''+lid+'\',\'comentario\',this.value,this)">';
     const descCell=formatLogDescCell(l);
     const plCell=fmtLogPrecioLitroCell(l);
     const litCell=fmtLogLitrosCell(l);
-    tableRows+='<tr class="'+dayCls+'">'+
+    tableRows+='<tr class="'+rowCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
       '<td class="log-col-lit'+(litCell.empty?' log-empty':'')+'">'+litCell.html+'</td>'+
-      '<td class="log-col-conc">'+(concepto||'—')+'</td>'+
+      '<td class="log-col-conc">'+concInput+'</td>'+
+      '<td class="log-col-com">'+comInput+'</td>'+
       '<td class="log-col-desc">'+descCell+'</td>'+
       '<td class="log-col-act"><button class="btn-icon" title="Eliminar" onclick="eliminarLog(\''+lid+'\')">🗑</button></td>'+
       '</tr>';
   });
-  el.innerHTML=
+  const hint=hasGrupo?'<p class="logs-grupo-hint">Mismo color = un solo pago aplicado a varias facturas. Los comentarios no salen en la foto WhatsApp.</p>':'';
+  el.innerHTML=hint+
     '<div class="table-wrap"><table class="logs-table"><thead><tr>'+
       '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-fact">Fact.</th>'+
       '<th class="log-col-pl">P/L</th><th class="log-col-lit">Litros</th>'+
-      '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
+      '<th class="log-col-conc">Conc.</th><th class="log-col-com">Comentario</th><th class="log-col-desc">Detalle</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
 }
 
