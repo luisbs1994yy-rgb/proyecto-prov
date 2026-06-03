@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.03
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.03
+    ESTADO DE CUENTA  |  Versión 3.04
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.04
      ============================================================ -->
 <html lang="es">
 <head>
@@ -243,6 +243,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .registrar-aplica-resumen{margin-top:10px;font-size:12px;}
 .registrar-alloc-alert{background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:10px 12px;margin-bottom:8px;color:var(--amber-text);font-size:11px;line-height:1.45;}
 .registrar-alloc-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);margin-bottom:6px;}
+.registrar-fecha-preview{font-size:11px;color:var(--text-muted);margin:-4px 0 10px;line-height:1.4;}
+.registrar-fecha-preview strong{color:var(--navy);}
 .registrar-alloc-row{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border);font-size:11px;}
 .registrar-alloc-row:last-child{border-bottom:none;}
 .registrar-alloc-row.warn{color:var(--red-text);font-weight:600;}
@@ -732,7 +734,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.03";
+const APP_VERSION = "3.04";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -861,8 +863,12 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
             <div class="form-row-duo">
-              <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha"></div>
-              <div class="form-group"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
+              <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+              <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+            </div>
+            <p class="registrar-fecha-preview" id="f-fecha-preview">Se registrará con la fecha y hora de arriba (hora México).</p>
+            <div class="form-row-duo">
+              <div class="form-group" style="grid-column:1/-1"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
             <div class="form-row-duo form-fact-concept-row">
               <div class="form-group form-factura-num">
@@ -1088,7 +1094,8 @@ let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 document.addEventListener('DOMContentLoaded', () => {
   bindAppVersionLink();
   syncLitrosPrecioLabels();
-  document.getElementById('f-fecha').value = new Date().toISOString().split('T')[0];
+  initRegistrarFechaHora();
+  ['f-fecha','f-hora'].forEach(id=>document.getElementById(id)?.addEventListener('change',updateRegistrarFechaPreview));
   document.getElementById('f-monto').addEventListener('input', onMontoInput);
   document.getElementById('f-monto').addEventListener('blur',  onMontoBlur);
   document.getElementById('f-precio-litro').addEventListener('input', onPrecioLitroInput);
@@ -1143,9 +1150,58 @@ function fmtFechaCorta(fecha){
   const m=MESES_ES[d.getMonth()].slice(0,3);
   return d.getDate()+' '+m+' '+String(d.getFullYear()).slice(-2);
 }
+const MX_TZ='America/Mexico_City';
+function pad2(n){return String(n).padStart(2,'0');}
+function getMexicoParts(date){
+  const parts={};
+  new Intl.DateTimeFormat('en-US',{timeZone:MX_TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(date).forEach(p=>{parts[p.type]=p.value;});
+  return{year:+parts.year,month:+parts.month,day:+parts.day,hour:+parts.hour,minute:+parts.minute};
+}
+function mexicoWallToDate(y,mo,d,h,mi){
+  let t=Date.now();
+  for(let i=0;i<72;i++){
+    const p=getMexicoParts(new Date(t));
+    const cmp=(p.year-y)||(p.month-mo)||(p.day-d)||(p.hour-h)||(p.minute-mi);
+    if(cmp===0)return new Date(t);
+    t+=(cmp>0?-1:1)*10*60000;
+  }
+  return new Date(y,mo-1,d,h,mi);
+}
+function initRegistrarFechaHora(){
+  const p=getMexicoParts(new Date());
+  const elF=document.getElementById('f-fecha'),elH=document.getElementById('f-hora');
+  if(elF)elF.value=p.year+'-'+pad2(p.month)+'-'+pad2(p.day);
+  if(elH)elH.value=pad2(p.hour)+':'+pad2(p.minute);
+  updateRegistrarFechaPreview();
+}
+function readRegistrarFechaHora(){
+  const dateVal=document.getElementById('f-fecha')?.value||'';
+  const timeVal=document.getElementById('f-hora')?.value||'';
+  const dm=dateVal.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const tm=timeVal.match(/^(\d{2}):(\d{2})/);
+  if(!dm)return null;
+  const y=+dm[1],mo=+dm[2],d=+dm[3],h=tm?+tm[1]:12,mi=tm?+tm[2]:0;
+  const dt=mexicoWallToDate(y,mo,d,h,mi);
+  const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return{
+    fecha:dm[1]+'-'+dm[2]+'-'+dm[3]+'T'+pad2(h)+':'+pad2(mi)+':00',
+    fechaDate:dm[1]+'-'+dm[2]+'-'+dm[3],
+    hora:pad2(h)+':'+pad2(mi),
+    fechaHora:d+' / '+MESES[mo-1]+' / '+y+'  '+dt.toLocaleTimeString('es-MX',{timeZone:MX_TZ,hour:'numeric',minute:'2-digit',hour12:true}),
+    createdAt:dt.toISOString()
+  };
+}
+function updateRegistrarFechaPreview(){
+  const el=document.getElementById('f-fecha-preview');
+  if(!el)return;
+  const ts=readRegistrarFechaHora();
+  if(!ts){el.textContent='Elige fecha y hora (México).';return;}
+  el.innerHTML='Se registrará: <strong>'+esc(ts.fechaHora)+'</strong> (hora México)';
+}
 function fmtLogFecha(d){
   const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  return d.getDate()+' / '+MESES[d.getMonth()]+' / '+d.getFullYear()+'  '+d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
+  const p=getMexicoParts(d);
+  return p.day+' / '+MESES[p.month-1]+' / '+p.year+'  '+d.toLocaleTimeString('es-MX',{timeZone:MX_TZ,hour:'numeric',minute:'2-digit',hour12:true});
 }
 function getFechaDisplay(l){
   if(l.fechaHora){if(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(l.fechaHora)){try{const d=new Date(l.fechaHora);if(!isNaN(d))return fmtLogFecha(d);}catch{}}return l.fechaHora;}
@@ -1165,7 +1221,23 @@ function logBadgeClass(tipo){
   return'badge-log-add';
 }
 const MESES_LOG_MAP={enero:0,febrero:1,marzo:2,abril:3,mayo:4,junio:5,julio:6,agosto:7,septiembre:8,octubre:9,noviembre:10,diciembre:11};
+function parseLogDateFromFechaHora(fecha,hora){
+  const fd=String(fecha||'').trim();
+  const hm=String(hora||'').match(/(\d{1,2}):(\d{2})/);
+  if(!fd)return null;
+  let y,m,d,h=12,mi=0;
+  const iso=fd.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso){y=+iso[1];m=+iso[2];d=+iso[3];}
+  else{
+    const sp=fd.match(/(\d{1,2})\s*\/\s*([A-Za-záéíóúÁÉÍÓÚ]+)\s*\/\s*(\d{4})/);
+    if(sp){const mes=MESES_LOG_MAP[sp[2].toLowerCase()];if(mes==null)return null;y=+sp[3];m=mes+1;d=+sp[1];}
+    else return null;
+  }
+  if(hm){h=+hm[1];mi=+hm[2];}
+  return mexicoWallToDate(y,m,d,h,mi);
+}
 function parseLogDate(l){
+  if(l.fecha&&l.hora){const d=parseLogDateFromFechaHora(l.fecha,l.hora);if(d)return d;}
   if(l.createdAt){try{const d=new Date(l.createdAt);if(!isNaN(d.getTime()))return d;}catch{}}
   const fh=String(l.fechaHora||'').trim();
   if(fh){
@@ -1179,8 +1251,9 @@ function parseLogDate(l){
 function fmtLogDisplayCompact(l){
   const d=parseLogDate(l);
   if(!d)return esc(getFechaDisplay(l));
-  const h=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
-  return d.getDate()+'/'+String(d.getMonth()+1).padStart(2,'0')+'<br><span class="log-hora">'+h+'</span>';
+  const p=getMexicoParts(d);
+  const h=pad2(p.hour)+':'+pad2(p.minute);
+  return p.day+'/'+p.month+'<br><span class="log-hora">'+h+'</span>';
 }
 function getLogDayKey(l){
   const d=parseLogDate(l);
@@ -1193,9 +1266,10 @@ function parseRegistroDate(fecha){
   if(fecha==null||fecha==='')return null;
   const raw=String(fecha).trim();
   if(!raw)return null;
-  let d;
-  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
-  else d=new Date(raw);
+  const dt=raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(dt)return mexicoWallToDate(+dt[1],+dt[2],+dt[3],+dt[4],+dt[5]);
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw))return mexicoWallToDate(+raw.slice(0,4),+raw.slice(5,7),+raw.slice(8,10),12,0);
+  const d=new Date(raw);
   return isNaN(d.getTime())?null:d;
 }
 function parseRegistroDateMs(fecha){const d=parseRegistroDate(fecha);return d?d.getTime():0;}
@@ -1290,7 +1364,7 @@ async function manualSync(){
     return;
   }catch(e){toastError(e);setSyncStatus('Error de red');setRefreshSyncing(false);}
 }
-function scheduleQuietSync(){if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},500);}
+function scheduleQuietSync(){if(syncTimer)clearTimeout(syncTimer);syncTimer=setTimeout(()=>{syncQuiet();syncTimer=null;},2500);}
 function proveedoresFromRegistros(regs){return[...new Set((regs||[]).map(r=>String(r.proveedor||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));}
 function mergeProveedoresList(apiList,regs){
   let list=Array.isArray(apiList)?apiList.map(p=>String(p||'').trim()).filter(Boolean):[];
@@ -1705,10 +1779,12 @@ async function persistPagoRegistro({fecha,prov,tipo,monto,factura,concepto,aplic
 }
 async function guardarRegistro(){
   const prov=document.getElementById('f-proveedor').value,tipo=document.getElementById('f-tipo').value,
-        montoNum=parseMonto(document.getElementById('f-monto').value),fecha=document.getElementById('f-fecha').value,
+        montoNum=parseMonto(document.getElementById('f-monto').value),
+        ts=readRegistrarFechaHora(),
         factura=document.getElementById('f-factura').value.trim(),concepto=document.getElementById('f-concepto').value.trim(),
         producto=document.getElementById('f-producto').value.trim();
-  if(!prov||!tipo||!fecha||isNaN(montoNum)){toast('Completa tipo, cliente, fecha y monto',true);return;}
+  if(!prov||!tipo||!ts||isNaN(montoNum)){toast('Completa tipo, cliente, fecha, hora y monto',true);return;}
+  const fecha=ts.fecha;
   if(isTipoFactura({tipo})&&!producto){toast('Selecciona producto: Etanol, Nafta o Regular',true);return;}
   const btn=document.getElementById('btn-save');
   if(isTipoPago({tipo})){
@@ -1723,20 +1799,19 @@ async function guardarRegistro(){
       btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
       try{
         const saved=[];
+        let logIdx=0;
         for(const part of parts){
-          saved.push(await persistPagoRegistro({fecha,prov,tipo,monto:part.monto,factura:part.factura,concepto,aplicaFacturaId:part.facturaId}));
+          const reg=await persistPagoRegistro({fecha,prov,tipo,monto:part.monto,factura:part.factura,concepto,aplicaFacturaId:part.facturaId});
+          saved.push(reg);
+          await addLogAwait(tipo,prov+' · '+fmt(reg.monto),reg.factura||'',concepto,reg.id,{},logIdx++);
         }
         if(remanente>0.001){
-          await persistPagoRegistro({fecha,prov,tipo,monto:remanente,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''});
-        }
-        saved.forEach(r=>addLog(tipo,prov+' · '+fmt(r.monto),r.factura||'',concepto,r.id));
-        if(remanente>0.001){
-          const rem=state.registros[state.registros.length-1];
-          if(rem)addLog(tipo,prov+' · '+fmt(rem.monto),'',rem.concepto||concepto,rem.id);
+          const remReg=await persistPagoRegistro({fecha,prov,tipo,monto:remanente,factura:'',concepto:(concepto?concepto+' · ':'')+'Remanente',aplicaFacturaId:''});
+          await addLogAwait(tipo,prov+' · '+fmt(remReg.monto),'',remReg.concepto||concepto,remReg.id,{},logIdx++);
         }
         saveAndRender();clearForm();
         if(remanente>0.001)toast('✓ Aplicado a '+parts.length+' factura(s) · Remanente '+fmt(remanente),false,true);
-        else toast('✓ Pago aplicado a '+parts.length+' factura(s)',false,true);
+        else toast('✓ Pago aplicado a '+parts.length+' factura(s) · bitácora: '+saved.length+' mov.',false,true);
         setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
       }catch(e){toastError(e);}
       finally{btn.disabled=false;btn.innerHTML='Guardar registro';btn.classList.remove('btn-locked');}
@@ -1744,8 +1819,8 @@ async function guardarRegistro(){
     }
     btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
     try{
-      await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
-      addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,state.registros[state.registros.length-1].id);
+      const reg=await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
+      await addLogAwait(tipo,prov+' · '+fmt(montoNum),factura,concepto,reg.id);
       saveAndRender();clearForm();toast('✓ Guardado (sin asignar)',false,true);
       setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
     }catch(e){toastError(e);}
@@ -1764,7 +1839,7 @@ async function guardarRegistro(){
     const res=await apiPost({action:'addRegistro',data:regData});
     if(res.error)throw new Error(res.error);
     state.registros.push({id:res.id,...regData});
-    addLog(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id,{producto,precioLitro:pn,litros:ln});
+    await addLogAwait(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id,{producto,precioLitro:pn,litros:ln});
     saveAndRender();clearForm();toast('✓ Guardado',false,true);
     setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
@@ -1790,6 +1865,7 @@ async function eliminarRegistro(id,btn){
 }
 function clearForm(){
   ['f-proveedor','f-factura','f-concepto','f-monto','f-precio-litro','f-litros','f-producto'].forEach(id=>document.getElementById(id).value='');
+  initRegistrarFechaHora();
   document.getElementById('f-tipo').value='';
   const list=document.getElementById('f-aplica-facturas-list');if(list)list.innerHTML='';
   const resumen=document.getElementById('f-aplica-resumen');if(resumen)resumen.innerHTML='';
@@ -2937,7 +3013,18 @@ function normalizeLog(log,prev={}){
 function mergeLogsPreservingDetails(incomingLogs){
   const prevMap={};
   getLogs().forEach(l=>{const key=l.localId||l.id||'';if(key)prevMap[key]=l;});
-  return (incomingLogs||[]).map(raw=>{const key=raw.localId||raw.id||'';return normalizeLog(raw,key?prevMap[key]:undefined);});
+  const seen=new Set();
+  const merged=(incomingLogs||[]).map(raw=>{
+    const key=raw.localId||raw.id||'';
+    if(key)seen.add(key);
+    return normalizeLog(raw,key?prevMap[key]:undefined);
+  });
+  getLogs().forEach(l=>{
+    const key=l.localId||l.id||'';
+    if(key&&!seen.has(key))merged.unshift(l);
+  });
+  merged.sort((a,b)=>(Date.parse(b.createdAt||'')||0)-(Date.parse(a.createdAt||'')||0));
+  return merged;
 }
 function cleanLogDescripcion(descripcion){
   return String(descripcion||'')
@@ -3203,9 +3290,7 @@ async function deleteLogsRemote_(logsToRemove){
 }
 function getLogs(){try{const raw=localStorage.getItem(LOGS_KEY);if(!raw)return logsMemory;const logs=JSON.parse(raw);logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];return logsMemory;}catch{return logsMemory;}}
 function saveLogs(logs){logsMemory=Array.isArray(logs)?logs.map(l=>normalizeLog(l)):[];try{localStorage.setItem(LOGS_KEY,JSON.stringify(logsMemory));}catch(e){console.warn(e);}}
-function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
-function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
-  const logs=getLogs().slice(),now=new Date();
+function buildLogEntry(tipo,descripcion,factura,concepto,registroId,extra,offsetMs){
   const facturaSafe=String(factura||'').trim();
   const conceptoSafe=String(concepto||'').trim();
   const regIdSafe=String(registroId||'').trim();
@@ -3219,11 +3304,31 @@ function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
   if(!isNaN(pn))descWithMeta+=' · P/L: '+formatPrecioLitroDisplay(pn);
   if(!isNaN(ln)&&ln>0)descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
   if(producto)descWithMeta+=' · Prod: '+producto;
-  const log={
+  const ts=readRegistrarFechaHora();
+  const baseMs=ts?Date.parse(ts.createdAt):Date.now();
+  const createdAt=new Date(baseMs+(offsetMs||0)).toISOString();
+  const stamp=ts?ts.fechaHora:fmtLogFecha(new Date(createdAt));
+  return{
     tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,
     producto,precioLitro:isNaN(pn)?'':pn,litros:isNaN(ln)?'':ln,
-    fechaHora:fmtLogFecha(now),createdAt:now.toISOString(),localId:'log_'+now.getTime()+'_'+Math.random().toString(36).slice(2)
+    fecha:ts?ts.fechaDate:'',hora:ts?ts.hora:'',fechaHora:stamp,createdAt,
+    localId:'log_'+createdAt+'_'+Math.random().toString(36).slice(2)
   };
+}
+function syncLogToSheets(log){apiPost({action:'addLog',data:log}).then(res=>{if(res.error)throw new Error(res.error);if(res.id){const logs=getLogs().slice(),found=logs.find(l=>l.localId===log.localId);if(found){found.id=res.id;saveLogs(logs);if(isPageActive('logs'))renderLogs();}}}).catch(e=>console.warn(e));}
+async function addLogAwait(tipo,descripcion,factura='',concepto='',registroId='',extra,offsetMs){
+  const log=buildLogEntry(tipo,descripcion,factura,concepto,registroId,extra,offsetMs);
+  const logs=getLogs().slice();
+  logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);
+  const res=await apiPost({action:'addLog',data:log});
+  if(res.error)throw new Error(res.error);
+  if(res.id){log.id=res.id;const logs2=getLogs().slice();const f=logs2.find(l=>l.localId===log.localId);if(f)f.id=res.id;saveLogs(logs2);}
+  if(isPageActive('logs'))renderLogs();
+  return log;
+}
+function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
+  const log=buildLogEntry(tipo,descripcion,factura,concepto,registroId,extra,0);
+  const logs=getLogs().slice();
   logs.unshift(log);if(logs.length>500)logs.splice(500);saveLogs(logs);syncLogToSheets(log);if(isPageActive('logs'))renderLogs();
 }
 async function eliminarLog(localId){
