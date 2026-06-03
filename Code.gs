@@ -1,6 +1,6 @@
 /**
  * ESTADO DE CUENTA  |  Versión 3.17
- * Compatible con index.HTML v3.17+ (pegar HTML después del ID de implementación)
+ * Compatible con index.HTML v3.17 (pegar HTML después del ID de implementación)
  *
  * Columna Registros: aplicaFacturaId = id del registro FACTURA al que se abona un PAGO.
  * Columna Registros: producto = Etanol / Nafta / Regular (solo Factura).
