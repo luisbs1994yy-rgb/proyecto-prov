@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.94
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.94
+    ESTADO DE CUENTA  |  Versión 2.95
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.95
      ============================================================ -->
 <html lang="es">
 <head>
@@ -705,7 +705,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.94";
+const APP_VERSION = "2.95";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2013,6 +2013,35 @@ function filterLogsByRange(logs,desde,hasta){
     return t>=t0&&t<=t1;
   }));
 }
+function getLogMontoNum(l){
+  const b=parseDescBasics(l.descripcion);
+  if(b&&!isNaN(b.monto))return b.monto;
+  const parts=String(l.descripcion||'').split(' · ');
+  for(let i=1;i<parts.length;i++){
+    const s=parts[i].replace(/[^\d.,-]/g,'').replace(/,/g,'');
+    const n=parseFloat(s);
+    if(!isNaN(n)&&n>0)return n;
+  }
+  return 0;
+}
+function summarizeBitacoraLogs(logs){
+  let facturado=0,pagado=0;
+  logs.forEach(l=>{
+    const t=String(l.tipo||'').toLowerCase();
+    const m=getLogMontoNum(l);
+    if(!m)return;
+    if(t.includes('factura'))facturado+=m;
+    else if(t.includes('pago'))pagado+=m;
+  });
+  return{facturado,pagado};
+}
+function getBitacoraResumenLabels(desde,hasta){
+  const hoy=toDateInputValue(startOfDay(new Date()));
+  const d0=toDateInputValue(desde),d1=toDateInputValue(hasta);
+  if(d0===d1&&d0===hoy)return{fact:'Facturado hoy',pago:'Pagado hoy'};
+  if(d0===d1)return{fact:'Facturado',pago:'Pagado'};
+  return{fact:'Facturado total',pago:'Pagado total'};
+}
 function getLogRowData(l){
   const d=parseLogDate(l);
   const tipo=String(escTipoDisplay(l.tipo)||'').toUpperCase();
@@ -2044,8 +2073,10 @@ function logTipoCanvasStyle(tipo){
 function buildBitacoraCanvas(logs,desde,hasta){
   const rows=logs.slice(0,BITACORA_CANVAS_MAX_FILAS);
   const extra=logs.length-rows.length;
-  const w=360,pad=10,headerH=52,rowH=34,gap=4,footH=extra?22:0,scale=3;
-  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+footH;
+  const resumen=summarizeBitacoraLogs(logs);
+  const lbl=getBitacoraResumenLabels(desde,hasta);
+  const w=360,pad=10,headerH=52,rowH=34,gap=4,extraH=extra?22:0,summaryH=46,scale=3;
+  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+extraH+gap+summaryH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2098,7 +2129,22 @@ function buildBitacoraCanvas(logs,desde,hasta){
     ctx.fillStyle='#94a3b8';ctx.font='600 9px IBM Plex Sans, Arial';ctx.textAlign='center';
     ctx.fillText('… y '+extra+' movimiento'+(extra!==1?'s':'')+' más',w/2,y+14);
     ctx.textAlign='left';
+    y+=extraH+gap;
+  }else{
+    y+=gap;
   }
+  const sy=y;
+  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.fill();
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.stroke();
+  const colW=(w-pad*2-16)/2,mid=pad+8+colW;
+  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText(lbl.fact,pad+8,sy+14);
+  ctx.fillText(lbl.pago,mid+4,sy+14);
+  ctx.fillStyle='#1e40af';ctx.font='700 11px IBM Plex Mono, monospace';
+  ctx.fillText(fmt(resumen.facturado),pad+8,sy+32);
+  ctx.fillStyle='#0d7a3e';
+  ctx.fillText(fmt(resumen.pagado),mid+4,sy+32);
+  ctx.textAlign='left';
   return canvas;
 }
 async function shareBitacoraBlob(blob,name,desde,hasta,count){
