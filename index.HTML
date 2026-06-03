@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.07
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.07
+    ESTADO DE CUENTA  |  Versión 3.08
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.08
      ============================================================ -->
 <html lang="es">
 <head>
@@ -751,7 +751,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.07";
+const APP_VERSION = "3.08";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1682,7 +1682,7 @@ function logsProveedor(prov){
     return b&&b.proveedor===prov;
   });
 }
-async function syncQuiet(){try{const d=await api('getAll');if(d.error)return;updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch{}}
+async function syncQuiet(){try{const d=await api('getAll');if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
 async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store'});return parseJSON(r);}
 async function apiPost(body){const r=await fetch(GAS_URL+'?'+cacheBustParam(),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),cache:'no-store'});return parseJSON(r);}
@@ -1852,7 +1852,7 @@ async function guardarRegistro(){
         const saved=[];
         let logIdx=0;
         const pagoGrupoId=(parts.length>1||remanente>0.001)?newPagoGrupoId():'';
-        const logExtra=pagoGrupoId?{pagoGrupoId}:{}};
+        const logExtra=pagoGrupoId?{pagoGrupoId}:{};
         for(const part of parts){
           const reg=await persistPagoRegistro({fecha,prov,tipo,monto:part.monto,factura:part.factura,concepto,aplicaFacturaId:part.facturaId});
           saved.push(reg);
