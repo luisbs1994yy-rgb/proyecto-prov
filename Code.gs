@@ -22,7 +22,7 @@ const SHEET_LOGS = 'Logs';
 const SHEET_PRECIOS_PRODUCTOS = 'PreciosProductos';
 
 /* ===== Registros ===== */
-const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'concepto', 'producto', 'aplicaFacturaId', 'createdAt'];
+const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'concepto', 'producto', 'precioLitro', 'litros', 'aplicaFacturaId', 'createdAt'];
 
 /* ===== Proveedores ===== */
 const PROV_HEADERS = ['nombre'];
@@ -166,6 +166,10 @@ function addRegistro_(data) {
   const factura = str_(data.factura);
   const concepto = str_(data.concepto);
   const producto = normalizeProducto_(data.producto);
+  const precioLitroRaw = data.precioLitro;
+  const litrosRaw = data.litros;
+  const precioLitro = precioLitroRaw === '' || precioLitroRaw == null ? '' : toNum_(precioLitroRaw);
+  const litros = litrosRaw === '' || litrosRaw == null ? '' : toNum_(litrosRaw);
 
   if (!fecha || !proveedor || !tipo || isNaN(monto)) {
     return { ok: false, error: 'Datos incompletos para registro' };
@@ -184,6 +188,8 @@ function addRegistro_(data) {
     factura: factura,
     concepto: concepto,
     producto: producto,
+    precioLitro: precioLitro === '' || isNaN(precioLitro) ? '' : precioLitro,
+    litros: litros === '' || isNaN(litros) ? '' : litros,
     aplicaFacturaId: aplicaFacturaId,
     createdAt: new Date().toISOString()
   });
