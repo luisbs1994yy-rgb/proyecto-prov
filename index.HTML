@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.99
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.99
+    ESTADO DE CUENTA  |  Versión 3.00
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.00
      ============================================================ -->
 <html lang="es">
 <head>
@@ -440,7 +440,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .bitacora-rango-head h3{font-size:14px;font-weight:700;color:var(--navy);margin:0;}
 .bitacora-rango-close{border:none;background:#f1f5f9;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;}
 .bitacora-rango-presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-.bitacora-preset{flex:1 1 calc(50% - 4px);min-width:0;padding:10px 8px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-size:12px;font-weight:700;cursor:pointer;color:var(--navy);}
+.bitacora-preset{flex:1 1 calc(33.33% - 4px);min-width:0;padding:9px 6px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;font-size:11px;font-weight:700;cursor:pointer;color:var(--navy);}
 .bitacora-preset.active{border-color:var(--blue);background:var(--blue-soft);color:var(--blue);}
 .bitacora-rango-dates{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 .bitacora-rango-dates label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);display:flex;flex-direction:column;gap:4px;}
@@ -724,7 +724,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.99";
+const APP_VERSION = "3.01";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -2044,13 +2044,47 @@ function getBitacoraPresetRange(preset){
   if(preset==='ultimos7')return{desde:addDaysDate(hoy,-6),hasta:endOfDay(hoy)};
   return{desde:hoy,hasta:endOfDay(hoy)};
 }
-function getBitacoraCanvasWidth(logs,desde,hasta){
+function getBitacoraWideLayout(rowData){
+  const mcv=document.createElement('canvas').getContext('2d');
+  const dateW=68,tipoW=58,plW=56,litW=96,montoW=108,gap=5;
+  let maxClient=80,maxMontoW=90,maxExtra=0;
+  rowData.forEach(r=>{
+    mcv.font='700 13px IBM Plex Sans, Arial';
+    maxClient=Math.max(maxClient,mcv.measureText(r.cliente||'').width);
+    if(r.extra){
+      mcv.font='500 10px IBM Plex Sans, Arial';
+      maxExtra=Math.max(maxExtra,mcv.measureText(r.extra).width);
+    }
+    mcv.font='700 12px IBM Plex Mono, monospace';
+    if(r.monto)maxMontoW=Math.max(maxMontoW,mcv.measureText(r.monto).width);
+    if(r.precioLitro)maxMontoW=Math.max(maxMontoW,mcv.measureText('$'+r.precioLitro).width);
+    if(r.litros)maxMontoW=Math.max(maxMontoW,mcv.measureText(r.litros+' L').width);
+  });
+  const clientW=Math.min(168,Math.max(88,Math.ceil(Math.max(maxClient,maxExtra))+10));
+  const montoW=Math.max(montoW,Math.ceil(maxMontoW)+8);
+  const contentW=dateW+gap+tipoW+gap+clientW+gap+plW+gap+litW+gap+montoW;
+  return{dateW,tipoW,clientW,plW,litW,montoW,gap,contentW};
+}
+function getBitacoraCanvasWidth(logs,desde,hasta,layout){
+  if(layout){
+    const pad=12;
+    const tight=layout.contentW+pad*2+16;
+    const dias=diasEnRangoBitacora(desde,hasta);
+    const quality=dias>=2?28:dias>=1?16:0;
+    return Math.min(1180,Math.max(tight,tight+quality));
+  }
   const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
-  const dias=diasEnRangoBitacora(desde,hasta);
-  if(n>25||dias>=6)return 920;
-  if(n>14||dias>=3)return 760;
-  if(n>6||dias>=2)return 600;
+  if(n>6)return 420;
   return 360;
+}
+function getBitacoraCanvasScale(w){
+  if(w>=560)return 5;
+  if(w>=420)return 4;
+  return 3;
+}
+function shouldUseBitacoraWideLayout(logs,desde,hasta){
+  const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
+  return n>3||diasEnRangoBitacora(desde,hasta)>=2;
 }
 function diasEnRangoBitacora(desde,hasta){
   return Math.round((endOfDay(hasta).getTime()-startOfDay(desde).getTime())/86400000)+1;
@@ -2180,38 +2214,56 @@ function logTipoCanvasStyle(tipo){
   if(t.includes('ELIM'))return{bg:'#fef2f2',fg:'#b91c1c',lbl:'ELIM'};
   return{bg:'#f1f5f9',fg:'#475569',lbl:(t||'—').slice(0,8)};
 }
-function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide){
+function drawBitacoraColHeaders(ctx,y,pad,layout){
+  const{dateW,tipoW,clientW,plW,litW,montoW,gap}=layout;
+  let x=pad+8;
+  ctx.fillStyle='#94a3b8';ctx.font='600 9px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText('Fecha',x,y);x+=dateW+gap;
+  ctx.fillText('Tipo',x,y);x+=tipoW+gap;
+  ctx.fillText('Cliente',x,y);x+=clientW+gap;
+  ctx.textAlign='center';
+  ctx.fillText('P/L',x+plW/2,y);x+=plW+gap;
+  ctx.fillText('Litros',x+litW/2,y);x+=litW+gap;
+  ctx.textAlign='right';
+  ctx.fillText('Monto',x+montoW,y);
+  ctx.textAlign='left';
+}
+function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout){
   const st=logTipoCanvasStyle(r.tipo);
-  const bg=wide?(r._idx%2===0?'#f8fafc':'#fff'):(r._idx%2===0?'#f8fafc':'#fff');
+  const bg=r._idx%2===0?'#f8fafc':'#fff';
   ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
   ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
-  const innerX=pad+8,innerW=w-pad*2-16;
-  if(wide){
-    const dateW=56,tipoW=50,plW=54,litW=78,montoW=96,gap=6;
-    const cx=innerX+dateW+gap+tipoW+gap;
-    const clientW=innerW-dateW-gap-tipoW-gap-plW-gap-litW-gap-montoW-gap;
-    const plX=cx+clientW+gap,litX=plX+plW+gap,montoX=litX+litW+gap;
-    ctx.fillStyle='#64748b';ctx.font='600 9px IBM Plex Mono, monospace';ctx.textAlign='left';
-    ctx.fillText(r.fecha,innerX,y+14);
-    ctx.fillStyle='#94a3b8';ctx.font='500 8px IBM Plex Mono, monospace';
-    ctx.fillText(r.hora,innerX,y+26);
-    const bx=innerX+dateW+gap;
-    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+8,tipoW,18,6);ctx.fill();
-    ctx.fillStyle=st.fg;ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
-    ctx.fillText(st.lbl,bx+tipoW/2,y+20);
+  if(wide&&layout){
+    const{dateW,tipoW,clientW,plW,litW,montoW,gap}=layout;
+    let x=pad+8;
+    const midY=y+Math.round(rowH/2)+1;
+    ctx.fillStyle='#64748b';ctx.font='600 11px IBM Plex Mono, monospace';ctx.textAlign='left';
+    ctx.fillText(r.fecha,x,y+16);
+    ctx.fillStyle='#94a3b8';ctx.font='500 10px IBM Plex Mono, monospace';
+    ctx.fillText(r.hora,x,y+28);
+    x+=dateW+gap;
+    ctx.fillStyle=st.bg;drawRoundRect(ctx,x,y+8,tipoW,22,6);ctx.fill();
+    ctx.fillStyle=st.fg;ctx.font='700 9px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText(st.lbl,x+tipoW/2,y+23);
+    x+=tipoW+gap;
     ctx.textAlign='left';
-    ctx.fillStyle='#1a1c2c';ctx.font='700 11px IBM Plex Sans, Arial';
-    drawFitText(ctx,r.cliente,cx,y+16,clientW);
-    ctx.fillStyle='#475569';ctx.font='600 9px IBM Plex Mono, monospace';ctx.textAlign='center';
-    ctx.fillText(r.precioLitro?'$'+r.precioLitro:'—',plX+plW/2,y+16);
-    ctx.fillText(r.litros?r.litros+' L':'—',litX+litW/2,y+16);
-    if(r.monto){
-      ctx.fillStyle='#1e40af';ctx.font='700 10px IBM Plex Mono, monospace';ctx.textAlign='right';
-      ctx.fillText(r.monto,montoX+montoW,y+16);
-    }
+    ctx.fillStyle='#1a1c2c';ctx.font='700 13px IBM Plex Sans, Arial';
     if(r.extra){
-      ctx.fillStyle='#94a3b8';ctx.font='500 8px IBM Plex Sans, Arial';ctx.textAlign='left';
-      drawFitText(ctx,r.extra,cx,y+28,innerW-dateW-gap-montoW-12);
+      drawFitText(ctx,r.cliente,x,y+15,clientW);
+      ctx.fillStyle='#94a3b8';ctx.font='500 10px IBM Plex Sans, Arial';
+      drawFitText(ctx,r.extra,x,y+28,clientW);
+    }else{
+      drawFitText(ctx,r.cliente,x,midY,clientW);
+    }
+    x+=clientW+gap;
+    ctx.fillStyle='#475569';ctx.font='600 11px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(r.precioLitro?'$'+r.precioLitro:'—',x+plW/2,midY);
+    x+=plW+gap;
+    ctx.fillText(r.litros?r.litros+' L':'—',x+litW/2,midY);
+    x+=litW+gap;
+    if(r.monto){
+      ctx.fillStyle='#1e40af';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='right';
+      ctx.fillText(r.monto,x+montoW,midY);
     }
     ctx.textAlign='left';
     return;
@@ -2249,10 +2301,12 @@ function buildBitacoraCanvas(logs,desde,hasta){
   const resumen=summarizeBitacoraLogs(logs);
   const lbl=getBitacoraResumenLabels(desde,hasta);
   const rowData=rows.map((l,i)=>{const r=getLogRowData(l);r._idx=i;return r;});
-  const w=getBitacoraCanvasWidth(logs,desde,hasta);
-  const wide=w>=600;
-  const pad=wide?14:10,headerH=wide?56:52,gap=wide?5:4,extraH=extra?24:0,summaryH=48,scale=3;
-  const rowHBase=wide?38:34;
+  const wide=shouldUseBitacoraWideLayout(logs,desde,hasta);
+  const layout=wide?getBitacoraWideLayout(rowData):null;
+  const w=getBitacoraCanvasWidth(logs,desde,hasta,layout);
+  const pad=wide?12:10,headerH=wide?60:52,gap=wide?4:4,extraH=extra?24:0,summaryH=wide?54:50;
+  const scale=getBitacoraCanvasScale(w);
+  const rowHBase=wide?42:34;
   const rowsH=rowData.reduce((acc,r)=>acc+(wide?rowHBase+(r.extra?10:0):r.rowH)+gap,0);
   const h=pad*2+headerH+gap+rowsH+extraH+gap+summaryH;
   const canvas=document.createElement('canvas');
@@ -2266,22 +2320,19 @@ function buildBitacoraCanvas(logs,desde,hasta){
   const grad=ctx.createLinearGradient(6,6,w-6,6);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,6,6,w-12,headerH,14);ctx.fill();
-  ctx.fillStyle='#9ca3af';ctx.font=wide?'600 9px':'600 8px IBM Plex Sans, Arial';
+  ctx.fillStyle='#9ca3af';ctx.font=wide?'600 10px IBM Plex Sans, Arial':'600 8px IBM Plex Sans, Arial';
   ctx.fillText('BITÁCORA',pad+4,24);
-  ctx.fillStyle='#fff';ctx.font=wide?'700 12px':'700 11px IBM Plex Sans, Arial';
-  drawFitText(ctx,fmtBitacoraRangoLabel(desde,hasta),pad+4,wide?42:38,w-pad*2-90);
-  ctx.fillStyle='#d1d5db';ctx.font='500 10px IBM Plex Sans, Arial';ctx.textAlign='right';
-  ctx.fillText(logs.length+' mov.',w-pad-4,wide?42:38);
-  if(wide){
-    ctx.font='500 8px IBM Plex Sans, Arial';ctx.textAlign='left';
-    ctx.fillText('Fecha    Tipo    Cliente    P/L    Litros    Monto',pad+4,headerH-6);
-  }
+  ctx.fillStyle='#fff';ctx.font=wide?'700 14px IBM Plex Sans, Arial':'700 11px IBM Plex Sans, Arial';
+  drawFitText(ctx,fmtBitacoraRangoLabel(desde,hasta),pad+4,wide?46:38,w-pad*2-90);
+  ctx.fillStyle='#d1d5db';ctx.font=wide?'500 11px IBM Plex Sans, Arial':'500 10px IBM Plex Sans, Arial';ctx.textAlign='right';
+  ctx.fillText(logs.length+' mov.',w-pad-4,wide?46:38);
+  if(wide&&layout)drawBitacoraColHeaders(ctx,headerH-8,pad,layout);
   ctx.textAlign='left';
   let y=6+headerH+gap;
   rows.forEach((l,i)=>{
     const r=rowData[i];
     const rowH=wide?rowHBase+(r.extra?10:0):r.rowH;
-    drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide);
+    drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout);
     y+=rowH+gap;
   });
   if(extra){
@@ -2296,10 +2347,10 @@ function buildBitacoraCanvas(logs,desde,hasta){
   ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.fill();
   ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,sy,w-pad*2,summaryH,10);ctx.stroke();
   const colW=(w-pad*2-16)/2,mid=pad+8+colW;
-  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillStyle='#64748b';ctx.font=wide?'600 8px IBM Plex Sans, Arial':'600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
   ctx.fillText(lbl.fact,pad+8,sy+14);
   ctx.fillText(lbl.pago,mid+4,sy+14);
-  ctx.fillStyle='#1e40af';ctx.font='700 11px IBM Plex Mono, monospace';
+  ctx.fillStyle='#1e40af';ctx.font=wide?'700 12px IBM Plex Mono, monospace':'700 11px IBM Plex Mono, monospace';
   ctx.fillText(fmt(resumen.facturado),pad+8,sy+32);
   ctx.fillStyle='#0d7a3e';
   ctx.fillText(fmt(resumen.pagado),mid+4,sy+32);
