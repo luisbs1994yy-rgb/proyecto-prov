@@ -1,19 +1,21 @@
 <!DOCTYPE html>
-<!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.13
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.13
-     ============================================================ -->
-<html lang="es">
+<!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
+<html lang="es" data-app-version="3.15">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" id="meta-app-version" content="3.13">
-<title>Estado de Cuenta v3.13</title>
-<script>/** Versión: cambiar aquí, en meta/title de arriba y en el comentario líneas 3-4. */
-const APP_VERSION="3.13";</script>
+<meta name="app-version" id="meta-app-version" content="">
+<title>Estado de Cuenta</title>
+<script>
+function getAppVersion(){
+  const v=document.documentElement.getAttribute('data-app-version');
+  return String(v||'').trim();
+}
+const APP_VERSION=getAppVersion()||'3.15';
+</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -810,13 +812,11 @@ function bindAppVersionLink(){
   }
   if(typeof document!=='undefined')document.title='Estado de Cuenta v'+APP_VERSION;
   const meta=document.getElementById('meta-app-version');
-  if(meta){
-    const metaV=(meta.getAttribute('content')||'').trim();
-    if(metaV&&metaV!==APP_VERSION&&stamp){
-      stamp.className='app-version-stamp warn';
-      stamp.innerHTML='⚠️ meta dice <strong>v'+metaV.replace(/[<>&"']/g,'')+'</strong> pero APP_VERSION es <strong>v'+APP_VERSION+'</strong>. Iguala comentario (líneas 3-4), meta, title y const en head.';
-    }
-    meta.setAttribute('content',APP_VERSION);
+  if(meta)meta.setAttribute('content',APP_VERSION);
+  const htmlV=getAppVersion();
+  if(stamp&&!htmlV){
+    stamp.className='app-version-stamp warn';
+    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.15"';
   }
 }
 async function copyAppReleaseUrl(e){
@@ -2039,11 +2039,11 @@ function getTotalesFotoResumenHoy(){
   const lbl=getBitacoraResumenLabels(hoy,hasta);
   return{facturado:resumen.facturado,pagado:resumen.pagado,fact:lbl.fact,pago:lbl.pago};
 }
-function buildTotalesText(){
-  const r=getTotalesFotoResumenHoy();
-  return r.fact+' '+fmt(r.facturado)+'    '+r.pago+' '+fmt(r.pagado);
+function buildTotalesWhatsappText(){
+  return 'Saldo total '+fmt(getTotalesSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
 }
-function getTotalesHeaderLine(){return buildTotalesText();}
+function buildTotalesText(){return buildTotalesWhatsappText();}
+function getTotalesHeaderLine(){return buildTotalesWhatsappText();}
 function copyTextLegacy(text){
   const ta=document.createElement('textarea');
   ta.value=text;
@@ -2082,8 +2082,21 @@ async function copyTotalesTextFallback(){
   return ok;
 }
 async function capturarTotalesMobile(blob){
+  const shareLine=buildTotalesWhatsappText();
+  if(navigator.share){
+    try{
+      const name='estado-cuenta-'+new Date().toISOString().slice(0,10)+'.png';
+      const file=new File([blob],name,{type:'image/png'});
+      const payload={files:[file],title:shareLine,text:shareLine};
+      if(!navigator.canShare||navigator.canShare(payload)){
+        await navigator.share(payload);
+        toast('Elige WhatsApp · foto + texto saldo total',false,true);
+        return;
+      }
+    }catch(e){if(e&&e.name==='AbortError')return;}
+  }
   if(!isIOSLike()&&await copyImageToClipboard(blob,3000)){
-    toast('Imagen copiada · pégala en WhatsApp',false,true);
+    toast('Imagen copiada · al compartir en WhatsApp usa también el texto con saldo total',false,true);
     return;
   }
   if(await copyTextRobust(buildTotalesText())){
@@ -3540,6 +3553,7 @@ async function eliminarLog(localId){
   else if(esMov)msg='¿Eliminar de la bitácora?\n\nNo se encontró el pago/factura vinculado; solo se borrará el registro del log.';
   if(!confirm(msg))return;
   const prevRegs=state.registros.slice(),prevLogs=all.slice();
+  markLogsDeleted([target]);
   saveLogs(all.filter(l=>(l.localId||l.id||'')!==localId));
   if(linked.length){
     limpiarAplicaMapRegistros(linked);
