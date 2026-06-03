@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.96
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.96
+    ESTADO DE CUENTA  |  Versión 2.98
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.98
      ============================================================ -->
 <html lang="es">
 <head>
@@ -449,8 +449,18 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .bitacora-rango-actions{display:flex;gap:8px;}
 .bitacora-rango-actions .btn{flex:1;}
 .bitacora-rango-actions .btn-primary{flex:1.2;}
+.logs-filters{display:flex;flex-wrap:wrap;gap:8px 10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--border);align-items:flex-end;}
+.logs-filters label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);display:flex;flex-direction:column;gap:3px;min-width:0;}
+.logs-filters input[type=date],.logs-filters select{padding:8px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--mono);background:#fff;min-width:0;}
+.logs-filters .logs-f-tipo{width:100px;}
+.logs-filters .logs-f-cliente{flex:1;min-width:120px;max-width:200px;}
+.logs-filters .btn{padding:8px 12px;font-size:11px;}
+.logs-filter-count{font-size:11px;color:var(--text-muted);margin-left:auto;align-self:center;white-space:nowrap;}
 @media (max-width:640px){
   #page-logs .btn-bitacora-share{width:32px;height:32px;font-size:16px;}
+  .logs-filters{padding:8px;gap:6px;}
+  .logs-filters .logs-f-cliente{max-width:none;flex:1 1 100%;}
+  .logs-filter-count{flex:1 1 100%;margin-left:0;text-align:left;}
 }
 /* === FIN COMPACTO === */
 
@@ -711,7 +721,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.96";
+const APP_VERSION = "2.98";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -896,6 +906,25 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal()" title="Foto de movimientos · WhatsApp">📷</button>
           </div>
         </div>
+        <div class="logs-filters" id="logs-filters">
+          <label>Desde<input type="date" id="logs-f-desde" onchange="onLogsFiltroChange()"></label>
+          <label>Hasta<input type="date" id="logs-f-hasta" onchange="onLogsFiltroChange()"></label>
+          <label>Tipo
+            <select id="logs-f-tipo" class="logs-f-tipo" onchange="onLogsFiltroChange()">
+              <option value="">Todos</option>
+              <option value="factura">Factura</option>
+              <option value="pago">Pago</option>
+              <option value="proveedor">Cliente</option>
+            </select>
+          </label>
+          <label>Cliente
+            <select id="logs-f-cliente" class="logs-f-cliente" onchange="onLogsFiltroChange()">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <button type="button" class="btn" onclick="limpiarLogsFiltro()">Limpiar</button>
+          <span class="logs-filter-count" id="logs-filter-count"></span>
+        </div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
@@ -1026,6 +1055,7 @@ let desgloseShowSaldadas = false;
 let analisisSortDecision = 'pendiente';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
+let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 
 document.addEventListener('DOMContentLoaded', () => {
   bindAppVersionLink();
@@ -1265,17 +1295,27 @@ function upsertPrecioProductoLocal(proveedor,producto,precio){
 }
 function loadAplicaMap(){try{return JSON.parse(localStorage.getItem(APLICA_KEY)||'{}');}catch{return {};}}
 function saveAplicaMap(map){try{localStorage.setItem(APLICA_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}}
+function enrichRegistroLitros(r){
+  if(!r||!isTipoFactura(r))return r;
+  let pl=parsePrecioLitro(r.precioLitro);
+  let lt=parseLitros(r.litros);
+  const m=parseFloat(r.monto)||0;
+  const prod=String(r.producto||'').trim();
+  if((isNaN(pl)||pl<=0)&&prod){
+    const pf=getPrecioProducto(r.proveedor,prod);
+    if(pf&&!isNaN(parsePrecioLitro(pf.precio)))pl=parsePrecioLitro(pf.precio);
+  }
+  if((isNaN(lt)||lt<=0)&&!isNaN(pl)&&pl>0&&m>0)lt=Math.round((m/pl)*100)/100;
+  return Object.assign({},r,{precioLitro:isNaN(pl)?'':pl,litros:isNaN(lt)?'':lt});
+}
 function normalizeRegistro(r){
   const map=loadAplicaMap();
   const id=String(r.id||'');
-  const pl=parsePrecioLitro(r.precioLitro);
-  const lt=parseLitros(r.litros);
-  return Object.assign({},r,{
+  const base=Object.assign({},r,{
     aplicaFacturaId:String(r.aplicaFacturaId||map[id]||'').trim(),
-    producto:String(r.producto||'').trim(),
-    precioLitro:isNaN(pl)?'':pl,
-    litros:isNaN(lt)?'':lt
+    producto:String(r.producto||'').trim()
   });
+  return enrichRegistroLitros(base);
 }
 function mergeAplicaIntoRegs(){
   const map=loadAplicaMap();
@@ -1284,10 +1324,36 @@ function mergeAplicaIntoRegs(){
 function updateStateFromSheetData(d){
   state.registros=(d.registros||[]).map(normalizeRegistro);
   mergeAplicaIntoRegs();
+  state.registros=state.registros.map(enrichRegistroLitros);
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
   state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
   savePreciosLocal(state.precios);
   if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
+  refreshLogsLitrosFromRegistros();
+}
+function refreshLogsLitrosFromRegistros(){
+  const logs=getLogs().slice();
+  let changed=false;
+  logs.forEach(l=>{
+    if(!isLogFactura(l))return;
+    const regs=findRegistrosForLog(l);
+    if(!regs.length)return;
+    const r=enrichRegistroLitros(regs[0]);
+    const rl=parseLitros(r.litros),rp=parsePrecioLitro(r.precioLitro);
+    if(isNaN(rl)||rl<=0)return;
+    const cur=parseLitros(l.litros);
+    if(!isNaN(cur)&&Math.abs(cur-rl)<0.02&&(!isNaN(rp)?Math.abs(parsePrecioLitro(l.precioLitro)-rp)<0.02:true))return;
+    l.litros=rl;
+    if(!isNaN(rp)&&rp>0)l.precioLitro=rp;
+    if(r.producto)l.producto=r.producto;
+    let d=String(l.descripcion||'').replace(/\s*·\s*Litros:\s*[^·]+/gi,'').replace(/\s*·\s*P\/L:\s*[^·]+/gi,'').replace(/\s*·\s*Prod:\s*[^·]+/gi,'');
+    if(!isNaN(rp)&&rp>0)d+=' · P/L: '+formatPrecioLitroDisplay(rp);
+    d+=' · Litros: '+formatLitrosDisplay(rl);
+    if(r.producto)d+=' · Prod: '+r.producto;
+    l.descripcion=d;
+    changed=true;
+  });
+  if(changed){saveLogs(logs);if(isPageActive('logs'))renderLogs();}
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
 function isTipoFactura(r){return !isTipoPago(r);}
@@ -1660,11 +1726,13 @@ async function guardarRegistro(){
   }
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
-    const ln=parseLitros(document.getElementById('f-litros').value);
+    let pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
+    let ln=parseLitros(document.getElementById('f-litros').value);
+    if((isNaN(ln)||ln<=0)&&!isNaN(pn)&&pn>0&&montoNum>0)ln=Math.round((montoNum/pn)*100)/100;
+    if((isNaN(pn)||pn<=0)&&!isNaN(ln)&&ln>0&&montoNum>0)pn=Math.round((montoNum/ln)*100)/100;
     const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
-    if(!isNaN(pn))regData.precioLitro=pn;
-    if(!isNaN(ln))regData.litros=ln;
+    if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
+    if(!isNaN(ln)&&ln>0)regData.litros=ln;
     const res=await apiPost({action:'addRegistro',data:regData});
     if(res.error)throw new Error(res.error);
     state.registros.push({id:res.id,...regData});
@@ -2692,46 +2760,125 @@ function cleanLogDescripcion(descripcion){
     .replace(/\s*·\s*Prod:\s*[^·]+/gi,'')
     .trim();
 }
+function parseLitrosFromText(text){
+  const s=String(text||'');
+  const ml=s.match(/(?:^|·)\s*Litros:\s*([0-9.,]+)/i);
+  if(ml){const n=parseLitros(ml[1]);if(!isNaN(n)&&n>0)return n;}
+  const m2=s.match(/([\d,]+\.\d{2})\s*L(?:itros?)?\b/i);
+  if(m2){const n=parseLitros(m2[1]);if(!isNaN(n)&&n>0)return n;}
+  return NaN;
+}
 function parseLogLitrosMeta(desc){
   const s=String(desc||'');
   const mp=s.match(/(?:^|·)\s*P\/L:\s*([0-9.,]+)/i);
-  const ml=s.match(/(?:^|·)\s*Litros:\s*([0-9.,]+)/i);
   const mprod=s.match(/(?:^|·)\s*Prod:\s*([^·]+)/i);
-  let precioLitro=NaN,litros=NaN,producto='';
+  let precioLitro=NaN,litros=parseLitrosFromText(s),producto='';
   if(mp){const n=parsePrecioLitro(mp[1]);if(!isNaN(n))precioLitro=n;}
-  if(ml){const n=parseLitros(ml[1]);if(!isNaN(n))litros=n;}
   if(mprod)producto=String(mprod[1]||'').trim();
   return{precioLitro,litros,producto};
 }
 function isLogFactura(l){return String(l.tipo||'').toLowerCase().includes('factura');}
+function inferProductoFromConcepto(concepto){
+  const c=String(concepto||'').toUpperCase();
+  if(/\bETANOL\b/.test(c)||/\bETANO\b/.test(c))return'Etanol';
+  if(/\bNAFTA\b/.test(c))return'Nafta';
+  if(/\bREGULAR\b/.test(c))return'Regular';
+  return'';
+}
+function getLogProveedorNombre(l,regs){
+  const b=parseDescBasics(l.descripcion);
+  if(b&&b.proveedor)return b.proveedor;
+  if(regs&&regs.length)return regs[0].proveedor||'';
+  return cleanLogDescripcion(l.descripcion).split(' · ')[0]||'';
+}
 function getLogFacturaDetalle(l){
   if(!isLogFactura(l))return null;
   const meta=parseLogLitrosMeta(l.descripcion);
+  const regs=findRegistrosForLog(l);
   let precioLitro=parsePrecioLitro(l.precioLitro);
   if(isNaN(precioLitro)&&!isNaN(meta.precioLitro))precioLitro=meta.precioLitro;
   let litros=parseLitros(l.litros);
   if(isNaN(litros)&&!isNaN(meta.litros))litros=meta.litros;
   let producto=String(l.producto||meta.producto||'').trim();
-  const regs=findRegistrosForLog(l);
+  if(!producto)producto=inferProductoFromConcepto(l.concepto);
+  const litConcepto=parseLitrosFromText(l.concepto);
+  if(!isNaN(litConcepto)&&litConcepto>0)litros=litConcepto;
   if(regs.length){
-    const r=regs[0];
+    const r=enrichRegistroLitros(regs[0]);
     const rp=parsePrecioLitro(r.precioLitro);
     const rl=parseLitros(r.litros);
-    if(!isNaN(rp))precioLitro=rp;
-    if(!isNaN(rl))litros=rl;
+    if(!isNaN(rp)&&rp>0)precioLitro=rp;
+    if(!isNaN(rl)&&rl>0)litros=rl;
     if(!producto)producto=String(r.producto||'').trim();
+    if(!producto)producto=inferProductoFromConcepto(r.concepto);
   }
-  const monto=getLogMontoNum(l);
+  const prov=getLogProveedorNombre(l,regs);
+  if((isNaN(precioLitro)||precioLitro<=0)&&producto&&prov){
+    const pf=getPrecioProducto(prov,producto);
+    if(pf&&!isNaN(parsePrecioLitro(pf.precio)))precioLitro=parsePrecioLitro(pf.precio);
+  }
+  let monto=getLogMontoNum(l);
+  if(monto<=0&&regs.length)monto=parseFloat(regs[0].monto)||0;
   if((isNaN(litros)||litros<=0)&&!isNaN(precioLitro)&&precioLitro>0&&monto>0)
     litros=Math.round((monto/precioLitro)*100)/100;
-  if((isNaN(precioLitro)||precioLitro<=0)&&producto){
-    const b=parseDescBasics(l.descripcion);
-    if(b&&b.proveedor){
-      const pf=getPrecioProducto(b.proveedor,producto);
-      if(pf&&!isNaN(parsePrecioLitro(pf.precio)))precioLitro=parsePrecioLitro(pf.precio);
-    }
-  }
   return{precioLitro,litros,producto};
+}
+function getLogClienteNombre(l){
+  const b=parseDescBasics(l.descripcion);
+  if(b&&b.proveedor)return b.proveedor;
+  const regs=findRegistrosForLog(l);
+  if(regs.length&&regs[0].proveedor)return regs[0].proveedor;
+  const t=String(l.tipo||'').toLowerCase();
+  if(t==='proveedor')return cleanLogDescripcion(l.descripcion);
+  return'';
+}
+function logMatchesFiltro(l){
+  if(logsFiltro.desde){
+    const d0=parseDateInputValue(logsFiltro.desde);
+    const d=parseLogDate(l);
+    if(d0&&(!d||d<startOfDay(d0)))return false;
+  }
+  if(logsFiltro.hasta){
+    const d1=parseDateInputValue(logsFiltro.hasta);
+    const d=parseLogDate(l);
+    if(d1&&(!d||d>endOfDay(d1)))return false;
+  }
+  if(logsFiltro.tipo){
+    const t=String(l.tipo||'').toLowerCase();
+    const f=logsFiltro.tipo.toLowerCase();
+    if(f==='proveedor'||f==='cliente'){if(t!=='proveedor')return false;}
+    else if(!t.includes(f))return false;
+  }
+  if(logsFiltro.cliente){
+    const cli=getLogClienteNombre(l);
+    if(cli!==logsFiltro.cliente)return false;
+  }
+  return true;
+}
+function getLogsFiltrados(){return getLogs().filter(logMatchesFiltro);}
+function syncLogsFiltroUI(){
+  const sel=document.getElementById('logs-f-cliente');
+  if(sel){
+    const cur=logsFiltro.cliente||sel.value||'';
+    const provs=[...new Set([...(state.proveedores||[]),...getLogs().map(getLogClienteNombre).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'es'));
+    sel.innerHTML='<option value="">Todos</option>'+provs.map(p=>'<option value="'+esc(p)+'">'+esc(p)+'</option>').join('');
+    sel.value=cur;
+  }
+  const d0=document.getElementById('logs-f-desde');if(d0)d0.value=logsFiltro.desde||'';
+  const d1=document.getElementById('logs-f-hasta');if(d1)d1.value=logsFiltro.hasta||'';
+  const tp=document.getElementById('logs-f-tipo');if(tp)tp.value=logsFiltro.tipo||'';
+}
+function onLogsFiltroChange(){
+  logsFiltro.desde=document.getElementById('logs-f-desde')?.value||'';
+  logsFiltro.hasta=document.getElementById('logs-f-hasta')?.value||'';
+  logsFiltro.tipo=document.getElementById('logs-f-tipo')?.value||'';
+  logsFiltro.cliente=document.getElementById('logs-f-cliente')?.value||'';
+  renderLogs();
+}
+function limpiarLogsFiltro(){
+  logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
+  syncLogsFiltroUI();
+  renderLogs();
 }
 function fmtLogPrecioLitroCell(l){
   const d=getLogFacturaDetalle(l);
@@ -2868,7 +3015,7 @@ function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
     (facturaSafe?' · Factura: '+facturaSafe:'')+
     (conceptoSafe?' · Concepto: '+conceptoSafe:'');
   if(!isNaN(pn))descWithMeta+=' · P/L: '+formatPrecioLitroDisplay(pn);
-  if(!isNaN(ln))descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
+  if(!isNaN(ln)&&ln>0)descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
   if(producto)descWithMeta+=' · Prod: '+producto;
   const log={
     tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,
@@ -2902,8 +3049,13 @@ async function eliminarLog(localId){
   }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();renderLogs();refreshDesglosePopup();toastError(e);}
 }
 function renderLogs(){
-  const el=document.getElementById('logs-list'),logs=getLogs();
-  if(!logs.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
+  const el=document.getElementById('logs-list');
+  syncLogsFiltroUI();
+  const all=getLogs(),logs=getLogsFiltrados();
+  const cnt=document.getElementById('logs-filter-count');
+  if(cnt)cnt.textContent=logs.length+' de '+all.length;
+  if(!all.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
+  if(!logs.length){el.innerHTML='<div class="empty">Ningún movimiento con estos filtros</div>';return;}
   let tableRows='',lastDay='',dayIdx=0;
   logs.forEach(l=>{
     const dayKey=getLogDayKey(l)||'—';
