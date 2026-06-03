@@ -1656,23 +1656,27 @@ function updateRegistrarAplicaResumen(){
   if(!isTipoPago({tipo})||!prov){
     resumen.innerHTML='';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   const ids=getRegistrarFacturasSeleccionadas();
   if(!ids.length){
     resumen.innerHTML='<span class="hint-text">Opcional: marca facturas para aplicar el pago antes de guardar.</span>';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   if(isNaN(montoNum)||montoNum<=0){
     resumen.innerHTML='<span class="hint-text">Ingresa el monto para ver cómo se distribuirá.</span>';
     if(btn)btn.classList.remove('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
   if(!parts.length){
     resumen.innerHTML='<span class="hint-text" style="color:var(--red-text)">Las facturas seleccionadas ya están saldadas.</span>';
     if(btn)btn.classList.add('btn-locked');
+    syncRegistrarFacturaCheckboxes();
     return;
   }
   let html='';
