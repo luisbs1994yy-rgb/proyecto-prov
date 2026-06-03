@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.12
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.12
+    ESTADO DE CUENTA  |  Versión 3.13
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.13
      ============================================================ -->
 <html lang="es">
 <head>
@@ -10,10 +10,10 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="app-version" id="meta-app-version" content="3.12">
-<title>Estado de Cuenta v3.12</title>
+<meta name="app-version" id="meta-app-version" content="3.13">
+<title>Estado de Cuenta v3.13</title>
 <script>/** Versión: cambiar aquí, en meta/title de arriba y en el comentario líneas 3-4. */
-const APP_VERSION="3.12";</script>
+const APP_VERSION="3.13";</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -828,6 +828,7 @@ async function copyAppReleaseUrl(e){
 const GAS_URL     = "https://script.google.com/macros/s/AKfycbxapSeHNDzRNwHn4wfx640zv2Ppxv75nI7YkSs9yEWC5YOWu-ya-YAS3B9g4gBBpkeM/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
+const DELETED_LOGS_KEY="pagos_v1_logs_deleted";
 const APLICA_KEY  = "pagos_v1_aplica";
 const PRECIOS_KEY = "pagos_v1_precios_productos";
 const PRODUCTOS   = ["Etanol","Nafta","Regular"];
@@ -2033,7 +2034,7 @@ function formatTotalesCopiaFecha(d){
 function getTotalesFotoResumenHoy(){
   const hoy=startOfDay(new Date());
   const hasta=endOfDay(hoy);
-  const logs=filterLogsByRange(getLogs(),hoy,hasta);
+  const logs=getLogsBitacoraEnRango(hoy,hasta);
   const resumen=summarizeBitacoraLogs(logs);
   const lbl=getBitacoraResumenLabels(hoy,hasta);
   return{facturado:resumen.facturado,pagado:resumen.pagado,fact:lbl.fact,pago:lbl.pago};
@@ -2325,8 +2326,8 @@ function updateBitacoraRangoHint(){
   const r=readBitacoraRangoFromUI();
   if(!hint||!r){if(hint)hint.textContent='Selecciona el rango (máx. 30 días).';return;}
   const dias=diasEnRangoBitacora(r.desde,r.hasta);
-  const logs=filterLogsByRange(getLogs(),r.desde,r.hasta);
-  let msg=fmtBitacoraRangoLabel(r.desde,r.hasta)+' · '+dias+' día'+(dias!==1?'s':'')+' · '+logs.length+' movimiento'+(logs.length!==1?'s':'');
+  const logs=getLogsBitacoraEnRango(r.desde,r.hasta);
+  let msg=fmtBitacoraRangoLabel(r.desde,r.hasta)+' · '+dias+' día'+(dias!==1?'s':'')+' · '+logs.length+' movimiento'+(logs.length!==1?'s':'')+' (vigentes)';
   if(dias>BITACORA_RANGO_MAX_DIAS)msg+=' · ⚠️ Máximo '+BITACORA_RANGO_MAX_DIAS+' días';
   hint.textContent=msg;
 }
@@ -2380,7 +2381,7 @@ function getLogMontoNum(l){
 }
 function summarizeBitacoraLogs(logs){
   let facturado=0,pagado=0;
-  logs.forEach(l=>{
+  (logs||[]).filter(logCuentaEnResumenBitacora).forEach(l=>{
     const t=String(l.tipo||'').toLowerCase();
     const m=getLogMontoNum(l);
     if(!m)return;
@@ -2640,8 +2641,8 @@ async function generarBitacoraWhatsapp(){
   if(!r){toast('Elige fechas desde y hasta',true);return;}
   const dias=diasEnRangoBitacora(r.desde,r.hasta);
   if(dias>BITACORA_RANGO_MAX_DIAS){toast('Máximo '+BITACORA_RANGO_MAX_DIAS+' días de rango',true);return;}
-  const logs=filterLogsByRange(getLogs(),r.desde,r.hasta);
-  if(!logs.length){toast('No hay movimientos en ese rango',true);return;}
+  const logs=getLogsBitacoraEnRango(r.desde,r.hasta);
+  if(!logs.length){toast('No hay movimientos vigentes en ese rango',true);return;}
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='Generando…';}
   try{
@@ -3168,18 +3169,54 @@ async function updateLogField(localId,field,value,inputEl){
     if(isPageActive('logs'))renderLogs();
   }
 }
+function getDeletedLogKeys(){
+  try{
+    const raw=localStorage.getItem(DELETED_LOGS_KEY);
+    const arr=raw?JSON.parse(raw):[];
+    return new Set(Array.isArray(arr)?arr.map(String).filter(Boolean):[]);
+  }catch{return new Set();}
+}
+function markLogsDeleted(logsToRemove){
+  const keys=getDeletedLogKeys();
+  (logsToRemove||[]).forEach(l=>{
+    const k=String(l.localId||l.id||'').trim();
+    if(k)keys.add(k);
+  });
+  if(!keys.size)return;
+  const list=[...keys];
+  if(list.length>600)list.splice(0,list.length-600);
+  try{localStorage.setItem(DELETED_LOGS_KEY,JSON.stringify(list));}catch(_){}
+}
+function isLogSuppressed(l){
+  const k=String(l.localId||l.id||'').trim();
+  return !!(k&&getDeletedLogKeys().has(k));
+}
+function logCuentaEnResumenBitacora(l){
+  if(!l||isLogSuppressed(l))return false;
+  const t=String(l.tipo||'').toLowerCase();
+  if(t==='eliminar'||t==='proveedor')return false;
+  if(!t.includes('pago')&&!t.includes('factura'))return false;
+  const ids=registroIdsFromLog(l);
+  if(ids.length&&!ids.some(id=>state.registros.some(r=>r.id===id)))return false;
+  return true;
+}
+function getLogsVisibles(){return getLogs().filter(l=>!isLogSuppressed(l));}
+function getLogsBitacoraEnRango(desde,hasta){
+  return filterLogsByRange(getLogsVisibles().filter(logCuentaEnResumenBitacora),desde,hasta);
+}
 function mergeLogsPreservingDetails(incomingLogs){
   const prevMap={};
+  const deleted=getDeletedLogKeys();
   getLogs().forEach(l=>{const key=l.localId||l.id||'';if(key)prevMap[key]=l;});
   const seen=new Set();
   const merged=(incomingLogs||[]).map(raw=>{
     const key=raw.localId||raw.id||'';
-    if(key)seen.add(key);
+    if(key){if(deleted.has(key))return null;seen.add(key);}
     return normalizeLog(raw,key?prevMap[key]:undefined);
-  });
+  }).filter(Boolean);
   getLogs().forEach(l=>{
     const key=l.localId||l.id||'';
-    if(key&&!seen.has(key))merged.unshift(l);
+    if(key&&!seen.has(key)&&!deleted.has(key))merged.unshift(l);
   });
   merged.sort((a,b)=>(Date.parse(b.createdAt||'')||0)-(Date.parse(a.createdAt||'')||0));
   return merged;
@@ -3288,7 +3325,7 @@ function logMatchesFiltro(l){
   }
   return true;
 }
-function getLogsFiltrados(){return getLogs().filter(logMatchesFiltro);}
+function getLogsFiltrados(){return getLogsVisibles().filter(logMatchesFiltro);}
 function syncLogsFiltroUI(){
   const sel=document.getElementById('logs-f-cliente');
   if(sel){
@@ -3439,6 +3476,7 @@ function limpiarAplicaMapRegistros(regs){
 function removeLogsLocal_(logsToRemove){
   const keys=new Set(logsToRemove.map(l=>(l.localId||l.id||'')).filter(Boolean));
   if(!keys.size)return;
+  markLogsDeleted(logsToRemove);
   saveLogs(getLogs().filter(l=>!keys.has(l.localId||l.id||'')));
 }
 async function deleteLogsRemote_(logsToRemove){
@@ -3518,7 +3556,7 @@ async function eliminarLog(localId){
 function renderLogs(){
   const el=document.getElementById('logs-list');
   syncLogsFiltroUI();
-  const all=getLogs(),logs=getLogsFiltrados().map(l=>({...l}));
+  const all=getLogsVisibles(),logs=getLogsFiltrados().map(l=>({...l}));
   const cnt=document.getElementById('logs-filter-count');
   if(cnt)cnt.textContent=logs.length+' de '+all.length;
   if(!all.length){el.innerHTML='<div class="empty">Sin registros en el log</div>';return;}
