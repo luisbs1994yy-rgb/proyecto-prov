@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.98
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.98
+    ESTADO DE CUENTA  |  Versión 2.99
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.99
      ============================================================ -->
 <html lang="es">
 <head>
@@ -455,6 +455,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .logs-filters .logs-f-tipo{width:100px;}
 .logs-filters .logs-f-cliente{flex:1;min-width:120px;max-width:200px;}
 .logs-filters .btn{padding:8px 12px;font-size:11px;}
+.logs-filters-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;width:100%;}
+.logs-filtro-chip{padding:6px 10px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:11px;font-weight:700;color:var(--navy);cursor:pointer;}
+.logs-filtro-chip:hover{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
 .logs-filter-count{font-size:11px;color:var(--text-muted);margin-left:auto;align-self:center;white-space:nowrap;}
 @media (max-width:640px){
   #page-logs .btn-bitacora-share{width:32px;height:32px;font-size:16px;}
@@ -721,7 +724,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.98";
+const APP_VERSION = "2.99";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -907,6 +910,10 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           </div>
         </div>
         <div class="logs-filters" id="logs-filters">
+          <div class="logs-filters-quick">
+            <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">Últimos 7 días</button>
+            <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+          </div>
           <label>Desde<input type="date" id="logs-f-desde" onchange="onLogsFiltroChange()"></label>
           <label>Hasta<input type="date" id="logs-f-hasta" onchange="onLogsFiltroChange()"></label>
           <label>Tipo
@@ -1030,6 +1037,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       <button type="button" class="bitacora-preset" data-preset="ayer" onclick="setBitacoraPreset('ayer')">Ayer</button>
       <button type="button" class="bitacora-preset" data-preset="semana" onclick="setBitacoraPreset('semana')">Esta semana</button>
       <button type="button" class="bitacora-preset" data-preset="mes" onclick="setBitacoraPreset('mes')">Este mes</button>
+      <button type="button" class="bitacora-preset" data-preset="ultimos7" onclick="setBitacoraPreset('ultimos7')">Últimos 7 días</button>
     </div>
     <div class="bitacora-rango-dates">
       <label>Desde<input type="date" id="bitacora-desde" onchange="onBitacoraFechaChange()"></label>
@@ -2033,7 +2041,16 @@ function getBitacoraPresetRange(preset){
   if(preset==='ayer'){const ay=addDaysDate(hoy,-1);return{desde:ay,hasta:endOfDay(ay)};}
   if(preset==='semana')return{desde:startOfWeekMonday(hoy),hasta:endOfDay(hoy)};
   if(preset==='mes')return{desde:new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0),hasta:endOfDay(hoy)};
+  if(preset==='ultimos7')return{desde:addDaysDate(hoy,-6),hasta:endOfDay(hoy)};
   return{desde:hoy,hasta:endOfDay(hoy)};
+}
+function getBitacoraCanvasWidth(logs,desde,hasta){
+  const n=Math.min(logs.length,BITACORA_CANVAS_MAX_FILAS);
+  const dias=diasEnRangoBitacora(desde,hasta);
+  if(n>25||dias>=6)return 920;
+  if(n>14||dias>=3)return 760;
+  if(n>6||dias>=2)return 600;
+  return 360;
 }
 function diasEnRangoBitacora(desde,hasta){
   return Math.round((endOfDay(hasta).getTime()-startOfDay(desde).getTime())/86400000)+1;
@@ -2163,14 +2180,80 @@ function logTipoCanvasStyle(tipo){
   if(t.includes('ELIM'))return{bg:'#fef2f2',fg:'#b91c1c',lbl:'ELIM'};
   return{bg:'#f1f5f9',fg:'#475569',lbl:(t||'—').slice(0,8)};
 }
+function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide){
+  const st=logTipoCanvasStyle(r.tipo);
+  const bg=wide?(r._idx%2===0?'#f8fafc':'#fff'):(r._idx%2===0?'#f8fafc':'#fff');
+  ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
+  ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
+  const innerX=pad+8,innerW=w-pad*2-16;
+  if(wide){
+    const dateW=56,tipoW=50,plW=54,litW=78,montoW=96,gap=6;
+    const cx=innerX+dateW+gap+tipoW+gap;
+    const clientW=innerW-dateW-gap-tipoW-gap-plW-gap-litW-gap-montoW-gap;
+    const plX=cx+clientW+gap,litX=plX+plW+gap,montoX=litX+litW+gap;
+    ctx.fillStyle='#64748b';ctx.font='600 9px IBM Plex Mono, monospace';ctx.textAlign='left';
+    ctx.fillText(r.fecha,innerX,y+14);
+    ctx.fillStyle='#94a3b8';ctx.font='500 8px IBM Plex Mono, monospace';
+    ctx.fillText(r.hora,innerX,y+26);
+    const bx=innerX+dateW+gap;
+    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+8,tipoW,18,6);ctx.fill();
+    ctx.fillStyle=st.fg;ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText(st.lbl,bx+tipoW/2,y+20);
+    ctx.textAlign='left';
+    ctx.fillStyle='#1a1c2c';ctx.font='700 11px IBM Plex Sans, Arial';
+    drawFitText(ctx,r.cliente,cx,y+16,clientW);
+    ctx.fillStyle='#475569';ctx.font='600 9px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(r.precioLitro?'$'+r.precioLitro:'—',plX+plW/2,y+16);
+    ctx.fillText(r.litros?r.litros+' L':'—',litX+litW/2,y+16);
+    if(r.monto){
+      ctx.fillStyle='#1e40af';ctx.font='700 10px IBM Plex Mono, monospace';ctx.textAlign='right';
+      ctx.fillText(r.monto,montoX+montoW,y+16);
+    }
+    if(r.extra){
+      ctx.fillStyle='#94a3b8';ctx.font='500 8px IBM Plex Sans, Arial';ctx.textAlign='left';
+      drawFitText(ctx,r.extra,cx,y+28,innerW-dateW-gap-montoW-12);
+    }
+    ctx.textAlign='left';
+    return;
+  }
+  ctx.fillStyle='#64748b';ctx.font='600 8px IBM Plex Mono, monospace';
+  ctx.fillText(r.fecha,pad+6,y+13);
+  ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Mono, monospace';
+  ctx.fillText(r.hora,pad+6,y+24);
+  const bx=pad+48;
+  ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+6,40,14,5);ctx.fill();
+  ctx.fillStyle=st.fg;ctx.font='700 6px IBM Plex Sans, Arial';ctx.textAlign='center';
+  ctx.fillText(st.lbl,bx+20,y+16);
+  ctx.textAlign='left';
+  const cx=bx+46;
+  ctx.fillStyle='#1a1c2c';ctx.font='700 9px IBM Plex Sans, Arial';
+  drawFitText(ctx,r.cliente,cx,y+13,w-pad-cx-72);
+  if(r.monto){
+    ctx.fillStyle='#1e40af';ctx.font='700 9px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(r.monto,w-pad-6,y+13);
+    ctx.textAlign='left';
+  }
+  if(r.precioLitro||r.litros){
+    ctx.fillStyle='#475569';ctx.font='600 7px IBM Plex Mono, monospace';
+    const plTxt=r.precioLitro?('$'+r.precioLitro+'/L'):'';
+    const liTxt=r.litros?(r.litros+' L'):'';
+    drawFitText(ctx,[plTxt,liTxt].filter(Boolean).join('  '),cx,y+26,w-pad-cx-8);
+  }else if(r.extra){
+    ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Sans, Arial';
+    drawFitText(ctx,r.extra,cx,y+26,w-pad-cx-6);
+  }
+}
 function buildBitacoraCanvas(logs,desde,hasta){
   const rows=logs.slice(0,BITACORA_CANVAS_MAX_FILAS);
   const extra=logs.length-rows.length;
   const resumen=summarizeBitacoraLogs(logs);
   const lbl=getBitacoraResumenLabels(desde,hasta);
-  const rowData=rows.map(l=>getLogRowData(l));
-  const w=360,pad=10,headerH=52,gap=4,extraH=extra?22:0,summaryH=46,scale=3;
-  const rowsH=rowData.reduce((acc,r)=>acc+r.rowH+gap,0);
+  const rowData=rows.map((l,i)=>{const r=getLogRowData(l);r._idx=i;return r;});
+  const w=getBitacoraCanvasWidth(logs,desde,hasta);
+  const wide=w>=600;
+  const pad=wide?14:10,headerH=wide?56:52,gap=wide?5:4,extraH=extra?24:0,summaryH=48,scale=3;
+  const rowHBase=wide?38:34;
+  const rowsH=rowData.reduce((acc,r)=>acc+(wide?rowHBase+(r.extra?10:0):r.rowH)+gap,0);
   const h=pad*2+headerH+gap+rowsH+extraH+gap+summaryH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
@@ -2183,47 +2266,22 @@ function buildBitacoraCanvas(logs,desde,hasta){
   const grad=ctx.createLinearGradient(6,6,w-6,6);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,6,6,w-12,headerH,14);ctx.fill();
-  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
-  ctx.fillText('BITÁCORA',pad+4,22);
-  ctx.fillStyle='#fff';ctx.font='700 11px IBM Plex Sans, Arial';
-  drawFitText(ctx,fmtBitacoraRangoLabel(desde,hasta),pad+4,38,w-pad*2-8);
-  ctx.fillStyle='#d1d5db';ctx.font='500 9px IBM Plex Sans, Arial';ctx.textAlign='right';
-  ctx.fillText(logs.length+' mov.',w-pad-4,38);
+  ctx.fillStyle='#9ca3af';ctx.font=wide?'600 9px':'600 8px IBM Plex Sans, Arial';
+  ctx.fillText('BITÁCORA',pad+4,24);
+  ctx.fillStyle='#fff';ctx.font=wide?'700 12px':'700 11px IBM Plex Sans, Arial';
+  drawFitText(ctx,fmtBitacoraRangoLabel(desde,hasta),pad+4,wide?42:38,w-pad*2-90);
+  ctx.fillStyle='#d1d5db';ctx.font='500 10px IBM Plex Sans, Arial';ctx.textAlign='right';
+  ctx.fillText(logs.length+' mov.',w-pad-4,wide?42:38);
+  if(wide){
+    ctx.font='500 8px IBM Plex Sans, Arial';ctx.textAlign='left';
+    ctx.fillText('Fecha    Tipo    Cliente    P/L    Litros    Monto',pad+4,headerH-6);
+  }
   ctx.textAlign='left';
   let y=6+headerH+gap;
   rows.forEach((l,i)=>{
     const r=rowData[i];
-    const rowH=r.rowH;
-    const st=logTipoCanvasStyle(r.tipo);
-    const bg=i%2===0?'#f8fafc':'#fff';
-    ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
-    ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
-    ctx.fillStyle='#64748b';ctx.font='600 8px IBM Plex Mono, monospace';
-    ctx.fillText(r.fecha,pad+6,y+13);
-    ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Mono, monospace';
-    ctx.fillText(r.hora,pad+6,y+24);
-    const bx=pad+48;
-    ctx.fillStyle=st.bg;drawRoundRect(ctx,bx,y+6,40,14,5);ctx.fill();
-    ctx.fillStyle=st.fg;ctx.font='700 6px IBM Plex Sans, Arial';ctx.textAlign='center';
-    ctx.fillText(st.lbl,bx+20,y+16);
-    ctx.textAlign='left';
-    const cx=bx+46;
-    ctx.fillStyle='#1a1c2c';ctx.font='700 9px IBM Plex Sans, Arial';
-    drawFitText(ctx,r.cliente,cx,y+13,w-pad-cx-72);
-    if(r.monto){
-      ctx.fillStyle='#1e40af';ctx.font='700 9px IBM Plex Mono, monospace';ctx.textAlign='right';
-      ctx.fillText(r.monto,w-pad-6,y+13);
-      ctx.textAlign='left';
-    }
-    if(r.precioLitro||r.litros){
-      ctx.fillStyle='#475569';ctx.font='600 7px IBM Plex Mono, monospace';
-      const plTxt=r.precioLitro?('$'+r.precioLitro+'/L'):'';
-      const liTxt=r.litros?(r.litros+' L'):'';
-      drawFitText(ctx,[plTxt,liTxt].filter(Boolean).join('  '),cx,y+26,w-pad-cx-8);
-    }else if(r.extra){
-      ctx.fillStyle='#94a3b8';ctx.font='500 7px IBM Plex Sans, Arial';
-      drawFitText(ctx,r.extra,cx,y+26,w-pad-cx-6);
-    }
+    const rowH=wide?rowHBase+(r.extra?10:0):r.rowH;
+    drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide);
     y+=rowH+gap;
   });
   if(extra){
@@ -2877,6 +2935,20 @@ function onLogsFiltroChange(){
 }
 function limpiarLogsFiltro(){
   logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
+  syncLogsFiltroUI();
+  renderLogs();
+}
+function setLogsFiltroHoy(){
+  const hoy=startOfDay(new Date());
+  logsFiltro.desde=toDateInputValue(hoy);
+  logsFiltro.hasta=toDateInputValue(hoy);
+  syncLogsFiltroUI();
+  renderLogs();
+}
+function setLogsFiltroUltimos7(){
+  const hoy=startOfDay(new Date());
+  logsFiltro.desde=toDateInputValue(addDaysDate(hoy,-6));
+  logsFiltro.hasta=toDateInputValue(hoy);
   syncLogsFiltroUI();
   renderLogs();
 }
