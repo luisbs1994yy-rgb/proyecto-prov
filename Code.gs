@@ -139,18 +139,24 @@ function getRegistros_() {
   const rows = readData_(sh, 2);
 
   return rows
-    .map((row) => ({
-      id: cell_(row, map, 'id'),
-      fecha: cell_(row, map, 'fecha'),
-      proveedor: cell_(row, map, 'proveedor'),
-      tipo: cell_(row, map, 'tipo'),
-      monto: toNum_(cell_(row, map, 'monto')),
-      factura: cell_(row, map, 'factura'),
-      concepto: cell_(row, map, 'concepto'),
-      producto: cell_(row, map, 'producto'),
-      aplicaFacturaId: cell_(row, map, 'aplicaFacturaId'),
-      createdAt: cell_(row, map, 'createdAt')
-    }))
+    .map((row) => {
+      const precioLitro = toNum_(cell_(row, map, 'precioLitro'));
+      const litros = toNum_(cell_(row, map, 'litros'));
+      return {
+        id: cell_(row, map, 'id'),
+        fecha: cell_(row, map, 'fecha'),
+        proveedor: cell_(row, map, 'proveedor'),
+        tipo: cell_(row, map, 'tipo'),
+        monto: toNum_(cell_(row, map, 'monto')),
+        factura: cell_(row, map, 'factura'),
+        concepto: cell_(row, map, 'concepto'),
+        producto: cell_(row, map, 'producto'),
+        precioLitro: isNaN(precioLitro) ? '' : precioLitro,
+        litros: isNaN(litros) ? '' : litros,
+        aplicaFacturaId: cell_(row, map, 'aplicaFacturaId'),
+        createdAt: cell_(row, map, 'createdAt')
+      };
+    })
     .filter((r) => r.id || r.fecha || r.proveedor);
 }
 

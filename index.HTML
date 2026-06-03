@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 2.96
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.96
+    ESTADO DE CUENTA  |  Versión 2.97
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=2.97
      ============================================================ -->
 <html lang="es">
 <head>
@@ -711,7 +711,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "2.96";
+const APP_VERSION = "2.97";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -1265,17 +1265,27 @@ function upsertPrecioProductoLocal(proveedor,producto,precio){
 }
 function loadAplicaMap(){try{return JSON.parse(localStorage.getItem(APLICA_KEY)||'{}');}catch{return {};}}
 function saveAplicaMap(map){try{localStorage.setItem(APLICA_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}}
+function enrichRegistroLitros(r){
+  if(!r||!isTipoFactura(r))return r;
+  let pl=parsePrecioLitro(r.precioLitro);
+  let lt=parseLitros(r.litros);
+  const m=parseFloat(r.monto)||0;
+  const prod=String(r.producto||'').trim();
+  if((isNaN(pl)||pl<=0)&&prod){
+    const pf=getPrecioProducto(r.proveedor,prod);
+    if(pf&&!isNaN(parsePrecioLitro(pf.precio)))pl=parsePrecioLitro(pf.precio);
+  }
+  if((isNaN(lt)||lt<=0)&&!isNaN(pl)&&pl>0&&m>0)lt=Math.round((m/pl)*100)/100;
+  return Object.assign({},r,{precioLitro:isNaN(pl)?'':pl,litros:isNaN(lt)?'':lt});
+}
 function normalizeRegistro(r){
   const map=loadAplicaMap();
   const id=String(r.id||'');
-  const pl=parsePrecioLitro(r.precioLitro);
-  const lt=parseLitros(r.litros);
-  return Object.assign({},r,{
+  const base=Object.assign({},r,{
     aplicaFacturaId:String(r.aplicaFacturaId||map[id]||'').trim(),
-    producto:String(r.producto||'').trim(),
-    precioLitro:isNaN(pl)?'':pl,
-    litros:isNaN(lt)?'':lt
+    producto:String(r.producto||'').trim()
   });
+  return enrichRegistroLitros(base);
 }
 function mergeAplicaIntoRegs(){
   const map=loadAplicaMap();
@@ -1284,10 +1294,36 @@ function mergeAplicaIntoRegs(){
 function updateStateFromSheetData(d){
   state.registros=(d.registros||[]).map(normalizeRegistro);
   mergeAplicaIntoRegs();
+  state.registros=state.registros.map(enrichRegistroLitros);
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
   state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
   savePreciosLocal(state.precios);
   if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
+  refreshLogsLitrosFromRegistros();
+}
+function refreshLogsLitrosFromRegistros(){
+  const logs=getLogs().slice();
+  let changed=false;
+  logs.forEach(l=>{
+    if(!isLogFactura(l))return;
+    const regs=findRegistrosForLog(l);
+    if(!regs.length)return;
+    const r=enrichRegistroLitros(regs[0]);
+    const rl=parseLitros(r.litros),rp=parsePrecioLitro(r.precioLitro);
+    if(isNaN(rl)||rl<=0)return;
+    const cur=parseLitros(l.litros);
+    if(!isNaN(cur)&&Math.abs(cur-rl)<0.02&&(!isNaN(rp)?Math.abs(parsePrecioLitro(l.precioLitro)-rp)<0.02:true))return;
+    l.litros=rl;
+    if(!isNaN(rp)&&rp>0)l.precioLitro=rp;
+    if(r.producto)l.producto=r.producto;
+    let d=String(l.descripcion||'').replace(/\s*·\s*Litros:\s*[^·]+/gi,'').replace(/\s*·\s*P\/L:\s*[^·]+/gi,'').replace(/\s*·\s*Prod:\s*[^·]+/gi,'');
+    if(!isNaN(rp)&&rp>0)d+=' · P/L: '+formatPrecioLitroDisplay(rp);
+    d+=' · Litros: '+formatLitrosDisplay(rl);
+    if(r.producto)d+=' · Prod: '+r.producto;
+    l.descripcion=d;
+    changed=true;
+  });
+  if(changed){saveLogs(logs);if(isPageActive('logs'))renderLogs();}
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
 function isTipoFactura(r){return !isTipoPago(r);}
@@ -1660,11 +1696,13 @@ async function guardarRegistro(){
   }
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    const pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
-    const ln=parseLitros(document.getElementById('f-litros').value);
+    let pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
+    let ln=parseLitros(document.getElementById('f-litros').value);
+    if((isNaN(ln)||ln<=0)&&!isNaN(pn)&&pn>0&&montoNum>0)ln=Math.round((montoNum/pn)*100)/100;
+    if((isNaN(pn)||pn<=0)&&!isNaN(ln)&&ln>0&&montoNum>0)pn=Math.round((montoNum/ln)*100)/100;
     const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
-    if(!isNaN(pn))regData.precioLitro=pn;
-    if(!isNaN(ln))regData.litros=ln;
+    if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
+    if(!isNaN(ln)&&ln>0)regData.litros=ln;
     const res=await apiPost({action:'addRegistro',data:regData});
     if(res.error)throw new Error(res.error);
     state.registros.push({id:res.id,...regData});
@@ -2692,14 +2730,20 @@ function cleanLogDescripcion(descripcion){
     .replace(/\s*·\s*Prod:\s*[^·]+/gi,'')
     .trim();
 }
+function parseLitrosFromText(text){
+  const s=String(text||'');
+  const ml=s.match(/(?:^|·)\s*Litros:\s*([0-9.,]+)/i);
+  if(ml){const n=parseLitros(ml[1]);if(!isNaN(n)&&n>0)return n;}
+  const m2=s.match(/([\d,]+\.\d{2})\s*L(?:itros?)?\b/i);
+  if(m2){const n=parseLitros(m2[1]);if(!isNaN(n)&&n>0)return n;}
+  return NaN;
+}
 function parseLogLitrosMeta(desc){
   const s=String(desc||'');
   const mp=s.match(/(?:^|·)\s*P\/L:\s*([0-9.,]+)/i);
-  const ml=s.match(/(?:^|·)\s*Litros:\s*([0-9.,]+)/i);
   const mprod=s.match(/(?:^|·)\s*Prod:\s*([^·]+)/i);
-  let precioLitro=NaN,litros=NaN,producto='';
+  let precioLitro=NaN,litros=parseLitrosFromText(s),producto='';
   if(mp){const n=parsePrecioLitro(mp[1]);if(!isNaN(n))precioLitro=n;}
-  if(ml){const n=parseLitros(ml[1]);if(!isNaN(n))litros=n;}
   if(mprod)producto=String(mprod[1]||'').trim();
   return{precioLitro,litros,producto};
 }
@@ -2712,9 +2756,11 @@ function getLogFacturaDetalle(l){
   let litros=parseLitros(l.litros);
   if(isNaN(litros)&&!isNaN(meta.litros))litros=meta.litros;
   let producto=String(l.producto||meta.producto||'').trim();
+  const litConcepto=parseLitrosFromText(l.concepto);
+  if(!isNaN(litConcepto)&&litConcepto>0)litros=litConcepto;
   const regs=findRegistrosForLog(l);
   if(regs.length){
-    const r=regs[0];
+    const r=enrichRegistroLitros(regs[0]);
     const rp=parsePrecioLitro(r.precioLitro);
     const rl=parseLitros(r.litros);
     if(!isNaN(rp))precioLitro=rp;
@@ -2868,7 +2914,7 @@ function addLog(tipo,descripcion,factura='',concepto='',registroId='',extra){
     (facturaSafe?' · Factura: '+facturaSafe:'')+
     (conceptoSafe?' · Concepto: '+conceptoSafe:'');
   if(!isNaN(pn))descWithMeta+=' · P/L: '+formatPrecioLitroDisplay(pn);
-  if(!isNaN(ln))descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
+  if(!isNaN(ln)&&ln>0)descWithMeta+=' · Litros: '+formatLitrosDisplay(ln);
   if(producto)descWithMeta+=' · Prod: '+producto;
   const log={
     tipo,descripcion:descWithMeta,factura:facturaSafe,concepto:conceptoSafe,registroId:regIdSafe,
