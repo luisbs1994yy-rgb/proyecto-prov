@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <!-- ============================================================
-    ESTADO DE CUENTA  |  Versión 3.10
-     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.10
+    ESTADO DE CUENTA  |  Versión 3.12
+     https://raw.githubusercontent.com/luisbs1994yy-rgb/proyecto-prov/cursor/mobile-copy-foto-6dc7/index.HTML?v=3.12
      ============================================================ -->
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="app-version" id="meta-app-version" content="">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Estado de Cuenta</title>
+<meta name="app-version" id="meta-app-version" content="3.12">
+<title>Estado de Cuenta v3.12</title>
+<script>/** Versión: cambiar aquí, en meta/title de arriba y en el comentario líneas 3-4. */
+const APP_VERSION="3.12";</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -757,7 +759,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 <body>
 
 <script>
-const APP_VERSION = "3.10";
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
 const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
@@ -809,7 +810,14 @@ function bindAppVersionLink(){
   }
   if(typeof document!=='undefined')document.title='Estado de Cuenta v'+APP_VERSION;
   const meta=document.getElementById('meta-app-version');
-  if(meta)meta.setAttribute('content',APP_VERSION);
+  if(meta){
+    const metaV=(meta.getAttribute('content')||'').trim();
+    if(metaV&&metaV!==APP_VERSION&&stamp){
+      stamp.className='app-version-stamp warn';
+      stamp.innerHTML='⚠️ meta dice <strong>v'+metaV.replace(/[<>&"']/g,'')+'</strong> pero APP_VERSION es <strong>v'+APP_VERSION+'</strong>. Iguala comentario (líneas 3-4), meta, title y const en head.';
+    }
+    meta.setAttribute('content',APP_VERSION);
+  }
 }
 async function copyAppReleaseUrl(e){
   if(e&&e.stopPropagation)e.stopPropagation();
@@ -2022,8 +2030,17 @@ function formatTotalesCopiaFecha(d){
   h=h%12;if(h===0)h=12;
   return DIAS[d.getDay()]+' '+d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear()+' '+h+':'+String(min).padStart(2,'0')+ampm;
 }
+function getTotalesFotoResumenHoy(){
+  const hoy=startOfDay(new Date());
+  const hasta=endOfDay(hoy);
+  const logs=filterLogsByRange(getLogs(),hoy,hasta);
+  const resumen=summarizeBitacoraLogs(logs);
+  const lbl=getBitacoraResumenLabels(hoy,hasta);
+  return{facturado:resumen.facturado,pagado:resumen.pagado,fact:lbl.fact,pago:lbl.pago};
+}
 function buildTotalesText(){
-  return 'Saldo total '+fmt(getTotalesSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
+  const r=getTotalesFotoResumenHoy();
+  return r.fact+' '+fmt(r.facturado)+'    '+r.pago+' '+fmt(r.pagado);
 }
 function getTotalesHeaderLine(){return buildTotalesText();}
 function copyTextLegacy(text){
@@ -2099,7 +2116,8 @@ function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
   const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
   const rows=resumen.slice(0,10);
-  const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=46,scale=3;
+  const hoyRes=getTotalesFotoResumenHoy();
+  const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=50,scale=3;
   const h=pad*2+headerH+gap+rows.length*(rowH+gap)+gap+footerH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
@@ -2138,17 +2156,17 @@ function buildTotalesCanvas(){
     y+=rowH+gap;
   });
   y+=gap;
-  const fy=y;
-  const footerW=w-pad*2;
+  const fy=y,footerW=w-pad*2;
   ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.fill();
   ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.stroke();
-  const fechaStr=formatTotalesCopiaFecha(new Date());
+  const colW=(footerW-16)/2,mid=pad+8+colW;
   ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
-  ctx.fillText('Saldo total',pad+8,fy+13);
-  ctx.fillStyle='#1e40af';ctx.font='700 13px IBM Plex Mono, monospace';
-  ctx.fillText(fmt(sumSaldos),pad+8,fy+30);
-  ctx.fillStyle='#64748b';ctx.font='500 7px IBM Plex Sans, Arial';
-  drawFitText(ctx,fechaStr,pad+8,fy+42,footerW-16);
+  ctx.fillText(hoyRes.fact,pad+8,fy+14);
+  ctx.fillText(hoyRes.pago,mid+4,fy+14);
+  ctx.fillStyle='#1e40af';ctx.font='700 11px IBM Plex Mono, monospace';
+  ctx.fillText(fmt(hoyRes.facturado),pad+8,fy+32);
+  ctx.fillStyle='#0d7a3e';
+  ctx.fillText(fmt(hoyRes.pagado),mid+4,fy+32);
   ctx.textAlign='left';
   return canvas;
 }
