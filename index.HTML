@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.24">
+<html lang="es" data-app-version="3.25">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.24';
+const APP_VERSION=getAppVersion()||'3.25';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -768,6 +768,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .precio-row{display:grid;grid-template-columns:minmax(120px,1.2fr) repeat(3,minmax(80px,1fr));gap:6px;align-items:center;padding:8px;border:1px solid var(--border);border-radius:10px;background:#f8fafc;}
 .precio-row-head{background:#eef2f7;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);}
 .precio-client{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--navy);word-break:break-word;}
+.precios-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:12px 0 6px;padding-left:2px;}
+.precios-section-title:first-child{margin-top:0;}
+.precios-section-title.prov{color:#0d7a3e;}
 .precio-input{width:100%;font-family:var(--mono);font-size:11px;text-align:center;padding:6px 6px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);}
 .precio-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 .precio-edit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 22px;gap:3px;align-items:center;}
@@ -1992,7 +1995,7 @@ function setSelectBtn(btn,inputId){
   btn.classList.add('active');
   document.getElementById(inputId).value=btn.dataset.val;
   if(inputId==='f-entidad')updateRegistrarEntidadUI();
-  if(inputId==='f-tipo'||inputId==='f-proveedor'){updateRegistrarAplicaUI();if(inputId==='f-proveedor'&&!isRegistrarProveedor())applyPrecioProductoDefault(true);}
+  if(inputId==='f-tipo'||inputId==='f-proveedor'){updateRegistrarAplicaUI();if(inputId==='f-proveedor')applyPrecioProductoDefault(true);}
   if(inputId==='f-producto')applyPrecioProductoDefault();
 }
 function syncLitrosPrecioLabels(){
@@ -4344,28 +4347,49 @@ function renderCatalogoProvManager(){
   if(!state.catalogoProveedores.length){el.innerHTML='<div class="empty">Sin proveedores · agrega uno arriba</div>';return;}
   el.innerHTML=state.catalogoProveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarCatalogoProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
-function renderPreciosManager(){
-  const el=document.getElementById('precios-list');
-  if(!el)return;
-  if(!state.proveedores.length){el.innerHTML='<div class="empty">Agrega clientes primero.</div>';return;}
-  let html='<div class="precios-grid"><div class="precio-row precio-row-head"><div>Cliente</div>'+PRODUCTOS.map(p=>'<div>'+esc(p)+'</div>').join('')+'</div>';
-  state.proveedores.forEach(prov=>{
+function todasEntidadesPrecios(){
+  return[
+    {tipo:'cliente',label:'Clientes',lista:state.proveedores||[]},
+    {tipo:'proveedor',label:'Proveedores',lista:state.catalogoProveedores||[]}
+  ];
+}
+function buildPreciosFilasHtml(lista,tipo){
+  let html='';
+  lista.forEach(prov=>{
     html+='<div class="precio-row"><div class="precio-client">'+esc(prov)+'</div>';
     PRODUCTOS.forEach(prod=>{
       const found=getPrecioProducto(prov,prod);
       const val=found?formatPrecioLitroDisplay(found.precio):'';
-      const id=precioInputId(prov,prod);
-      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><div class="precio-edit-wrap"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" data-original="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"><button type="button" class="btn btn-primary precio-mini-save" title="Guardar" onclick="guardarPrecioMini(\''+esc(prov)+'\',\''+esc(prod)+'\',this)">✓</button></div></div>';
+      const id=precioInputId(prov,prod,tipo);
+      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><div class="precio-edit-wrap"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" data-original="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"><button type="button" class="btn btn-primary precio-mini-save" title="Guardar" onclick="guardarPrecioMini(\''+esc(prov)+'\',\''+esc(prod)+'\',this,\''+tipo+'\')">✓</button></div></div>';
     });
     html+='</div>';
   });
-  html+='</div><div class="hint-text" style="margin-top:10px">Al registrar Factura: elige cliente + producto y se cargará este precio automáticamente. Puedes cambiarlo manualmente si hace falta.</div>';
+  return html;
+}
+function renderPreciosManager(){
+  const el=document.getElementById('precios-list');
+  if(!el)return;
+  const secciones=todasEntidadesPrecios();
+  const conDatos=secciones.filter(s=>s.lista.length);
+  if(!conDatos.length){el.innerHTML='<div class="empty">Agrega clientes o proveedores en Config primero.</div>';return;}
+  let html='<div class="precios-grid"><div class="precio-row precio-row-head"><div>Nombre</div>'+PRODUCTOS.map(p=>'<div>'+esc(p)+'</div>').join('')+'</div>';
+  secciones.forEach(sec=>{
+    if(!sec.lista.length)return;
+    const cls=sec.tipo==='proveedor'?' precios-section-title prov':' precios-section-title';
+    html+='<div class="'+cls.trim()+'">'+esc(sec.label)+'</div>';
+    html+=buildPreciosFilasHtml(sec.lista,sec.tipo);
+  });
+  html+='</div><div class="hint-text" style="margin-top:10px">Al registrar Factura (cliente o proveedor) + producto, se carga este precio automáticamente. Puedes cambiarlo manualmente si hace falta.</div>';
   el.innerHTML=html;
 }
-function precioInputId(prov,prod){return 'precio_'+String(prov+'_'+prod).replace(/[^a-zA-Z0-9_]/g,'_');}
+function precioInputId(prov,prod,tipo){
+  const prefix=tipo==='proveedor'?'prov_':'cli_';
+  return 'precio_'+prefix+String(prov+'_'+prod).replace(/[^a-zA-Z0-9_]/g,'_');
+}
 function onPrecioListaInput(el){el.value=sanitizePrecioLitroTyping(el.value);el.dataset.dirty=String((el.value||'').trim()!==(el.dataset.original||'').trim());}
-async function guardarPrecioMini(prov,producto,btn){
-  const el=document.getElementById(precioInputId(prov,producto));
+async function guardarPrecioMini(prov,producto,btn,tipo){
+  const el=document.getElementById(precioInputId(prov,producto,tipo||'cliente'));
   if(!el)return;
   const raw=String(el.value||'').trim();
   const n=parsePrecioLitro(raw);
@@ -4391,19 +4415,21 @@ async function guardarPrecioMini(prov,producto,btn){
 }
 function collectPreciosFromUI(){
   const precios=[];
-  for(const prov of state.proveedores){
-    for(const producto of PRODUCTOS){
-      const el=document.getElementById(precioInputId(prov,producto));
-      if(!el)continue;
-      if(el.dataset.dirty!=='true')continue;
-      const raw=String(el.value||'').trim();
-      const n=parsePrecioLitro(raw);
-      if(raw&&isNaN(n))throw new Error('Precio inválido en '+prov+' · '+producto);
-      const precio=isNaN(n)?'':n;
-      if(!isNaN(n))el.value=formatPrecioLitroDisplay(n);
-      precios.push({proveedor:prov,cliente:prov,producto,precio});
-    }
-  }
+  todasEntidadesPrecios().forEach(sec=>{
+    sec.lista.forEach(prov=>{
+      PRODUCTOS.forEach(producto=>{
+        const el=document.getElementById(precioInputId(prov,producto,sec.tipo));
+        if(!el)continue;
+        if(el.dataset.dirty!=='true')continue;
+        const raw=String(el.value||'').trim();
+        const n=parsePrecioLitro(raw);
+        if(raw&&isNaN(n))throw new Error('Precio inválido en '+sec.label.slice(0,-1)+' '+prov+' · '+producto);
+        const precio=isNaN(n)?'':n;
+        if(!isNaN(n))el.value=formatPrecioLitroDisplay(n);
+        precios.push({proveedor:prov,cliente:prov,producto,precio});
+      });
+    });
+  });
   return precios;
 }
 async function guardarTodosPrecios(btn){
