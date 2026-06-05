@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.27">
+<html lang="es" data-app-version="3.28">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.27';
+const APP_VERSION=getAppVersion()||'3.28';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -106,6 +106,9 @@ textarea{resize:vertical;min-height:60px;}
 .btn:hover{background:var(--bg);box-shadow:var(--shadow-sm);} .btn:active{transform:scale(.98);}
 .btn-primary{background:linear-gradient(135deg,#3a86ff,#2563eb);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
 .btn-primary:hover{filter:brightness(1.05);box-shadow:0 6px 16px rgba(58,134,255,.4);}
+.btn-saving,.btn-primary.btn-saving,#btn-save.btn-saving{background:linear-gradient(135deg,#059669,#047857)!important;color:#fff!important;border-color:transparent!important;opacity:1!important;cursor:wait!important;box-shadow:0 4px 12px rgba(5,150,105,.4)!important;filter:none!important;}
+.btn-saving .spinner{border-color:#fff;border-right-color:transparent;}
+.btn-primary:disabled.btn-saving{opacity:1!important;}
 .btn-sm{padding:5px 12px;font-size:11px;border-radius:8px;}
 .btn-danger{color:var(--red-text);border-color:var(--red-border);background:var(--red-bg);}
 .btn-danger:hover{background:#fee2e2;}
@@ -185,7 +188,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-sum-p{color:#34d399!important;font-weight:600;}
 .desglose-sum-s{color:#f87171!important;font-weight:600;}
 .popup-sub-totals{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:2px;}
-.desglose-cell-fecha{font-size:10px;font-weight:600;white-space:nowrap;text-align:left;}
+.desglose-cell-fecha{font-size:8px;font-weight:600;white-space:normal;text-align:left;line-height:1.15;overflow:hidden;max-width:100%;}
+.desglose-cell-fecha .fecha-mini-line{display:block;font-size:7px;font-weight:700;line-height:1.15;}
+.desglose-cell-fecha .hora-mini-line{display:block;font-size:6px;font-weight:500;color:var(--text-faint);line-height:1.1;margin-top:1px;}
 .desglose-cell-tipo{text-align:center;}
 .desglose-cell-tipo .badge{font-size:8px!important;padding:2px 6px!important;display:inline-block;}
 .desglose-detail{font-size:8px;color:var(--text-faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
@@ -288,7 +293,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-desglose table.prov-fact-table thead th.col-total{background:#eff6ff;color:#1e40af;}
 .popup-desglose table.prov-fact-table thead th.col-abon{background:#d1fae5;color:#065f46;}
 .popup-desglose table.prov-fact-table thead th.col-pend{background:#fee2e2;color:#991b1b;}
-.prov-fact-table th,.prov-fact-table td{text-align:center;vertical-align:middle;font-size:8px;padding:3px 4px;}
+.prov-fact-table th,.prov-fact-table td{text-align:center;vertical-align:middle;font-size:7px;padding:2px 3px;overflow:hidden;max-width:100%;}
+.prov-fact-table .col-ref{width:10%;}
 .prov-fact-table .col-total{font-family:var(--mono);background:#f8fafc;color:var(--navy);}
 .prov-fact-table tbody .col-abon{font-family:var(--mono);background:#ecfdf5;color:#047857;font-weight:600;}
 .prov-fact-table tbody .col-pend{font-family:var(--mono);background:#fef2f2;color:#b91c1c;font-weight:600;}
@@ -307,17 +313,17 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-inline-input{width:100%;min-width:0;padding:4px 6px;font-size:10px;font-family:var(--font);border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text);box-sizing:border-box;}
 .desglose-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);background:#fff;}
 .desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
-.desglose-inline-input.saving{opacity:.6;border-color:var(--amber-border);background:var(--amber-bg);}
+.desglose-inline-input.saving{opacity:1;border-color:#86efac;background:#e6f7ed;color:#0d7a3e;}
 .desglose-inline-input.warn{border-color:var(--red-border);background:var(--red-bg);}
 .prov-actions{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:3px;padding:2px 3px!important;white-space:nowrap;}
-.prov-fact-table .col-fecha{width:12%;}
+.prov-fact-table .col-fecha{width:9%;max-width:40px;}
 .prov-fact-table .col-ref{width:14%;}
 .prov-fact-table .prov-actions-col{width:9%;max-width:32px;min-width:26px;padding:2px 1px!important;}
-.prov-fact-table.prov-facturas-table .col-total{width:20%;}
-.prov-fact-table.prov-facturas-table .col-abon{width:22%;}
-.prov-fact-table.prov-facturas-table .col-pend{width:23%;}
+.prov-fact-table.prov-facturas-table .col-total{width:18%;}
+.prov-fact-table.prov-facturas-table .col-abon{width:20%;}
+.prov-fact-table.prov-facturas-table .col-pend{width:20%;}
 .prov-fact-table.prov-pagos-table .col-total{width:22%;}
-.prov-fact-table.prov-pagos-table .col-aplica{width:43%;font-size:7px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prov-fact-table.prov-pagos-table .col-aplica{width:38%;font-size:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .prov-fact-table .btn-abonar-mini{padding:2px 5px;font-size:7px;font-weight:600;line-height:1.15;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--navy);cursor:pointer;font-family:var(--font);min-height:0;height:auto;flex-shrink:0;}
 .prov-fact-table .btn-abonar-mini:hover{background:var(--blue-soft);border-color:var(--blue-border);}
 .prov-fact-table .btn-del-compact{width:17px;height:17px;min-width:17px;font-size:8px;line-height:1;border-radius:4px;flex-shrink:0;padding:0;}
@@ -325,7 +331,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-bitacora-table thead th{background:#f1f5f9;color:var(--navy);font-size:7px;padding:3px 4px;text-align:center;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);}
 .prov-bitacora-table td{padding:2px 4px!important;font-size:7px;line-height:1.2;vertical-align:middle;border-bottom:1px solid #eef2f7;}
 .prov-bitacora-table tr:last-child td{border-bottom:none;}
-.prov-bitacora-table .log-col-fecha{width:20%;text-align:center;white-space:nowrap;font-family:var(--mono);font-size:7px;}
+.prov-bitacora-table .log-col-fecha{width:14%;text-align:center;white-space:normal;font-family:var(--mono);font-size:7px;overflow:hidden;}
 .prov-bitacora-table .log-col-tipo{width:16%;text-align:center;}
 .prov-bitacora-table .log-col-desc{width:58%;text-align:left;}
 .prov-bitacora-table .log-col-act{width:6%;text-align:center;padding:2px!important;}
@@ -463,7 +469,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .btn-captura-duo:active{background:rgba(37,211,102,.38);}
 .totales-shot-zone{flex:1;min-width:0;}
 .capture-mode .screen-capture-hide{display:none!important;}
-.capture-mode #totales-shot-zone .desglose-btn{display:none!important;}
+.capture-mode #totales-shot-zone .desglose-btn,.capture-mode #proveedores-shot-zone .desglose-btn{display:none!important;}
 .logs-header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .btn-bitacora-share{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--border);background:var(--blue-soft);color:var(--blue);cursor:pointer;font-size:17px;line-height:1;}
 .btn-bitacora-share:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
@@ -616,6 +622,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
+  #page-proveedores .totales-summary { padding: 8px 10px; gap: 2px 8px; }
+  #page-proveedores .totales-summary-label { font-size: 9px; }
+  #page-proveedores .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
+  #page-proveedores .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-proveedores .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-proveedores .totales-actions { gap: 5px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
@@ -793,7 +805,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 
 <script>
 const RAW_HTML_REPO = "luisbs1994yy-rgb/proyecto-prov";
-const RAW_HTML_BRANCH = "cursor/mobile-copy-foto-6dc7";
+const RAW_HTML_BRANCH = "main";
 const REFRESH_FLAG_KEY = "pagos_v1_just_refreshed";
 function getAppReleaseUrl(){
   return 'https://raw.githubusercontent.com/'+RAW_HTML_REPO+'/'+RAW_HTML_BRANCH+'/index.HTML?v='+APP_VERSION+'&build='+APP_VERSION.replace('.','');
@@ -991,15 +1003,21 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
 
     <div class="page" id="page-proveedores">
-      <div class="page-title">Proveedores</div>
-      <div class="card totales-panel">
-        <div class="totales-summary">
-          <div class="totales-summary-main">
-            <span class="totales-summary-label">Saldo total proveedores</span>
-            <span class="totales-summary-value" id="k-total-prov">—</span>
+      <div class="page-title screen-capture-hide">Proveedores</div>
+      <div class="card totales-panel" id="proveedores-captura">
+        <div id="proveedores-shot-zone" class="totales-shot-zone">
+          <div class="totales-summary">
+            <div class="totales-summary-main">
+              <span class="totales-summary-label">Saldo total proveedores</span>
+              <span class="totales-summary-value" id="k-total-prov">—</span>
+            </div>
+            <div class="totales-actions screen-capture-hide">
+              <button type="button" class="btn-screenshot" id="btn-captura-prov" onclick="capturarProveedores()" title="Copiar foto">📋</button>
+              <button type="button" class="btn-captura-movil" id="btn-captura-prov-movil" onclick="capturarProveedoresMovil()" title="WhatsApp: foto saldo proveedores">📷</button>
+            </div>
           </div>
+          <div class="card-body" style="padding:0"><div id="tabla-prov"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
         </div>
-        <div class="card-body" style="padding:0"><div id="tabla-prov"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
 
@@ -1291,6 +1309,30 @@ function fmtFechaCorta(fecha){
   if(isNaN(d.getTime()))return raw.length>12?raw.slice(0,10):raw;
   const m=MESES_ES[d.getMonth()].slice(0,3);
   return d.getDate()+' '+m+' '+String(d.getFullYear()).slice(-2);
+}
+function fmtFechaMini(fecha){
+  if(fecha==null||fecha==='')return'—';
+  const raw=String(fecha).trim();
+  if(!raw)return'—';
+  let d;
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
+  else d=new Date(raw);
+  if(isNaN(d.getTime()))return raw.length>8?raw.slice(0,8):raw;
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+}
+function beginBtnSaving(btn,label){
+  if(!btn)return;
+  btn.disabled=true;
+  btn.classList.add('btn-saving');
+  btn.dataset.prevLabel=btn.innerHTML||btn.textContent||'';
+  btn.innerHTML='<span class="spinner"></span>'+(label||'Guardando…');
+}
+function endBtnSaving(btn,label){
+  if(!btn)return;
+  btn.disabled=false;
+  btn.classList.remove('btn-saving');
+  btn.innerHTML=label!=null?label:(btn.dataset.prevLabel||'Guardar registro');
+  delete btn.dataset.prevLabel;
 }
 const MX_TZ='America/Mexico_City';
 function pad2(n){return String(n).padStart(2,'0');}
@@ -2187,7 +2229,7 @@ async function guardarRegistro(){
         const aplicado=montoNum-remanente;
         if(!confirmarRemanentePago(montoNum,aplicado,remanente,parts.length))return;
       }
-      btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+      beginBtnSaving(btn);
       try{
         const saved=[];
         let logIdx=0;
@@ -2207,18 +2249,18 @@ async function guardarRegistro(){
         else toast('✓ Pago aplicado a '+parts.length+' factura(s) · bitácora: '+saved.length+' mov.',false,true);
         setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
       }catch(e){toastError(e);}
-      finally{btn.disabled=false;btn.innerHTML='Guardar registro';btn.classList.remove('btn-locked');}
+      finally{endBtnSaving(btn,'Guardar registro');btn.classList.remove('btn-locked');}
       return;
     }
     if(!confirmarPagoSinFacturas(prov,montoNum))return;
-    btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+    beginBtnSaving(btn);
     try{
       const reg=await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
       await addLogAwait(tipo,prov+' · '+fmt(montoNum),factura,concepto,reg.id);
       saveAndRender();clearForm();toast('✓ Abono guardado · aparece en verde (+) y resta del saldo total',false,true);
       setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
     }catch(e){toastError(e);}
-    finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
+    finally{endBtnSaving(btn,'Guardar registro');}
     return;
   }
   let pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
@@ -2227,7 +2269,7 @@ async function guardarRegistro(){
   if((isNaN(pn)||pn<=0)&&!isNaN(ln)&&ln>0&&montoNum>0)pn=Math.round((montoNum/ln)*100)/100;
   const faltantesFact=faltantesDetalleFactura(producto,pn,ln);
   if(faltantesFact.length&&!confirmarFacturaSinDetalle(faltantesFact))return;
-  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
+  beginBtnSaving(btn);
   try{
     const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
     if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
@@ -2242,7 +2284,7 @@ async function guardarRegistro(){
     saveAndRender();clearForm();toast('✓ Guardado',false,true);
     setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
   }catch(e){toastError(e);}
-  finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
+  finally{endBtnSaving(btn,'Guardar registro');}
 }
 async function eliminarRegistro(id,btn){
   if(!confirm('¿Eliminar este registro?'))return;
@@ -2366,6 +2408,12 @@ function isMobileLike(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator
 function isIOSLike(){return /iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
 function getTotalesSaldoTotal(){
   return calcTotalesNeto(resumenProveedoresActivos(state.registros)).neto;
+}
+function getProveedoresSaldoTotal(){
+  return calcTotalesNeto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[])).neto;
+}
+function buildProveedoresWhatsappText(){
+  return 'Saldo proveedores '+fmt(getProveedoresSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2546,6 +2594,134 @@ function buildTotalesCanvas(){
   ctx.fillText(fmt(hoyRes.pagado),mid+4,fy+32);
   ctx.textAlign='left';
   return canvas;
+}
+function buildProveedoresCanvas(){
+  const resumen=resumenCatalogoProveedoresActivos(state.registrosProveedores||[]);
+  const{deudas,neto}=calcTotalesNeto(resumen);
+  const rows=resumen.slice(0,10);
+  const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=28,scale=3;
+  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+gap+footerH;
+  const canvas=document.createElement('canvas');
+  canvas.width=w*scale;canvas.height=h*scale;
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');
+  ctx.scale(scale,scale);
+  ctx.imageSmoothingEnabled=false;
+  ctx.fillStyle='#eef1f6';ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#ffffff';
+  drawRoundRect(ctx,8,8,w-16,h-16,18);ctx.fill();
+  const grad=ctx.createLinearGradient(8,8,w-8,8);
+  grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
+  ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
+  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
+  ctx.fillText('SALDO PROVEEDORES',pad+5,26);
+  ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
+  ctx.fillText('Saldo total',pad+5,40);
+  ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
+  ctx.fillText(fmt(neto),w-pad-5,40);
+  ctx.textAlign='left';
+  let y=8+headerH+gap;
+  rows.forEach(r=>{
+    const cell=formatSaldoTotalesRow(r.saldo,deudas);
+    const isCredito=r.saldo<-0.001;
+    const isZero=Math.abs(r.saldo)<0.001;
+    ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
+    ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
+    const innerX=pad+10, innerW=w-pad*2-20;
+    const nameW=118, pctW=42, amountW=innerW-nameW-pctW;
+    const midY=y+rowH/2;
+    ctx.fillStyle='#1a1c2c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawClienteNombreCanvas(ctx,r.proveedor,innerX,midY,nameW);
+    ctx.fillStyle=isZero||isCredito?'#047857':'#b91c1c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(cell.text,innerX+nameW+(amountW/2),midY+4);
+    ctx.fillStyle=isCredito?'#047857':'#6b7280';ctx.font='500 10px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(cell.pct,innerX+innerW,midY+4);
+    y+=rowH+gap;
+  });
+  y+=gap;
+  const fy=y,footerW=w-pad*2;
+  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.fill();
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.stroke();
+  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';
+  ctx.fillText(formatTotalesCopiaFecha(new Date()),pad+8,fy+17);
+  ctx.textAlign='left';
+  return canvas;
+}
+async function capturarSaldosMobile(blob,shareLine,filePrefix){
+  if(navigator.share){
+    try{
+      const name=(filePrefix||'estado-cuenta')+'-'+new Date().toISOString().slice(0,10)+'.png';
+      const file=new File([blob],name,{type:'image/png'});
+      const payload={files:[file],title:shareLine,text:shareLine};
+      if(!navigator.canShare||navigator.canShare(payload)){
+        await navigator.share(payload);
+        toast('Elige WhatsApp · foto + texto saldo',false,true);
+        return;
+      }
+    }catch(e){if(e&&e.name==='AbortError')return;}
+  }
+  if(!isIOSLike()&&await copyImageToClipboard(blob,3000)){
+    toast('Imagen copiada · al compartir en WhatsApp usa también el texto con saldo',false,true);
+    return;
+  }
+  if(await copyTextRobust(shareLine)){
+    toast(isIOSLike()?'iPhone: copié resumen en texto (pégalo en WhatsApp)':'No pude copiar foto; copié resumen en texto',false,true);
+    return;
+  }
+  downloadBlob(blob,(filePrefix||'estado-cuenta')+'-'+new Date().toISOString().slice(0,10)+'.png');
+  toast('Guardé la imagen en Descargas; ábrela y compártela por WhatsApp',false,true);
+}
+async function capturarProveedoresMovil(){
+  const btn=document.getElementById('btn-captura-prov-movil');
+  const panel=document.getElementById('proveedores-captura');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  if(panel)panel.classList.add('capture-mode');
+  try{
+    const canvas=buildProveedoresCanvas();
+    const blob=await canvasToBlob(canvas);
+    if(!blob)throw new Error('No se pudo crear imagen');
+    const shareLine=buildProveedoresWhatsappText();
+    const name='proveedores-'+new Date().toISOString().slice(0,10)+'.png';
+    const file=new File([blob],name,{type:'image/png'});
+    if(navigator.share&&navigator.canShare){
+      try{
+        const payload={files:[file],title:shareLine,text:shareLine};
+        if(navigator.canShare(payload)){
+          await navigator.share(payload);
+          toast('Elige WhatsApp para enviar foto de proveedores',false,true);
+          return;
+        }
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(blob,name);
+    toast('Foto guardada · Galería o WhatsApp',false,true);
+  }catch(e){toastError(e);}
+  finally{
+    if(panel)panel.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📷';}
+  }
+}
+async function capturarProveedores(){
+  const btn=document.getElementById('btn-captura-prov');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const canvas=buildProveedoresCanvas();
+    const blob=await canvasToBlob(canvas);
+    if(!blob)throw new Error('No se pudo crear imagen');
+    if(isMobileLike()){
+      await capturarSaldosMobile(blob,buildProveedoresWhatsappText(),'proveedores');
+      return;
+    }
+    if(await copyImageToClipboard(blob,5000)){
+      toast('Imagen copiada · pégala en WhatsApp',false,true);
+      return;
+    }
+    downloadBlob(blob,'proveedores-'+new Date().toISOString().slice(0,10)+'.png');
+    toast('No se pudo copiar; imagen descargada',false,true);
+  }catch(e){toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent=prev||'📋';}}
 }
 async function buildBitacoraFotoHoy(){
   const hoy=startOfDay(new Date());
@@ -3136,9 +3312,9 @@ function onPagoDesgloseX(pagoId,btn){
 }
 function fmtLogFechaCortaDesglose(l){
   const d=parseLogDate(l);
-  if(!d)return esc(String(getFechaDisplay(l)||'—').slice(0,14));
+  if(!d)return '<span class="fecha-mini-line">'+esc(String(getFechaDisplay(l)||'—').slice(0,10))+'</span>';
   const h=d.toLocaleTimeString('es-MX',{hour:'numeric',minute:'2-digit',hour12:true});
-  return esc(fmtFechaCorta(d)+' '+h);
+  return '<span class="fecha-mini-line">'+esc(fmtFechaMini(d))+'</span><span class="hora-mini-line">'+esc(h)+'</span>';
 }
 function formatLogDescInline(l){
   const tipo=String(l.tipo||'').toLowerCase();
@@ -3403,8 +3579,8 @@ function buildDesgloseFacturasHtml(facts,pagos){
     const pendVal=formatMontoDisplay(pend);
     const saldadaCls=pend<=0.001?' desglose-row-saldada':'';
     rows+='<tr class="desglose-row desglose-row-factura'+saldadaCls+'">'+
-      '<td class="desglose-cell-fecha col-fecha">'+esc(fmtFechaCorta(f.fecha))+'</td>'+
-      '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
+      '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtFechaMini(f.fecha))+'</span></td>'+
+      '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
@@ -3454,8 +3630,8 @@ function buildDesglosePagosHtml(facts,pagos){
     const refVal=esc(p.factura||'');
     const montoVal=formatMontoDisplay(parseFloat(p.monto)||0);
     rows+='<tr class="desglose-row desglose-row-pago">'+
-      '<td class="desglose-cell-fecha col-fecha">'+esc(fmtFechaCorta(p.fecha))+'</td>'+
-      '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref." onblur="onDesgloseRefBlur(\''+esc(p.id)+'\',this)"></td>'+
+      '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtFechaMini(p.fecha))+'</span></td>'+
+      '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(p.id)+'\',this)"></td>'+
       '<td class="col-aplica">'+aplTxt+'</td>'+
       '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" title="'+(apl?'Quitar de factura':'Eliminar pago')+'" onclick="onPagoDesgloseX(\''+esc(p.id)+'\',this)">✕</button></td></tr>';
@@ -4449,7 +4625,7 @@ async function guardarPrecioMini(prov,producto,btn,tipo){
   const precio=isNaN(n)?'':n;
   if(!isNaN(n))el.value=formatPrecioLitroDisplay(n);
   const prevLabel=btn?btn.textContent:'';
-  if(btn){btn.disabled=true;btn.textContent='...';}
+  if(btn){beginBtnSaving(btn,'…');}
   try{
     const res=await apiPost({action:'setPrecioProducto',data:{proveedor:prov,cliente:prov,producto,precio}});
     if(res&&res.error)throw new Error(res.error);
@@ -4463,7 +4639,7 @@ async function guardarPrecioMini(prov,producto,btn,tipo){
     el.dataset.dirty='false';
     toast('Precio guardado',false,true);
   }catch(e){toastError(e);}
-  finally{if(btn){btn.disabled=false;btn.textContent=prevLabel||'✓';}}
+  finally{if(btn){endBtnSaving(btn,prevLabel||'✓');}}
 }
 function collectPreciosFromUI(){
   const precios=[];
@@ -4487,7 +4663,7 @@ function collectPreciosFromUI(){
 async function guardarTodosPrecios(btn){
   const prevLabel=btn?btn.textContent:'';
   const prev=state.precios.slice();
-  if(btn){btn.disabled=true;btn.textContent='Guardando...';}
+  if(btn){beginBtnSaving(btn,'Guardando…');}
   try{
     const precios=collectPreciosFromUI();
     if(!precios.length){toast('No hay cambios por guardar',false,true);return;}
@@ -4511,7 +4687,7 @@ async function guardarTodosPrecios(btn){
     saveAndRender();
     toastError(e);
   }finally{
-    if(btn){btn.disabled=false;btn.textContent=prevLabel||'Guardar precios';}
+    if(btn){endBtnSaving(btn,prevLabel||'Guardar precios');}
   }
 }
 function renderProvManager(){
