@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.30">
+<html lang="es" data-app-version="3.31">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.30';
+const APP_VERSION=getAppVersion()||'3.31';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -475,6 +475,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .logs-header-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .btn-bitacora-share{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid var(--border);background:var(--blue-soft);color:var(--blue);cursor:pointer;font-size:17px;line-height:1;}
 .btn-bitacora-share:hover{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-captura-cliente-bitacora{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(58,134,255,.6);background:rgba(58,134,255,.38);color:#fff;cursor:pointer;font-size:17px;line-height:1;box-shadow:0 2px 8px rgba(58,134,255,.25);}
+.btn-captura-cliente-bitacora:active{background:rgba(37,99,235,.55);}
 .bitacora-rango-overlay{display:none;position:fixed;inset:0;z-index:2100;background:rgba(26,28,44,.55);padding:12px;box-sizing:border-box;align-items:center;justify-content:center;}
 .bitacora-rango-overlay.open{display:flex;}
 .bitacora-rango-popup{background:var(--surface);border-radius:14px;box-shadow:var(--shadow-md);width:100%;max-width:400px;max-height:min(92vh,640px);overflow:auto;padding:14px;}
@@ -510,7 +512,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .logs-filtro-chip:hover{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
 .logs-filter-count{font-size:11px;color:var(--text-muted);margin-left:auto;align-self:center;white-space:nowrap;}
 @media (max-width:640px){
-  #page-logs .btn-bitacora-share{width:32px;height:32px;font-size:16px;}
+  #page-logs .btn-bitacora-share,#page-logs .btn-captura-cliente-bitacora{width:32px;height:32px;font-size:16px;}
+  #page-logs .logs-header-actions{gap:5px;}
   .logs-filters{padding:8px;gap:6px;}
   .logs-filters .logs-f-cliente{max-width:none;flex:1 1 100%;}
   .logs-filter-count{flex:1 1 100%;margin-left:0;text-align:left;}
@@ -1029,7 +1032,8 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
         <div class="card-header">
           <span class="card-title">Bitácora general</span>
           <div class="logs-header-actions">
-            <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal()" title="Foto de movimientos · WhatsApp">📷</button>
+            <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal()" title="Foto bitácora · movimientos">📷</button>
+            <button type="button" class="btn-captura-cliente-bitacora" id="btn-bitacora-captura-cliente" onclick="capturarPantallaMovil(this)" title="WhatsApp: foto saldo clientes">📷</button>
           </div>
         </div>
         <div class="logs-filters" id="logs-filters">
@@ -2678,8 +2682,8 @@ async function capturarSaldosMobile(blob,shareLine,filePrefix){
   downloadBlob(blob,(filePrefix||'estado-cuenta')+'-'+new Date().toISOString().slice(0,10)+'.png');
   toast('Guardé la imagen en Descargas; ábrela y compártela por WhatsApp',false,true);
 }
-async function capturarProveedoresMovil(){
-  const btn=document.getElementById('btn-captura-proveedor');
+async function capturarProveedoresMovil(btnEl){
+  const btn=btnEl||document.getElementById('btn-captura-proveedor');
   const panel=document.getElementById('proveedores-captura');
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='…';}
@@ -2785,8 +2789,8 @@ async function capturarTotalesYBitacoraWhatsapp(){
     if(btn){btn.disabled=false;btn.textContent=prev||'📸';}
   }
 }
-async function capturarPantallaMovil(){
-  const btn=document.getElementById('btn-captura-cliente');
+async function capturarPantallaMovil(btnEl){
+  const btn=btnEl||document.getElementById('btn-captura-cliente');
   const panel=document.getElementById('totales-captura');
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='…';}
