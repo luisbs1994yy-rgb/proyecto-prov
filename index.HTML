@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.26">
+<html lang="es" data-app-version="3.27">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.26';
+const APP_VERSION=getAppVersion()||'3.27';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -4471,8 +4471,8 @@ function collectPreciosFromUI(){
     sec.lista.forEach(prov=>{
       PRODUCTOS.forEach(producto=>{
         const el=document.getElementById(precioInputId(prov,producto,sec.tipo));
-        if(!el)continue;
-        if(el.dataset.dirty!=='true')continue;
+        if(!el)return;
+        if(el.dataset.dirty!=='true')return;
         const raw=String(el.value||'').trim();
         const n=parsePrecioLitro(raw);
         if(raw&&isNaN(n))throw new Error('Precio inválido en '+sec.label.slice(0,-1)+' '+prov+' · '+producto);
