@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.19">
+<html lang="es" data-app-version="3.20">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.19';
+const APP_VERSION=getAppVersion()||'3.20';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -458,6 +458,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .totales-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .btn-captura-movil{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
 .btn-captura-movil:active{background:rgba(255,255,255,.32);}
+.btn-captura-duo{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(37,211,102,.55);background:rgba(37,211,102,.22);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
+.btn-captura-duo:active{background:rgba(37,211,102,.38);}
 .totales-shot-zone{flex:1;min-width:0;}
 .capture-mode .screen-capture-hide{display:none!important;}
 .capture-mode #totales-shot-zone .desglose-btn{display:none!important;}
@@ -607,6 +609,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
   #page-totales .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
   .desglose-overlay { padding: 46px 8px 8px; }
@@ -822,7 +825,7 @@ function bindAppVersionLink(){
   const htmlV=getAppVersion();
   if(stamp&&!htmlV){
     stamp.className='app-version-stamp warn';
-    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.19"';
+    stamp.textContent='⚠️ Falta data-app-version en <html>. Pon ej. data-app-version="3.20"';
   }
 }
 async function copyAppReleaseUrl(e){
@@ -944,7 +947,8 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-movil" id="btn-captura-movil" onclick="capturarPantallaMovil()" title="Guardar foto (solo saldos)">📷</button>
+              <button type="button" class="btn-captura-movil" id="btn-captura-movil" onclick="capturarPantallaMovil()" title="WhatsApp: foto saldo total">📷</button>
+              <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="capturarTotalesYBitacoraWhatsapp()" title="WhatsApp: saldo total + bitácora hoy (2 fotos)">📸</button>
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
@@ -2273,6 +2277,61 @@ function buildTotalesCanvas(){
   ctx.fillText(fmt(hoyRes.pagado),mid+4,fy+32);
   ctx.textAlign='left';
   return canvas;
+}
+async function buildBitacoraFotoHoy(){
+  const hoy=startOfDay(new Date());
+  const hasta=endOfDay(hoy);
+  const logsRaw=getLogsBitacoraEnRango(hoy,hasta);
+  const logsForInfer=logsRaw.map(l=>({...l}));
+  inferPagoGruposForDisplay(logsForInfer);
+  const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
+  const canvas=buildBitacoraCanvas(logsFoto,hoy,hasta);
+  const blob=await canvasToBlob(canvas,20000);
+  if(!blob)throw new Error('No se pudo crear la foto de bitácora');
+  return{blob,name:'bitacora-'+toDateInputValue(hoy)+'.png'};
+}
+async function shareFilesWhatsapp(files,title,text){
+  if(!navigator.share)return false;
+  const payloads=[
+    title?{files,title,text:text||title}:{files},
+    {files}
+  ];
+  for(let i=0;i<payloads.length;i++){
+    const payload=payloads[i];
+    if(!navigator.canShare||navigator.canShare(payload)){
+      await navigator.share(payload);
+      return true;
+    }
+  }
+  return false;
+}
+async function capturarTotalesYBitacoraWhatsapp(){
+  const btn=document.getElementById('btn-captura-duo');
+  const panel=document.getElementById('totales-captura');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  if(panel)panel.classList.add('capture-mode');
+  try{
+    const canvasTot=buildTotalesCanvas();
+    const blobTot=await canvasToBlob(canvasTot);
+    if(!blobTot)throw new Error('No se pudo crear imagen de saldos');
+    const hoyTag=new Date().toISOString().slice(0,10);
+    const fileTot=new File([blobTot],'estado-cuenta-'+hoyTag+'.png',{type:'image/png'});
+    const bit=await buildBitacoraFotoHoy();
+    const fileBit=new File([bit.blob],bit.name,{type:'image/png'});
+    const shareLine=buildTotalesWhatsappText();
+    if(await shareFilesWhatsapp([fileTot,fileBit],shareLine,shareLine)){
+      toast('Elige WhatsApp · 2 fotos: saldo + bitácora hoy',false,true);
+      return;
+    }
+    downloadBlob(blobTot,fileTot.name);
+    downloadBlob(bit.blob,bit.name);
+    toast('Tu celular no comparte 2 fotos; guardé ambas en Descargas',false,true);
+  }catch(e){toastError(e);}
+  finally{
+    if(panel)panel.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📸';}
+  }
 }
 async function capturarPantallaMovil(){
   const btn=document.getElementById('btn-captura-movil');
