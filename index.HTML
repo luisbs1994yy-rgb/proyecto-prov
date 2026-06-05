@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.22">
+<html lang="es" data-app-version="3.23">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -542,6 +542,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .form-actions .btn, .form-actions .btn-primary { width: 100%; justify-content: center; }
   .btn-group { gap: 6px; justify-content: flex-start; width: 100%; }
   .btn-select { padding: 8px 10px; font-size: 12px; flex: 1 1 calc(50% - 4px); min-width: 0; text-align: center; }
+  #page-registrar { touch-action: manipulation; }
+  #page-registrar input,
+  #page-registrar select,
+  #page-registrar textarea { font-size: 16px !important; touch-action: manipulation; }
   #page-registrar .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-registrar .card-body { padding: 8px; }
   #page-registrar .form-grid { gap: 6px; }
@@ -570,7 +574,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   }
   #page-registrar input#f-fecha,
   #page-registrar input#f-hora {
-    font-size: 14px;
     padding: 6px 8px;
     height: 36px;
     min-height: 36px;
@@ -588,7 +591,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   }
   #page-registrar input#f-monto,
   #page-registrar input#f-precio-litro,
-  #page-registrar input#f-litros { font-size: 14px; padding: 6px 8px; height: 36px; }
+  #page-registrar input#f-litros { padding: 6px 8px; height: 36px; }
   #page-registrar .registrar-fact-item { font-size: 13px; padding: 12px; }
   #page-registrar .registrar-fact-item input[type=checkbox] { width: 18px; height: 18px; }
   .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
@@ -1442,11 +1445,18 @@ function resumenProveedoresActivos(regs){
 function pendienteFactura(fact,pagos){return pendienteFacturaExcl(fact,pagos,'');}
 function toggleMobileMenu(){const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebar-overlay'),open=sb.classList.toggle('open');ov.classList.toggle('open',open);}
 function closeMobileMenu(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
+const VIEWPORT_DEFAULT='width=device-width, initial-scale=1.0';
+const VIEWPORT_NO_ZOOM='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+function setRegistrarViewportNoZoom(on){
+  const vp=document.querySelector('meta[name=viewport]');
+  if(vp)vp.setAttribute('content',on?VIEWPORT_NO_ZOOM:VIEWPORT_DEFAULT);
+}
 function navTo(page,el){
   closeDesglosePopup();closeMobileMenu();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');el.classList.add('active');
+  setRegistrarViewportNoZoom(page==='registrar');
   if(page==='totales')renderTotales();if(page==='logs')renderLogs();
   if(page==='config')renderProvManager();if(page==='precios')renderPreciosManager();if(page==='analisis')renderAnalisis();
   if(page==='registrar')updateRegistrarAplicaUI();
@@ -1729,6 +1739,19 @@ function confirmarPagoSinFacturas(prov,montoNum){
   if(!confirm('Confirmación final: ¿Registrar el abono sin facturas? (2 de 2)'))return false;
   return true;
 }
+function faltantesDetalleFactura(producto,pn,ln){
+  const f=[];
+  if(!String(producto||'').trim())f.push('producto');
+  if(isNaN(pn)||pn<=0)f.push('precio x litro');
+  if(isNaN(ln)||ln<=0)f.push('litros');
+  return f;
+}
+function confirmarFacturaSinDetalle(faltantes){
+  const lista=faltantes.join(', ');
+  if(!confirm('Factura sin: '+lista+'.\n\n¿Continuar? (1 de 2)'))return false;
+  if(!confirm('Confirmación final: ¿Registrar la factura sin '+lista+'? (2 de 2)'))return false;
+  return true;
+}
 function newPagoGrupoId(){return 'pg_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);}
 const PAGO_GRUPO_COLORS=8;
 function getLogPagoGrupoId(l){return String(l&&l.pagoGrupoId||l&&l._inferredGrupo||'').trim();}
@@ -1986,7 +2009,6 @@ async function guardarRegistro(){
         producto=document.getElementById('f-producto').value.trim();
   if(!prov||!tipo||!ts||isNaN(montoNum)){toast('Completa tipo, cliente, fecha, hora y monto',true);return;}
   const fecha=ts.fecha;
-  if(isTipoFactura({tipo})&&!producto){toast('Selecciona producto: Etanol, Nafta o Regular',true);return;}
   const btn=document.getElementById('btn-save');
   if(isTipoPago({tipo})){
     const selectedIds=getRegistrarFacturasSeleccionadas();
@@ -2031,12 +2053,14 @@ async function guardarRegistro(){
     finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
     return;
   }
+  let pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
+  let ln=parseLitros(document.getElementById('f-litros').value);
+  if((isNaN(ln)||ln<=0)&&!isNaN(pn)&&pn>0&&montoNum>0)ln=Math.round((montoNum/pn)*100)/100;
+  if((isNaN(pn)||pn<=0)&&!isNaN(ln)&&ln>0&&montoNum>0)pn=Math.round((montoNum/ln)*100)/100;
+  const faltantesFact=faltantesDetalleFactura(producto,pn,ln);
+  if(faltantesFact.length&&!confirmarFacturaSinDetalle(faltantesFact))return;
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Guardando…';
   try{
-    let pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
-    let ln=parseLitros(document.getElementById('f-litros').value);
-    if((isNaN(ln)||ln<=0)&&!isNaN(pn)&&pn>0&&montoNum>0)ln=Math.round((montoNum/pn)*100)/100;
-    if((isNaN(pn)||pn<=0)&&!isNaN(ln)&&ln>0&&montoNum>0)pn=Math.round((montoNum/ln)*100)/100;
     const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
     if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
     if(!isNaN(ln)&&ln>0)regData.litros=ln;
