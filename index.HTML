@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.29">
+<html lang="es" data-app-version="3.30">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.29';
+const APP_VERSION=getAppVersion()||'3.30';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -463,8 +463,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .btn-screenshot{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
 .btn-screenshot:hover{background:rgba(255,255,255,.32);}
 .totales-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
-.btn-captura-movil{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.18);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
-.btn-captura-movil:active{background:rgba(255,255,255,.32);}
+.btn-captura-cliente{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(58,134,255,.6);background:rgba(58,134,255,.38);color:#fff;cursor:pointer;font-size:17px;line-height:1;box-shadow:0 2px 8px rgba(58,134,255,.25);}
+.btn-captura-cliente:active{background:rgba(37,99,235,.55);}
+.btn-captura-proveedor{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(245,158,11,.65);background:rgba(245,158,11,.42);color:#fff;cursor:pointer;font-size:17px;line-height:1;box-shadow:0 2px 8px rgba(245,158,11,.28);}
+.btn-captura-proveedor:active{background:rgba(217,119,6,.55);}
 .btn-captura-duo{display:none;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border-radius:10px;border:1px solid rgba(37,211,102,.55);background:rgba(37,211,102,.22);color:#fff;cursor:pointer;font-size:17px;line-height:1;}
 .btn-captura-duo:active{background:rgba(37,211,102,.38);}
 .totales-shot-zone{flex:1;min-width:0;}
@@ -619,13 +621,13 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
   #page-totales .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
-  #page-totales .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-totales .btn-captura-cliente { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
   #page-proveedores .totales-summary { padding: 8px 10px; gap: 2px 8px; }
   #page-proveedores .totales-summary-label { font-size: 9px; }
   #page-proveedores .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
-  #page-proveedores .btn-captura-movil { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
+  #page-proveedores .btn-captura-proveedor { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .totales-actions { gap: 5px; }
   #page-totales .totales-panel { margin-bottom: .5rem; }
@@ -993,7 +995,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-movil" id="btn-captura-movil" onclick="capturarPantallaMovil()" title="WhatsApp: foto saldo total">📷</button>
+              <button type="button" class="btn-captura-cliente" id="btn-captura-cliente" onclick="capturarPantallaMovil()" title="WhatsApp: foto saldo clientes">📷</button>
               <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="capturarTotalesYBitacoraWhatsapp()" title="WhatsApp: saldo total + bitácora hoy (2 fotos)">📸</button>
             </div>
           </div>
@@ -1013,7 +1015,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-prov" onclick="capturarProveedores()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-movil" id="btn-captura-prov-movil" onclick="capturarProveedoresMovil()" title="WhatsApp: foto saldo proveedores">📷</button>
+              <button type="button" class="btn-captura-proveedor" id="btn-captura-proveedor" onclick="capturarProveedoresMovil()" title="WhatsApp: foto saldo proveedores">📷</button>
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-prov"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
@@ -2437,7 +2439,7 @@ function getTotalesFotoResumenHoy(){
   return{facturado:resumen.facturado,pagado:resumen.pagado,fact:lbl.fact,pago:lbl.pago};
 }
 function buildTotalesWhatsappText(){
-  return 'Saldo total '+fmt(getTotalesSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
+  return 'Saldo clientes '+fmt(getTotalesSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
 }
 function buildTotalesText(){return buildTotalesWhatsappText();}
 function getTotalesHeaderLine(){return buildTotalesWhatsappText();}
@@ -2561,9 +2563,9 @@ function buildTotalesCanvas(){
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
   ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
-  ctx.fillText('ESTADO DE CUENTA',pad+5,26);
+  ctx.fillText('CLIENTES',pad+5,26);
   ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
-  ctx.fillText('Saldo total',pad+5,40);
+  ctx.fillText('Saldo total clientes',pad+5,40);
   ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
   ctx.fillText(fmt(neto),w-pad-5,40);
   ctx.textAlign='left';
@@ -2616,10 +2618,10 @@ function buildProveedoresCanvas(){
   ctx.fillStyle='#ffffff';
   drawRoundRect(ctx,8,8,w-16,h-16,18);ctx.fill();
   const grad=ctx.createLinearGradient(8,8,w-8,8);
-  grad.addColorStop(0,'#1a1c2c');grad.addColorStop(1,'#1e3a5f');
+  grad.addColorStop(0,'#78350f');grad.addColorStop(1,'#b45309');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
-  ctx.fillStyle='#9ca3af';ctx.font='600 8px IBM Plex Sans, Arial';
-  ctx.fillText('SALDO PROVEEDORES',pad+5,26);
+  ctx.fillStyle='#fde68a';ctx.font='600 8px IBM Plex Sans, Arial';
+  ctx.fillText('PROVEEDORES',pad+5,26);
   ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
   ctx.fillText('Saldo total',pad+5,40);
   ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
@@ -2677,7 +2679,7 @@ async function capturarSaldosMobile(blob,shareLine,filePrefix){
   toast('Guardé la imagen en Descargas; ábrela y compártela por WhatsApp',false,true);
 }
 async function capturarProveedoresMovil(){
-  const btn=document.getElementById('btn-captura-prov-movil');
+  const btn=document.getElementById('btn-captura-proveedor');
   const panel=document.getElementById('proveedores-captura');
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='…';}
@@ -2784,7 +2786,7 @@ async function capturarTotalesYBitacoraWhatsapp(){
   }
 }
 async function capturarPantallaMovil(){
-  const btn=document.getElementById('btn-captura-movil');
+  const btn=document.getElementById('btn-captura-cliente');
   const panel=document.getElementById('totales-captura');
   const prev=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='…';}
@@ -2801,13 +2803,13 @@ async function capturarPantallaMovil(){
         const payload={files:[file],title:shareHeader,text:buildTotalesText()};
         if(navigator.canShare(payload)){
           await navigator.share(payload);
-          toast('Elige WhatsApp para enviar la foto',false,true);
+          toast('Elige WhatsApp · foto saldo clientes',false,true);
           return;
         }
       }catch(e){if(e&&e.name==='AbortError')return;}
     }
     downloadBlob(blob,name);
-    toast('Foto guardada (solo saldos) · Galería o WhatsApp',false,true);
+    toast('Foto clientes guardada · Galería o WhatsApp',false,true);
   }catch(e){toastError(e);}
   finally{
     if(panel)panel.classList.remove('capture-mode');
