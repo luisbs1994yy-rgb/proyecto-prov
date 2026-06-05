@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.25">
+<html lang="es" data-app-version="3.26">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.25';
+const APP_VERSION=getAppVersion()||'3.26';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1215,8 +1215,13 @@ document.addEventListener('DOMContentLoaded', () => {
       state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
       state.precios=normalizePreciosList(d.precios||loadPreciosLocal());
       mergeAplicaIntoRegs();mergeAplicaIntoRegsProv();
-      renderAll();setSyncStatus('Actualizando…',true);
-    } catch {}
+      ensureStateArrays();
+      renderAllSafe();setSyncStatus('Actualizando…',true);
+    } catch(err){
+      console.warn('cache load',err);
+      ensureStateArrays();
+      renderAllSafe();
+    }
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
@@ -1228,17 +1233,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escTipoDisplay(tipo){const t=String(tipo||'').toLowerCase();if(t==='proveedor')return 'Cliente';return String(tipo||'');}
+function ensureStateArrays(){
+  if(!Array.isArray(state.registros))state.registros=[];
+  if(!Array.isArray(state.proveedores))state.proveedores=[];
+  if(!Array.isArray(state.catalogoProveedores))state.catalogoProveedores=[];
+  if(!Array.isArray(state.registrosProveedores))state.registrosProveedores=[];
+  if(!Array.isArray(state.precios))state.precios=[];
+}
 function saveAndRender(){
+  ensureStateArrays();
   const map={},mapP={};
   state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
-  (state.registrosProveedores||[]).forEach(r=>{if(r.id&&r.aplicaFacturaId)mapP[r.id]=r.aplicaFacturaId;});
+  state.registrosProveedores.forEach(r=>{if(r.id&&r.aplicaFacturaId)mapP[r.id]=r.aplicaFacturaId;});
   saveAplicaMap(map);saveAplicaMapProv(mapP);
-  localStorage.setItem(CACHE_KEY,JSON.stringify({
-    registros:state.registros,proveedores:state.proveedores,
-    catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-    precios:state.precios
-  }));
+  try{
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      registros:state.registros,proveedores:state.proveedores,
+      catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
+      precios:state.precios
+    }));
+  }catch(e){console.warn('cache save',e);}
   renderAll();
+}
+function renderAllSafe(){
+  try{renderAll();}
+  catch(e){
+    console.error('renderAll',e);
+    try{renderTotales();}catch(_){}
+    try{renderProveedoresTotales();}catch(_){}
+    const el=document.getElementById('tabla-total');
+    if(el&&el.querySelector('.loading'))el.innerHTML='<div class="empty">Error al mostrar datos · recarga la página</div>';
+  }
 }
 function isPageActive(page){const el=document.getElementById('page-'+page);return !!el&&el.classList.contains('active');}
 function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);}
@@ -1653,18 +1678,19 @@ function mergeAplicaIntoRegs(){
   state.registros.forEach(r=>{if(r.id&&!r.aplicaFacturaId&&map[r.id])r.aplicaFacturaId=map[r.id];});
 }
 function updateStateFromSheetData(d){
-  state.registros=(d.registros||[]).map(normalizeRegistro);
+  ensureStateArrays();
+  try{state.registros=(d.registros||[]).map(normalizeRegistro);}catch(e){console.warn('registros',e);state.registros=[];}
   mergeAplicaIntoRegs();
   state.registros=state.registros.map(enrichRegistroLitros);
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
-  state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
+  try{state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);}catch(e){console.warn('registrosProveedores',e);state.registrosProveedores=[];}
   mergeAplicaIntoRegsProv();
-  state.registrosProveedores=(state.registrosProveedores||[]).map(enrichRegistroLitros);
+  state.registrosProveedores=state.registrosProveedores.map(enrichRegistroLitros);
   state.catalogoProveedores=mergeCatalogoProveedoresList(d.catalogoProveedores,state.registrosProveedores);
   state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
   savePreciosLocal(state.precios);
-  if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
-  refreshLogsLitrosFromRegistros();
+  try{if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));}catch(e){console.warn('logs',e);}
+  try{refreshLogsLitrosFromRegistros();}catch(e){console.warn('logs litros',e);}
 }
 function refreshLogsLitrosFromRegistros(){
   const logs=getLogs().slice();
@@ -1972,7 +1998,14 @@ function logsProveedor(prov){
 }
 async function syncQuiet(){try{const d=await api('getAll');if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
-async function api(action){const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store'});return parseJSON(r);}
+async function api(action){
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  const tid=ctrl?setTimeout(()=>ctrl.abort(),45000):null;
+  try{
+    const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store',redirect:'follow',signal:ctrl?ctrl.signal:undefined});
+    return await parseJSON(r);
+  }finally{if(tid)clearTimeout(tid);}
+}
 async function apiPost(body){const r=await fetch(GAS_URL+'?'+cacheBustParam(),{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body),cache:'no-store'});return parseJSON(r);}
 async function loadLogsFromSheets(){try{const d=await api('getLogs');if(d.error)throw new Error(d.error);saveLogs(mergeLogsPreservingDetails(Array.isArray(d.logs)?d.logs:[]));if(isPageActive('logs'))renderLogs();}catch(e){console.warn(e);}}
 async function loadPreciosFromSheets(){
@@ -1985,8 +2018,21 @@ async function loadPreciosFromSheets(){
 }
 async function loadAll(){
   setSyncStatus('Sincronizando…',true);
-  try{const d=await api('getAll');if(d.error)throw new Error(d.error);updateStateFromSheetData(d);saveAndRender();if(!Array.isArray(d.logs))loadLogsFromSheets();if(!Array.isArray(d.precios)&&!Array.isArray(d.preciosProductos)&&!Array.isArray(d.listaPrecios))loadPreciosFromSheets();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
-  catch(e){if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}else setSyncStatus('Caché · sin red');}
+  try{
+    const d=await api('getAll');
+    if(d.error)throw new Error(d.error);
+    updateStateFromSheetData(d);
+    saveAndRender();
+    if(!Array.isArray(d.logs))loadLogsFromSheets();
+    if(!Array.isArray(d.precios)&&!Array.isArray(d.preciosProductos)&&!Array.isArray(d.listaPrecios))loadPreciosFromSheets();
+    setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+  }catch(e){
+    console.error('loadAll',e);
+    ensureStateArrays();
+    renderAllSafe();
+    if(!localStorage.getItem(CACHE_KEY)){setSyncStatus('Sin conexión');toastError(e);}
+    else setSyncStatus('Caché · sin red');
+  }
 }
 function setSyncStatus(msg,loading=false){const el=document.getElementById('sync-status');el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg;}
 
@@ -2247,10 +2293,15 @@ function renderProvSelect(){
 }
 
 function renderTotales(){
+  const elTabla=document.getElementById('tabla-total');
+  const elTotal=document.getElementById('k-total');
+  if(!elTabla)return;
+  ensureStateArrays();
   const regs=state.registros,resumen=resumenProveedoresActivos(regs);
   const{deudas,neto}=calcTotalesNeto(resumen);
-  document.getElementById('k-total').textContent=fmt(neto);
-  if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
+  if(elTotal)elTotal.textContent=fmt(neto);
+  if(!regs.length){elTabla.innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
+  if(!resumen.length){elTabla.innerHTML='<div class="empty">Sin clientes activos · agrégalos en Config</div>';return;}
   let rows='';
   resumen.forEach(r=>{
     const cell=formatSaldoTotalesRow(r.saldo,deudas);
@@ -2261,7 +2312,7 @@ function renderTotales(){
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="cliente" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'cliente\')">Cuenta</button></td>'+
       '</tr>';
   });
-  document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   syncDesgloseActiveBtns();
 }
 function renderProveedoresTotales(){
@@ -4344,8 +4395,9 @@ async function eliminarCatalogoProveedor(nombre){
 function renderCatalogoProvManager(){
   const el=document.getElementById('prov-cat-manager-list');
   if(!el)return;
-  if(!state.catalogoProveedores.length){el.innerHTML='<div class="empty">Sin proveedores · agrega uno arriba</div>';return;}
-  el.innerHTML=state.catalogoProveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarCatalogoProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
+  const lista=state.catalogoProveedores||[];
+  if(!lista.length){el.innerHTML='<div class="empty">Sin proveedores · agrega uno arriba</div>';return;}
+  el.innerHTML=lista.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarCatalogoProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
 function todasEntidadesPrecios(){
   return[
