@@ -1,44 +1,47 @@
 /**
- * ESTADO DE CUENTA  |  Versión 3.17
- * Compatible con index.HTML v3.17 (pegar HTML después del ID de implementación)
+ * ESTADO DE CUENTA  |  Versión 3.24
+ * Compatible con index.HTML v3.24+ (pegar HTML después del ID de implementación)
  *
- * Columna Registros: aplicaFacturaId = id del registro FACTURA al que se abona un PAGO.
- * Columna Registros: producto = Etanol / Nafta / Regular (solo Factura).
+ * Clientes (quienes te deben): hoja Proveedores + Registros (campo proveedor = cliente)
+ * Proveedores (a quienes les debes): hoja CatalogoProveedores + RegistrosProveedores
  *
  * IMPORTANTE:
  * 1) Reemplaza TODO el contenido de Code.gs con este archivo.
  * 2) Ejecuta setupSheets() una vez.
  * 3) Implementar > Administrar implementaciones > Nueva versión (obligatorio).
+ * 4) Pásame el ID de implementación para actualizar el HTML.
  *
  * Hojas:
- * - Registros
- * - Proveedores
+ * - Registros          (movimientos de clientes)
+ * - Proveedores        (lista de clientes)
+ * - RegistrosProveedores (movimientos de proveedores)
+ * - CatalogoProveedores  (lista de proveedores)
  * - Logs
  * - PreciosProductos
  */
 
-const APP_VERSION = '3.17';
+const APP_VERSION = '3.24';
 
 const SHEET_REGISTROS = 'Registros';
 const SHEET_PROVEEDORES = 'Proveedores';
+const SHEET_REGISTROS_PROV = 'RegistrosProveedores';
+const SHEET_CATALOGO_PROV = 'CatalogoProveedores';
 const SHEET_LOGS = 'Logs';
 const SHEET_PRECIOS_PRODUCTOS = 'PreciosProductos';
 
-/* ===== Registros ===== */
+/* ===== Registros (clientes y proveedores comparten columnas) ===== */
 const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'concepto', 'producto', 'precioLitro', 'litros', 'aplicaFacturaId', 'createdAt'];
 
-/* ===== Proveedores ===== */
+/* ===== Lista clientes (hoja Proveedores — nombre histórico) ===== */
 const PROV_HEADERS = ['nombre'];
+
+/* ===== Lista proveedores (catálogo) ===== */
+const CAT_PROV_HEADERS = ['nombre'];
 
 /* ===== Precios por cliente/producto ===== */
 const PRODUCTOS_HEADERS = ['cliente', 'producto', 'precio', 'updatedAt'];
 const PRODUCTOS_VALIDOS = ['Etanol', 'Nafta', 'Regular'];
 
-/*
-  Logs (layout real detectado en tu libro):
-  A:id | B:createdAt | C:fecha | D:hora | E:tipo | F:descripcion | G:localId | H:factura | I:concepto
-  (En fila 1 pueden aparecer etiquetas viejas; el script escribe por posición fija)
-*/
 const LOG_COL = {
   id: 1,
   createdAt: 2,
@@ -103,6 +106,8 @@ function route_(action, payload) {
       return {
         registros: getRegistros_(),
         proveedores: getProveedores_(),
+        catalogoProveedores: getCatalogoProveedores_(),
+        registrosProveedores: getRegistrosProveedores_(),
         logs: getLogs_(),
         precios: getPreciosProductos_().precios
       };
@@ -118,6 +123,13 @@ function route_(action, payload) {
     case 'updateRegistro':
       return updateRegistro_(payload.id, payload.data || {});
 
+    case 'addRegistroProveedor':
+      return addRegistroProveedor_(payload.data || {});
+    case 'deleteRegistroProveedor':
+      return deleteRegistroProveedor_(payload.id);
+    case 'updateRegistroProveedor':
+      return updateRegistroProveedor_(payload.id, payload.data || {});
+
     case 'addLog':
       return addLog_(payload.data || {});
     case 'deleteLog':
@@ -130,6 +142,11 @@ function route_(action, payload) {
     case 'deleteProveedor':
       return deleteProveedor_(payload.nombre);
 
+    case 'addCatalogoProveedor':
+      return addCatalogoProveedor_(payload.nombre);
+    case 'deleteCatalogoProveedor':
+      return deleteCatalogoProveedor_(payload.nombre);
+
     case 'setPrecioProducto':
       return setPrecioProducto_(payload.data || {});
     case 'setPreciosProductos':
@@ -140,10 +157,43 @@ function route_(action, payload) {
   }
 }
 
-/* ===================== REGISTROS ===================== */
+/* ===================== REGISTROS CLIENTES ===================== */
 
 function getRegistros_() {
-  const sh = sheet_(SHEET_REGISTROS);
+  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS));
+}
+
+function addRegistro_(data) {
+  return addRegistroToSheet_(sheet_(SHEET_REGISTROS), data, getRegistros_);
+}
+
+function updateRegistro_(id, data) {
+  return updateRegistroInSheet_(sheet_(SHEET_REGISTROS), id, data, getRegistros_);
+}
+
+function deleteRegistro_(id) {
+  return deleteRegistroFromSheet_(sheet_(SHEET_REGISTROS), id);
+}
+
+/* ===================== REGISTROS PROVEEDORES ===================== */
+
+function getRegistrosProveedores_() {
+  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS_PROV));
+}
+
+function addRegistroProveedor_(data) {
+  return addRegistroToSheet_(sheet_(SHEET_REGISTROS_PROV), data, getRegistrosProveedores_);
+}
+
+function updateRegistroProveedor_(id, data) {
+  return updateRegistroInSheet_(sheet_(SHEET_REGISTROS_PROV), id, data, getRegistrosProveedores_);
+}
+
+function deleteRegistroProveedor_(id) {
+  return deleteRegistroFromSheet_(sheet_(SHEET_REGISTROS_PROV), id);
+}
+
+function getRegistrosFromSheet_(sh) {
   const map = ensureHeaders_(sh, REG_HEADERS);
   const rows = readData_(sh, 2);
 
@@ -169,8 +219,7 @@ function getRegistros_() {
     .filter((r) => r.id || r.fecha || r.proveedor);
 }
 
-function addRegistro_(data) {
-  const sh = sheet_(SHEET_REGISTROS);
+function addRegistroToSheet_(sh, data, getRegsFn) {
   const map = ensureHeaders_(sh, REG_HEADERS);
 
   const id = str_(data.id) || uuid_('reg');
@@ -191,7 +240,7 @@ function addRegistro_(data) {
   }
 
   const aplicaFacturaId = str_(data.aplicaFacturaId);
-  const errAplica = validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo);
+  const errAplica = validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo, getRegsFn);
   if (errAplica) return { ok: false, error: errAplica };
 
   appendByMap_(sh, map, {
@@ -212,11 +261,10 @@ function addRegistro_(data) {
   return { ok: true, id: id };
 }
 
-function updateRegistro_(id, data) {
+function updateRegistroInSheet_(sh, id, data, getRegsFn) {
   const target = str_(id);
   if (!target) return { ok: false, error: 'ID requerido' };
 
-  const sh = sheet_(SHEET_REGISTROS);
   const map = ensureHeaders_(sh, REG_HEADERS);
   const lastRow = sh.getLastRow();
   if (lastRow < 2) return { ok: false, error: 'Registro no encontrado' };
@@ -238,7 +286,7 @@ function updateRegistro_(id, data) {
     const tipoActual = str_(sh.getRange(rowNum, map.tipo).getValue());
     const provActual = str_(sh.getRange(rowNum, map.proveedor).getValue());
     const aplicaVal = str_(data.aplicaFacturaId);
-    const errAplica = validateAplicaFacturaId_(aplicaVal, provActual, tipoActual);
+    const errAplica = validateAplicaFacturaId_(aplicaVal, provActual, tipoActual, getRegsFn);
     if (errAplica) return { ok: false, error: errAplica };
     const col = map.aplicafacturaid;
     if (col) sh.getRange(rowNum, col).setValue(aplicaVal);
@@ -267,33 +315,27 @@ function updateRegistro_(id, data) {
   return { ok: true, id: target };
 }
 
-function deleteRegistro_(id) {
+function deleteRegistroFromSheet_(sh, id) {
   const target = str_(id);
   if (!target) return { ok: false, error: 'ID requerido' };
 
-  const sh = sheet_(SHEET_REGISTROS);
   const map = ensureHeaders_(sh, REG_HEADERS);
   const deleted = deleteByField_(sh, map, 'id', target);
 
   return deleted ? { ok: true } : { ok: false, error: 'Registro no encontrado' };
 }
 
-/** true si el tipo es pago (incluye "pago sin comprobante", etc.) */
 function isTipoPago_(tipo) {
   return str_(tipo).toLowerCase().indexOf('pago') !== -1;
 }
 
-/**
- * Valida que aplicaFacturaId apunte a una factura del mismo proveedor.
- * Solo los pagos pueden tener aplicaFacturaId.
- */
-function validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo) {
+function validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo, getRegsFn) {
   const apl = str_(aplicaFacturaId);
   if (!apl) return '';
   if (!isTipoPago_(tipo)) {
     return 'Solo un pago puede aplicarse a una factura';
   }
-  const regs = getRegistros_();
+  const regs = getRegsFn();
   const fact = regs.find(function (r) {
     return str_(r.id) === apl;
   });
@@ -305,16 +347,15 @@ function validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo) {
   return '';
 }
 
-/**
- * Ejecutar una vez: agrega columna aplicaFacturaId/producto en hoja Registros si falta.
- */
 function repairRegistrosAplicaColumn() {
   const sh = sheet_(SHEET_REGISTROS);
   const map = ensureHeaders_(sh, REG_HEADERS);
+  const shProv = sheet_(SHEET_REGISTROS_PROV);
+  const mapProv = ensureHeaders_(shProv, REG_HEADERS);
   return {
     ok: true,
-    column: map.aplicafacturaid || 0,
-    productoColumn: map.producto || 0,
+    clientes: { column: map.aplicafacturaid || 0, productoColumn: map.producto || 0 },
+    proveedores: { column: mapProv.aplicafacturaid || 0, productoColumn: mapProv.producto || 0 },
     headers: REG_HEADERS.join(', ')
   };
 }
@@ -424,12 +465,37 @@ function normalizeProducto_(producto) {
   return found || p;
 }
 
-/* ===================== PROVEEDORES ===================== */
+/* ===================== CLIENTES (hoja Proveedores) ===================== */
 
 function getProveedores_() {
-  const sh = sheet_(SHEET_PROVEEDORES);
-  ensureProveedoresLayout_(sh);
-  const map = ensureHeaders_(sh, PROV_HEADERS);
+  return getNombresFromSheet_(sheet_(SHEET_PROVEEDORES), PROV_HEADERS, ensureProveedoresLayout_);
+}
+
+function addProveedor_(nombre) {
+  return addNombreToSheet_(sheet_(SHEET_PROVEEDORES), PROV_HEADERS, nombre, 'Nombre de cliente requerido', getProveedores_, ensureProveedoresLayout_);
+}
+
+function deleteProveedor_(nombre) {
+  return deleteNombreFromSheet_(sheet_(SHEET_PROVEEDORES), PROV_HEADERS, nombre, 'Nombre de cliente requerido', 'Cliente no encontrado', ensureProveedoresLayout_);
+}
+
+/* ===================== CATÁLOGO PROVEEDORES ===================== */
+
+function getCatalogoProveedores_() {
+  return getNombresFromSheet_(sheet_(SHEET_CATALOGO_PROV), CAT_PROV_HEADERS, ensureCatalogoProveedoresLayout_);
+}
+
+function addCatalogoProveedor_(nombre) {
+  return addNombreToSheet_(sheet_(SHEET_CATALOGO_PROV), CAT_PROV_HEADERS, nombre, 'Nombre de proveedor requerido', getCatalogoProveedores_, ensureCatalogoProveedoresLayout_);
+}
+
+function deleteCatalogoProveedor_(nombre) {
+  return deleteNombreFromSheet_(sheet_(SHEET_CATALOGO_PROV), CAT_PROV_HEADERS, nombre, 'Nombre de proveedor requerido', 'Proveedor no encontrado', ensureCatalogoProveedoresLayout_);
+}
+
+function getNombresFromSheet_(sh, headers, layoutFn) {
+  if (layoutFn) layoutFn(sh);
+  const map = ensureHeaders_(sh, headers);
   const rows = readData_(sh, 2);
 
   let list = rows.map((r) => cell_(r, map, 'nombre')).filter(Boolean);
@@ -437,11 +503,40 @@ function getProveedores_() {
   return Array.from(new Set(list)).sort((a, b) => a.localeCompare(b, 'es'));
 }
 
-/**
- * Hojas viejas guardan nombres en columna A sin encabezado "nombre".
- * Si la fila 1 no es encabezado, inserta "nombre" arriba.
- */
+function addNombreToSheet_(sh, headers, nombre, errEmpty, getListFn, layoutFn) {
+  const value = str_(nombre);
+  if (!value) return { ok: false, error: errEmpty };
+
+  if (layoutFn) layoutFn(sh);
+  const exists = getListFn().some((p) => p.toUpperCase() === value.toUpperCase());
+  if (!exists) {
+    const map = ensureHeaders_(sh, headers);
+    appendByMap_(sh, map, { nombre: value });
+  }
+
+  return { ok: true };
+}
+
+function deleteNombreFromSheet_(sh, headers, nombre, errEmpty, errNotFound, layoutFn) {
+  const value = str_(nombre);
+  if (!value) return { ok: false, error: errEmpty };
+
+  if (layoutFn) layoutFn(sh);
+  const map = ensureHeaders_(sh, headers);
+  const deleted = deleteByField_(sh, map, 'nombre', value, true);
+
+  return deleted ? { ok: true } : { ok: false, error: errNotFound };
+}
+
 function ensureProveedoresLayout_(sh) {
+  ensureNombreSheetLayout_(sh);
+}
+
+function ensureCatalogoProveedoresLayout_(sh) {
+  ensureNombreSheetLayout_(sh);
+}
+
+function ensureNombreSheetLayout_(sh) {
   const lastRow = sh.getLastRow();
   if (lastRow < 1) return;
 
@@ -471,31 +566,6 @@ function readProveedoresColA_(sh) {
   if (isProveedorHeader_(vals[0])) start = 1;
 
   return vals.slice(start);
-}
-
-function addProveedor_(nombre) {
-  const value = str_(nombre);
-  if (!value) return { ok: false, error: 'Nombre de cliente requerido' };
-
-  const exists = getProveedores_().some((p) => p.toUpperCase() === value.toUpperCase());
-  if (!exists) {
-    const sh = sheet_(SHEET_PROVEEDORES);
-    const map = ensureHeaders_(sh, PROV_HEADERS);
-    appendByMap_(sh, map, { nombre: value });
-  }
-
-  return { ok: true };
-}
-
-function deleteProveedor_(nombre) {
-  const value = str_(nombre);
-  if (!value) return { ok: false, error: 'Nombre de cliente requerido' };
-
-  const sh = sheet_(SHEET_PROVEEDORES);
-  const map = ensureHeaders_(sh, PROV_HEADERS);
-  const deleted = deleteByField_(sh, map, 'nombre', value, true);
-
-  return deleted ? { ok: true } : { ok: false, error: 'Cliente no encontrado' };
 }
 
 /* ===================== LOGS ===================== */
@@ -566,7 +636,6 @@ function addLog_(data) {
   const comentario = str_(data.comentario);
   const pagoGrupoId = str_(data.pagoGrupoId);
 
-  // Escritura celda por celda (evita que factura/concepto queden vacíos en H/I)
   const nextRow = sh.getLastRow() + 1;
   sh.getRange(nextRow, LOG_COL.id).setValue(id);
   sh.getRange(nextRow, LOG_COL.createdAt).setValue(createdAt);
@@ -835,10 +904,6 @@ function json_(obj) {
   );
 }
 
-/**
- * Ejecutar una vez para rellenar columnas H (factura) e I (concepto)
- * desde la descripción en filas viejas.
- */
 function repairLogsFacturaConcepto() {
   const sh = sheet_(SHEET_LOGS);
   ensureLogsLayout_(sh);
@@ -866,25 +931,29 @@ function repairLogsFacturaConcepto() {
   return { ok: true, updated: updated };
 }
 
-/** Ejecutar una vez */
+/** Ejecutar una vez después de pegar Code.gs v3.24 */
 function setupSheets() {
   const regMap = ensureHeaders_(sheet_(SHEET_REGISTROS), REG_HEADERS);
   const provSh = sheet_(SHEET_PROVEEDORES);
   ensureProveedoresLayout_(provSh);
   ensureHeaders_(provSh, PROV_HEADERS);
+  const regProvMap = ensureHeaders_(sheet_(SHEET_REGISTROS_PROV), REG_HEADERS);
+  const catProvSh = sheet_(SHEET_CATALOGO_PROV);
+  ensureCatalogoProveedoresLayout_(catProvSh);
+  ensureHeaders_(catProvSh, CAT_PROV_HEADERS);
   ensureLogsLayout_(sheet_(SHEET_LOGS));
   ensureHeaders_(sheet_(SHEET_PRECIOS_PRODUCTOS), PRODUCTOS_HEADERS);
   const logsRepair = repairLogsFacturaConcepto();
   return {
     ok: true,
-    registrosColumnaAplica: regMap.aplicafacturaid || 0,
-    registrosColumnaProducto: regMap.producto || 0,
-    preciosProductos: SHEET_PRECIOS_PRODUCTOS,
+    version: APP_VERSION,
+    registrosClientes: { aplica: regMap.aplicafacturaid || 0, producto: regMap.producto || 0 },
+    registrosProveedores: { aplica: regProvMap.aplicafacturaid || 0, producto: regProvMap.producto || 0 },
+    hojas: [SHEET_REGISTROS, SHEET_PROVEEDORES, SHEET_REGISTROS_PROV, SHEET_CATALOGO_PROV, SHEET_LOGS, SHEET_PRECIOS_PRODUCTOS],
     logs: logsRepair
   };
 }
 
-/** Ejecutar una vez si la hoja Proveedores quedó con encabezado en columna B */
 function repairProveedoresSheet() {
   const sh = sheet_(SHEET_PROVEEDORES);
   const lastRow = sh.getLastRow();
