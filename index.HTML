@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.23">
+<html lang="es" data-app-version="3.24">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.20';
+const APP_VERSION=getAppVersion()||'3.24';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -607,6 +607,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .kpi-sub { font-size: 10px; margin-top: 4px; }
   .table-wrap { overflow-x: visible; -webkit-overflow-scrolling: touch; }
   #page-totales .page-title { display: none; }
+  #page-proveedores .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-totales .totales-summary { padding: 8px 10px; gap: 2px 8px; }
   #page-totales .totales-summary-main { flex: 1 1 auto; gap: 6px; }
   #page-totales .totales-summary-label { font-size: 9px; }
@@ -628,11 +629,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .prov-fact-table .prov-actions-col { width: 8%; max-width: 28px; min-width: 24px; }
   #page-totales .totales-panel .card-header { padding: 6px 10px; }
   #page-totales .totales-panel .card-title { font-size: 11px; }
-  #page-totales #tabla-total .table-wrap { padding: 0 6px 6px; }
-  #page-totales #tabla-total table { display: block; width: 100%; }
-  #page-totales #tabla-total thead { display: none; }
-  #page-totales #tabla-total tbody { display: block; }
-  #page-totales #tabla-total tr {
+  #page-totales #tabla-total .table-wrap,
+  #page-proveedores #tabla-prov .table-wrap { padding: 0 6px 6px; }
+  #page-totales #tabla-total table,
+  #page-proveedores #tabla-prov table { display: block; width: 100%; }
+  #page-totales #tabla-total thead,
+  #page-proveedores #tabla-prov thead { display: none; }
+  #page-totales #tabla-total tbody,
+  #page-proveedores #tabla-prov tbody { display: block; }
+  #page-totales #tabla-total tr,
+  #page-proveedores #tabla-prov tr {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -644,14 +650,17 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     background: #fafbfd;
     box-shadow: none;
   }
-  #page-totales #tabla-total tr:last-child { margin-bottom: 0; }
-  #page-totales #tabla-total td {
+  #page-totales #tabla-total tr:last-child,
+  #page-proveedores #tabla-prov tr:last-child { margin-bottom: 0; }
+  #page-totales #tabla-total td,
+  #page-proveedores #tabla-prov td {
     display: block;
     padding: 0;
     border: none;
     text-align: left;
   }
-  #page-totales #tabla-total td.totales-nombre-cell {
+  #page-totales #tabla-total td.totales-nombre-cell,
+  #page-proveedores #tabla-prov td.totales-nombre-cell {
     flex: 1 1 0;
     min-width: 0;
     font-size: 10px;
@@ -661,31 +670,37 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     white-space: normal;
     line-height: 1.2;
   }
-  #page-totales #tabla-total td.amount {
+  #page-totales #tabla-total td.amount,
+  #page-proveedores #tabla-prov td.amount {
     flex: 0 0 auto;
     font-size: 11px;
     font-weight: 600;
     margin: 0;
     white-space: nowrap;
   }
-  #page-totales #tabla-total td.pct-cell {
+  #page-totales #tabla-total td.pct-cell,
+  #page-proveedores #tabla-prov td.pct-cell {
     flex: 0 0 34px;
     font-size: 10px;
     margin: 0;
     text-align: right;
   }
-  #page-totales #tabla-total td:last-child {
+  #page-totales #tabla-total td:last-child,
+  #page-proveedores #tabla-prov td:last-child {
     flex: 0 0 auto;
     padding: 0;
   }
-  #page-totales #tabla-total .desglose-btn {
+  #page-totales #tabla-total .desglose-btn,
+  #page-proveedores #tabla-prov .desglose-btn {
     width: auto;
     padding: 3px 8px;
     font-size: 9px;
     border-radius: 12px;
   }
-  #page-totales #tabla-total .desglose-btn::before { content: ''; }
-  #page-totales .empty, #page-totales .loading { padding: 1rem; font-size: 12px; }
+  #page-totales #tabla-total .desglose-btn::before,
+  #page-proveedores #tabla-prov .desglose-btn::before { content: ''; }
+  #page-totales .empty, #page-totales .loading,
+  #page-proveedores .empty, #page-proveedores .loading { padding: 1rem; font-size: 12px; }
   th, td { font-size: 11px; }
   #page-logs .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-logs .card-body { padding: 0; }
@@ -838,11 +853,12 @@ async function copyAppReleaseUrl(e){
   try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
   catch(_){toast(url,false,true);}
 }
-const GAS_URL     = "https://script.google.com/macros/s/AKfycbwP0n1b4W6AQwDKGbwZZeBuerfoPytdt5ZXnwUeRHVKVyKnWofPRUwwj794mhWIuwE9/exec";
+const GAS_URL     = "https://script.google.com/macros/s/AKfycby7sgQ8eA421f8GQcbZPdNq-Nr4QKoU_s5ntO8qoIQ5wh3y5h3Zb3XV2IOmyxlYTZ0K/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const DELETED_LOGS_KEY="pagos_v1_logs_deleted";
 const APLICA_KEY  = "pagos_v1_aplica";
+const APLICA_PROV_KEY = "pagos_v1_aplica_prov";
 const PRECIOS_KEY = "pagos_v1_precios_productos";
 const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 </script>
@@ -863,7 +879,8 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="nav-section">
       <div class="nav-label">Menú</div>
       <div class="nav-item"        onclick="navTo('registrar',this)"><span class="nav-icon">＋</span> Registrar</div>
-      <div class="nav-item active" onclick="navTo('totales',this)"><span class="nav-icon">≡</span> Totales</div>
+      <div class="nav-item active" onclick="navTo('totales',this)"><span class="nav-icon">≡</span> Clientes</div>
+      <div class="nav-item"        onclick="navTo('proveedores',this)"><span class="nav-icon">◫</span> Proveedores</div>
       <div class="nav-item"        onclick="navTo('logs',this)"><span class="nav-icon">◎</span> Bitácora</div>
       <div class="nav-item"        onclick="navTo('analisis',this)"><span class="nav-icon">◈</span> Análisis</div>
     </div>
@@ -871,6 +888,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       <div class="nav-label">Config</div>
       <div class="nav-item" onclick="navTo('precios',this)"><span class="nav-icon">$</span> Lista de precios</div>
       <div class="nav-item" onclick="navTo('config',this)"><span class="nav-icon">⚙</span> Clientes</div>
+      <div class="nav-item" onclick="navTo('config-prov',this)"><span class="nav-icon">＋</span> Proveedores</div>
     </div>
   </nav>
   <main class="main">
@@ -881,6 +899,14 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
         <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
         <div class="card-body">
           <div class="form-grid">
+            <div class="form-group" style="grid-column:1/-1">
+              <label>¿Registrar para? *</label>
+              <div class="btn-group" id="f-entidad-group">
+                <button type="button" class="btn-select active" data-val="cliente" onclick="setSelectBtn(this,'f-entidad')">Cliente</button>
+                <button type="button" class="btn-select" data-val="proveedor" onclick="setSelectBtn(this,'f-entidad')">Proveedor</button>
+              </div>
+              <input type="hidden" id="f-entidad" value="cliente">
+            </div>
             <div class="form-group">
               <label>Tipo *</label>
               <div class="btn-group" id="f-tipo-group">
@@ -890,7 +916,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               <input type="hidden" id="f-tipo" value="">
             </div>
             <div class="form-group">
-              <label>Cliente *</label>
+              <label id="f-proveedor-lbl">Cliente *</label>
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
@@ -942,6 +968,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
 
     <div class="page active" id="page-totales">
+      <div class="page-title screen-capture-hide">Clientes</div>
       <div class="card totales-panel" id="totales-captura">
         <div id="totales-shot-zone" class="totales-shot-zone">
           <div class="totales-summary">
@@ -957,6 +984,19 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
         </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-proveedores">
+      <div class="page-title">Proveedores</div>
+      <div class="card totales-panel">
+        <div class="totales-summary">
+          <div class="totales-summary-main">
+            <span class="totales-summary-label">Saldo total proveedores</span>
+            <span class="totales-summary-value" id="k-total-prov">—</span>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0"><div id="tabla-prov"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
     </div>
 
@@ -1050,6 +1090,17 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       </div>
     </div>
 
+    <div class="page" id="page-config-prov">
+      <div class="page-title">Gestionar proveedores</div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Lista de proveedores</span></div>
+        <div class="card-body">
+          <div class="add-prov-row"><input type="text" id="new-prov-cat" placeholder="Nombre del proveedor" style="flex:1"><button class="btn btn-primary" onclick="agregarCatalogoProveedor()">Agregar</button></div>
+          <div id="prov-cat-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-config">
       <div class="page-title">Gestionar clientes</div>
       <div class="card">
@@ -1126,9 +1177,10 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <div class="toast" id="toast"></div>
 
 <script>
-let state = { registros:[], proveedores:[], precios:[] };
+let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], precios:[] };
 let logsMemory = [];
 let syncTimer = null, desgloseOpen = false;
+let desgloseEntidad = 'cliente';
 let desgloseSort = { col: 'fecha', dir: 'desc' };
 let desgloseProvTab = 'facturas';
 let desgloseAbonarFacturaId = '';
@@ -1152,7 +1204,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('f-litros').addEventListener('blur', onLitrosBlur);
   const cached = localStorage.getItem(CACHE_KEY);
   if (cached) {
-    try { const d=JSON.parse(cached); state.registros=(d.registros||[]).map(normalizeRegistro); state.proveedores=d.proveedores||[]; state.precios=normalizePreciosList(d.precios||loadPreciosLocal()); mergeAplicaIntoRegs(); renderAll(); setSyncStatus('Actualizando…',true); } catch {}
+    try {
+      const d=JSON.parse(cached);
+      state.registros=(d.registros||[]).map(normalizeRegistro);
+      state.proveedores=d.proveedores||[];
+      state.catalogoProveedores=d.catalogoProveedores||[];
+      state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
+      state.precios=normalizePreciosList(d.precios||loadPreciosLocal());
+      mergeAplicaIntoRegs();mergeAplicaIntoRegsProv();
+      renderAll();setSyncStatus('Actualizando…',true);
+    } catch {}
   }
   loadAll();
   setInterval(() => { syncQuiet(); }, 60000);
@@ -1165,10 +1226,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escTipoDisplay(tipo){const t=String(tipo||'').toLowerCase();if(t==='proveedor')return 'Cliente';return String(tipo||'');}
 function saveAndRender(){
-  const map={};
+  const map={},mapP={};
   state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
-  saveAplicaMap(map);
-  localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores,precios:state.precios}));
+  (state.registrosProveedores||[]).forEach(r=>{if(r.id&&r.aplicaFacturaId)mapP[r.id]=r.aplicaFacturaId;});
+  saveAplicaMap(map);saveAplicaMapProv(mapP);
+  localStorage.setItem(CACHE_KEY,JSON.stringify({
+    registros:state.registros,proveedores:state.proveedores,
+    catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
+    precios:state.precios
+  }));
   renderAll();
 }
 function isPageActive(page){const el=document.getElementById('page-'+page);return !!el&&el.classList.contains('active');}
@@ -1442,6 +1508,29 @@ function resumenProveedoresActivos(regs){
   const activos=new Set(state.proveedores);
   return resumenPorProveedor(regs).filter(r=>activos.has(r.proveedor));
 }
+function resumenCatalogoProveedoresActivos(regs){
+  const activos=new Set(state.catalogoProveedores||[]);
+  return resumenPorProveedor(regs).filter(r=>activos.has(r.proveedor));
+}
+function getRegistrarEntidad(){return document.getElementById('f-entidad')?.value||'cliente';}
+function isRegistrarProveedor(){return getRegistrarEntidad()==='proveedor';}
+function isDesgloseProveedor(){return desgloseEntidad==='proveedor';}
+function getRegsStore(){return isDesgloseProveedor()?(state.registrosProveedores||[]):state.registros;}
+function getCatalogoActivo(){return isDesgloseProveedor()?(state.catalogoProveedores||[]):state.proveedores;}
+function loadAplicaMapProv(){try{return JSON.parse(localStorage.getItem(APLICA_PROV_KEY)||'{}');}catch{return {};}}
+function saveAplicaMapProv(map){try{localStorage.setItem(APLICA_PROV_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}}
+function loadAplicaMapEntidad(){return isDesgloseProveedor()?loadAplicaMapProv():loadAplicaMap();}
+function saveAplicaMapEntidad(map){return isDesgloseProveedor()?saveAplicaMapProv(map):saveAplicaMap(map);}
+function mergeAplicaIntoRegsProv(){
+  const map=loadAplicaMapProv();
+  (state.registrosProveedores||[]).forEach(r=>{if(r.id&&!r.aplicaFacturaId&&map[r.id])r.aplicaFacturaId=map[r.id];});
+}
+function mergeCatalogoProveedoresList(list,regs){
+  const fromRegs=proveedoresFromRegistros(regs);
+  const merged=[...new Set([...(list||[]),...fromRegs])];
+  return merged.sort((a,b)=>a.localeCompare(b,'es'));
+}
+function apiActionRegistro(base){return isDesgloseProveedor()?base+'Proveedor':base;}
 function pendienteFactura(fact,pagos){return pendienteFacturaExcl(fact,pagos,'');}
 function toggleMobileMenu(){const sb=document.getElementById('sidebar'),ov=document.getElementById('sidebar-overlay'),open=sb.classList.toggle('open');ov.classList.toggle('open',open);}
 function closeMobileMenu(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
@@ -1457,9 +1546,13 @@ function navTo(page,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');el.classList.add('active');
   setRegistrarViewportNoZoom(page==='registrar');
-  if(page==='totales')renderTotales();if(page==='logs')renderLogs();
-  if(page==='config')renderProvManager();if(page==='precios')renderPreciosManager();if(page==='analisis')renderAnalisis();
-  if(page==='registrar')updateRegistrarAplicaUI();
+  if(page==='totales')renderTotales();
+  if(page==='proveedores')renderProveedoresTotales();
+  if(page==='logs')renderLogs();
+  if(page==='config')renderProvManager();
+  if(page==='config-prov')renderCatalogoProvManager();
+  if(page==='precios')renderPreciosManager();if(page==='analisis')renderAnalisis();
+  if(page==='registrar')updateRegistrarEntidadUI();
 }
 
 function cacheBustParam(){return '_='+Date.now();}
@@ -1561,6 +1654,10 @@ function updateStateFromSheetData(d){
   mergeAplicaIntoRegs();
   state.registros=state.registros.map(enrichRegistroLitros);
   state.proveedores=mergeProveedoresList(d.proveedores,state.registros);
+  state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
+  mergeAplicaIntoRegsProv();
+  state.registrosProveedores=(state.registrosProveedores||[]).map(enrichRegistroLitros);
+  state.catalogoProveedores=mergeCatalogoProveedoresList(d.catalogoProveedores,state.registrosProveedores);
   state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
   savePreciosLocal(state.precios);
   if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));
@@ -1592,7 +1689,14 @@ function refreshLogsLitrosFromRegistros(){
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
 function isTipoFactura(r){return !isTipoPago(r);}
-function registrosProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
+function getPoolRegs(){
+  if(desgloseOpen)return getRegsStore();
+  if(isPageActive('registrar'))return isRegistrarProveedor()?(state.registrosProveedores||[]):state.registros;
+  return state.registros;
+}
+function registrosProveedor(prov){
+  return getPoolRegs().filter(r=>r.proveedor===prov);
+}
 function facturasAbiertasProveedor(prov){
   const regs=registrosProveedor(prov);
   const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
@@ -1617,7 +1721,7 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
   const pagos=registrosProveedor(prov).filter(isTipoPago);
   let resto=Math.round((parseFloat(montoTotal)||0)*100)/100;
   const parts=[];
-  const facts=facturaIds.map(id=>state.registros.find(r=>r.id===id)).filter(Boolean)
+  const facts=facturaIds.map(id=>getPoolRegs().find(r=>r.id===id)).filter(Boolean)
     .sort((a,b)=>parseRegistroDateMs(a.fecha)-parseRegistroDateMs(b.fecha));
   facts.forEach(f=>{
     if(resto<=0.001)return;
@@ -1678,7 +1782,7 @@ function syncRegistrarFacturaRefs(){
   if(!inp)return;
   const ids=getRegistrarFacturasSeleccionadas();
   if(!ids.length){inp.value='';return;}
-  const refs=ids.map(id=>{const f=state.registros.find(r=>r.id===id);return f&&f.factura?String(f.factura).trim():'';}).filter(Boolean);
+  const refs=ids.map(id=>{const f=getPoolRegs().find(r=>r.id===id);return f&&f.factura?String(f.factura).trim():'';}).filter(Boolean);
   inp.value=refs.join(', ');
 }
 function updateRegistrarAplicaResumen(){
@@ -1817,7 +1921,15 @@ function updateRegistrarAplicaUI(){
   updateRegistrarAplicaResumen();
   updateRegistrarLitrosUI();
 }
-function regsProveedor(prov){return state.registros.filter(r=>r.proveedor===prov);}
+function regsProveedor(prov){return getRegsStore().filter(r=>r.proveedor===prov);}
+function updateRegistrarEntidadUI(){
+  const lbl=document.getElementById('f-proveedor-lbl');
+  const prov=isRegistrarProveedor();
+  if(lbl)lbl.textContent=prov?'Proveedor *':'Cliente *';
+  const pageReg=document.getElementById('page-registrar');
+  if(pageReg)pageReg.classList.toggle('registrar-modo-proveedor',prov);
+  renderProvSelect();
+}
 function isAjusteManualPago(p){return isTipoPago(p)&&/ajuste\s*manual/i.test(String(p.concepto||''));}
 function calcFacturaAbonado(fact,pagos,excluirId){
   const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
@@ -1879,7 +1991,8 @@ function setSelectBtn(btn,inputId){
   btn.parentElement.querySelectorAll('.btn-select').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById(inputId).value=btn.dataset.val;
-  if(inputId==='f-tipo'||inputId==='f-proveedor'){updateRegistrarAplicaUI();if(inputId==='f-proveedor')applyPrecioProductoDefault(true);}
+  if(inputId==='f-entidad')updateRegistrarEntidadUI();
+  if(inputId==='f-tipo'||inputId==='f-proveedor'){updateRegistrarAplicaUI();if(inputId==='f-proveedor'&&!isRegistrarProveedor())applyPrecioProductoDefault(true);}
   if(inputId==='f-producto')applyPrecioProductoDefault();
 }
 function syncLitrosPrecioLabels(){
@@ -1994,11 +2107,17 @@ function parseMonto(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||
 function formatMontoDisplay(n){const f=(Math.round(n*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
 
 async function persistPagoRegistro({fecha,prov,tipo,monto,factura,concepto,aplicaFacturaId}){
-  const res=await apiPost({action:'addRegistro',data:{fecha,proveedor:prov,tipo,monto,factura,concepto,aplicaFacturaId:aplicaFacturaId||''}});
+  const action=isRegistrarProveedor()?'addRegistroProveedor':'addRegistro';
+  const res=await apiPost({action,data:{fecha,proveedor:prov,tipo,monto,factura,concepto,aplicaFacturaId:aplicaFacturaId||''}});
   if(res.error)throw new Error(res.error);
   const reg={id:res.id,fecha,proveedor:prov,tipo,monto,factura,concepto,aplicaFacturaId:aplicaFacturaId||''};
-  state.registros.push(reg);
-  if(aplicaFacturaId){const map=loadAplicaMap();map[res.id]=aplicaFacturaId;saveAplicaMap(map);}
+  const store=isRegistrarProveedor()?state.registrosProveedores:state.registros;
+  store.push(reg);
+  if(aplicaFacturaId){
+    const map=isRegistrarProveedor()?loadAplicaMapProv():loadAplicaMap();
+    map[res.id]=aplicaFacturaId;
+    if(isRegistrarProveedor())saveAplicaMapProv(map);else saveAplicaMap(map);
+  }
   return reg;
 }
 async function guardarRegistro(){
@@ -2064,9 +2183,12 @@ async function guardarRegistro(){
     const regData={fecha,proveedor:prov,tipo,monto:montoNum,factura,concepto,producto,aplicaFacturaId:''};
     if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
     if(!isNaN(ln)&&ln>0)regData.litros=ln;
-    const res=await apiPost({action:'addRegistro',data:regData});
+    const action=isRegistrarProveedor()?'addRegistroProveedor':'addRegistro';
+    const res=await apiPost({action,data:regData});
     if(res.error)throw new Error(res.error);
-    state.registros.push({id:res.id,...regData});
+    const regItem={id:res.id,...regData};
+    if(isRegistrarProveedor())state.registrosProveedores.push(regItem);
+    else state.registros.push(regItem);
     await addLogAwait(tipo,prov+' · '+fmt(montoNum),factura,concepto,res.id,{producto,precioLitro:pn,litros:ln});
     saveAndRender();clearForm();toast('✓ Guardado',false,true);
     setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
@@ -2076,19 +2198,24 @@ async function guardarRegistro(){
 async function eliminarRegistro(id,btn){
   if(!confirm('¿Eliminar este registro?'))return;
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner" style="border-color:#fff;border-right-color:transparent;width:10px;height:10px;margin:0"></span>';}
-  const found=state.registros.find(r=>r.id===id);
+  const store=getRegsStore();
+  const found=store.find(r=>r.id===id);
   const logsToRemove=found?findLogsForRegistro(found):[];
-  const prevRegs=state.registros.slice(),prevLogs=getLogs().slice();
-  state.registros=state.registros.filter(r=>r.id!==id);
+  const prevRegs=store.slice(),prevLogs=getLogs().slice();
+  if(isDesgloseProveedor())state.registrosProveedores=store.filter(r=>r.id!==id);
+  else state.registros=store.filter(r=>r.id!==id);
   if(found)limpiarAplicaMapRegistros([found]);
   removeLogsLocal_(logsToRemove);
   saveAndRender();refreshDesglosePopup();
   try{
-    const res=await apiPost({action:'deleteRegistro',id});
+    const res=await apiPost({action:apiActionRegistro('deleteRegistro'),id});
     if(res.error)throw new Error(res.error);
     await deleteLogsRemote_(logsToRemove);
     toast('Eliminado');scheduleQuietSync();
-  }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);}
+  }catch(e){
+    if(isDesgloseProveedor())state.registrosProveedores=prevRegs;else state.registros=prevRegs;
+    saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);
+  }
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
 }
 function clearForm(){
@@ -2098,15 +2225,20 @@ function clearForm(){
   const list=document.getElementById('f-aplica-facturas-list');if(list)list.innerHTML='';
   const resumen=document.getElementById('f-aplica-resumen');if(resumen)resumen.innerHTML='';
   const btn=document.getElementById('btn-save');if(btn)btn.classList.remove('btn-locked');
-  document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select,#f-producto-group .btn-select').forEach(b=>b.classList.remove('active'));
-  updateRegistrarAplicaUI();
+  document.querySelectorAll('#f-tipo-group .btn-select,#f-proveedor-group .btn-select,#f-producto-group .btn-select,#f-entidad-group .btn-select').forEach(b=>b.classList.remove('active'));
+  const entBtn=document.querySelector('#f-entidad-group .btn-select[data-val="cliente"]');
+  if(entBtn)entBtn.classList.add('active');
+  document.getElementById('f-entidad').value='cliente';
+  updateRegistrarEntidadUI();
 }
 function renderProvSelect(){
   const group=document.getElementById('f-proveedor-group');
   const cur=document.getElementById('f-proveedor').value;
+  const lista=isRegistrarProveedor()?(state.catalogoProveedores||[]):state.proveedores;
+  const vacio=isRegistrarProveedor()?'Sin proveedores':'Sin clientes';
   group.classList.add('prov-btn-grid');
-  if(!state.proveedores.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">Sin clientes</div>';return;}
-  group.innerHTML=state.proveedores.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
+  if(!lista.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">'+vacio+'</div>';return;}
+  group.innerHTML=lista.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
   updateRegistrarAplicaUI();
 }
@@ -2123,17 +2255,40 @@ function renderTotales(){
       '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
       '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
       '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
-      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
+      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="cliente" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'cliente\')">Cuenta</button></td>'+
       '</tr>';
   });
   document.getElementById('tabla-total').innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  syncDesgloseActiveBtns();
+}
+function renderProveedoresTotales(){
+  const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
+  const{deudas,neto}=calcTotalesNeto(resumen);
+  const elTotal=document.getElementById('k-total-prov');
+  const elTabla=document.getElementById('tabla-prov');
+  if(elTotal)elTotal.textContent=fmt(neto);
+  if(!elTabla)return;
+  if(!regs.length&&!resumen.length){elTabla.innerHTML='<div class="empty">Sin registros de proveedores</div>';return;}
+  let rows='';
+  resumen.forEach(r=>{
+    const cell=formatSaldoTotalesRow(r.saldo,deudas);
+    rows+='<tr>'+
+      '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
+      '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
+      '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
+      '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="proveedor" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'proveedor\')">Cuenta</button></td>'+
+      '</tr>';
+  });
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  syncDesgloseActiveBtns();
+}
+function syncDesgloseActiveBtns(){
   const ov=document.getElementById('desglose-overlay');
-  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor){
-    refreshDesglosePopup();
-    document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>{
-      b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor);
-    });
-  }
+  if(!ov||!ov.classList.contains('open')||!ov.dataset.proveedor)return;
+  refreshDesglosePopup();
+  document.querySelectorAll('#tabla-total .desglose-btn,#tabla-prov .desglose-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor&&b.dataset.entidad===(ov.dataset.entidad||'cliente'));
+  });
 }
 let bitacoraPendingShare=null;
 function canvasToBlob(canvas,timeoutMs){
@@ -2910,17 +3065,18 @@ async function generarBitacoraWhatsapp(){
   }catch(e){toastError(e);}
   finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷 Generar foto';}}
 }
-function toggleDesglose(e,proveedor,btn){
+function toggleDesglose(e,proveedor,btn,entidad){
   e.stopPropagation();
+  desgloseEntidad=entidad||'cliente';
   const ov=document.getElementById('desglose-overlay');
-  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor===proveedor){closeDesglosePopup();return;}
-  showDesglosePopup(proveedor,btn);
+  if(ov&&ov.classList.contains('open')&&ov.dataset.proveedor===proveedor&&(ov.dataset.entidad||'cliente')===desgloseEntidad){closeDesglosePopup();return;}
+  showDesglosePopup(proveedor,btn,desgloseEntidad);
 }
 function setDesgloseTab(tab){desgloseProvTab=tab;desgloseAbonarFacturaId='';refreshDesglosePopup();}
 function toggleDesgloseSaldadas(){desgloseShowSaldadas=!desgloseShowSaldadas;refreshDesglosePopup();}
 function openAbonarPicker(facturaId){desgloseAbonarFacturaId=facturaId;desgloseProvTab='facturas';refreshDesglosePopup();}
 function onPagoDesgloseX(pagoId,btn){
-  const p=state.registros.find(r=>r.id===pagoId);
+  const p=getRegsStore().find(r=>r.id===pagoId);
   if(p&&String(p.aplicaFacturaId||''))quitarAbonoPago(pagoId);
   else eliminarRegistro(pagoId,btn);
 }
@@ -2945,8 +3101,9 @@ function formatLogDescInline(l){
 }
 function cancelAbonarPicker(){desgloseAbonarFacturaId='';refreshDesglosePopup();}
 async function abonarPagoAFactura(pagoId,facturaId){
-  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
-  const fact=state.registros.find(r=>r.id===facturaId);
+  const store=getRegsStore();
+  const p=store.find(r=>r.id===pagoId);if(!p)return;
+  const fact=store.find(r=>r.id===facturaId);
   if(!fact){toast('Factura no encontrada',true);return;}
   const pagos=registrosProveedor(p.proveedor).filter(isTipoPago);
   const pend=pendienteFacturaExcl(fact,pagos,pagoId);
@@ -2956,24 +3113,24 @@ async function abonarPagoAFactura(pagoId,facturaId){
   const montoAplicar=Math.min(pagoMonto,pend);
   const resto=Math.round((pagoMonto-montoAplicar)*100)/100;
   const prevPago={id:p.id,monto:p.monto,factura:p.factura,aplicaFacturaId:p.aplicaFacturaId||''};
-  const map=loadAplicaMap();
+  const map=loadAplicaMapEntidad();
   const prevMapEntry=map[pagoId];
   p.monto=montoAplicar;
   p.aplicaFacturaId=facturaId;
   if(fact.factura)p.factura=String(fact.factura).trim();
   map[pagoId]=facturaId;
-  saveAplicaMap(map);
+  saveAplicaMapEntidad(map);
   let nuevoRemanente=null;
   if(resto>0.001){
     nuevoRemanente={id:'tmp_'+Date.now(),fecha:p.fecha,proveedor:p.proveedor,tipo:'pago',monto:resto,factura:'',concepto:(p.concepto?p.concepto+' · ':'')+'Remanente',aplicaFacturaId:''};
-    state.registros.push(nuevoRemanente);
+    store.push(nuevoRemanente);
   }
   saveAndRender();desgloseAbonarFacturaId='';refreshDesglosePopup();
   try{
-    const resUpd=await apiPost({action:'updateRegistro',id:pagoId,data:{monto:montoAplicar,aplicaFacturaId:facturaId,factura:p.factura||''}});
+    const resUpd=await apiPost({action:apiActionRegistro('updateRegistro'),id:pagoId,data:{monto:montoAplicar,aplicaFacturaId:facturaId,factura:p.factura||''}});
     if(resUpd.error)throw new Error(resUpd.error);
     if(nuevoRemanente){
-      const resAdd=await apiPost({action:'addRegistro',data:{fecha:nuevoRemanente.fecha,proveedor:nuevoRemanente.proveedor,tipo:'pago',monto:resto,factura:'',concepto:nuevoRemanente.concepto,aplicaFacturaId:''}});
+      const resAdd=await apiPost({action:apiActionRegistro('addRegistro'),data:{fecha:nuevoRemanente.fecha,proveedor:nuevoRemanente.proveedor,tipo:'pago',monto:resto,factura:'',concepto:nuevoRemanente.concepto,aplicaFacturaId:''}});
       if(resAdd.error)throw new Error(resAdd.error);
       nuevoRemanente.id=resAdd.id;
     }
@@ -2984,29 +3141,30 @@ async function abonarPagoAFactura(pagoId,facturaId){
     p.factura=prevPago.factura;
     p.aplicaFacturaId=prevPago.aplicaFacturaId;
     if(prevMapEntry)map[pagoId]=prevMapEntry;else delete map[pagoId];
-    saveAplicaMap(map);
-    if(nuevoRemanente)state.registros=state.registros.filter(r=>r.id!==nuevoRemanente.id);
+    saveAplicaMapEntidad(map);
+    if(nuevoRemanente)store.splice(store.findIndex(r=>r.id===nuevoRemanente.id),1);
     saveAndRender();refreshDesglosePopup();
     toastError(e);
   }
 }
 async function quitarAbonoPago(pagoId){
-  const p=state.registros.find(r=>r.id===pagoId);if(!p)return;
+  const p=getRegsStore().find(r=>r.id===pagoId);if(!p)return;
   const prev=p.aplicaFacturaId||'';
   p.aplicaFacturaId='';
-  const map=loadAplicaMap();delete map[pagoId];saveAplicaMap(map);
+  const map=loadAplicaMapEntidad();delete map[pagoId];saveAplicaMapEntidad(map);
   saveAndRender();refreshDesglosePopup();
   try{
-    const res=await apiPost({action:'updateRegistro',id:pagoId,data:{aplicaFacturaId:''}});
+    const res=await apiPost({action:apiActionRegistro('updateRegistro'),id:pagoId,data:{aplicaFacturaId:''}});
     if(res.error)throw new Error(res.error);
     toast('Abono quitado',false,true);
   }catch(e){
-    p.aplicaFacturaId=prev;if(prev)map[pagoId]=prev;saveAplicaMap(map);
+    p.aplicaFacturaId=prev;if(prev)map[pagoId]=prev;saveAplicaMapEntidad(map);
     saveAndRender();refreshDesglosePopup();toastError(e);
   }
 }
 async function guardarDesgloseCampo(regId,campo,valor,el){
-  const reg=state.registros.find(r=>r.id===regId);
+  const store=getRegsStore();
+  const reg=store.find(r=>r.id===regId);
   if(!reg)return;
   let nuevo=valor;
   if(campo==='factura')nuevo=String(valor||'').trim();
@@ -3024,7 +3182,7 @@ async function guardarDesgloseCampo(regId,campo,valor,el){
       }
     }
     if(isTipoPago(reg)&&String(reg.aplicaFacturaId||'')){
-      const fact=state.registros.find(r=>r.id===reg.aplicaFacturaId);
+      const fact=store.find(r=>r.id===reg.aplicaFacturaId);
       if(fact){
         const maxAplicar=montoMaxPagoAFactura(fact,pagos,regId);
         if(nuevo>maxAplicar+0.001){
@@ -3046,7 +3204,7 @@ async function guardarDesgloseCampo(regId,campo,valor,el){
   saveAndRender();
   try{
     const data={};data[campo]=nuevo;
-    const res=await apiPost({action:'updateRegistro',id:regId,data});
+    const res=await apiPost({action:apiActionRegistro('updateRegistro'),id:regId,data});
     if(res.error)throw new Error(res.error);
     refreshDesglosePopup();
     toast('Actualizado',false,true);
@@ -3064,7 +3222,8 @@ function onDesgloseMontoBlur(regId,el){
   guardarDesgloseCampo(regId,'monto',el.value,el);
 }
 async function ajustarAbonadoFactura(facturaId,targetAb,el){
-  const fact=state.registros.find(r=>r.id===facturaId);
+  const store=getRegsStore();
+  const fact=store.find(r=>r.id===facturaId);
   if(!fact)return;
   const prov=fact.proveedor;
   const pagos=registrosProveedor(prov).filter(isTipoPago);
@@ -3096,27 +3255,26 @@ async function ajustarAbonadoFactura(facturaId,targetAb,el){
   try{
     if(ajusteMonto<=0.001){
       if(ajuste){
-        const prevRegs=state.registros.slice();
-        state.registros=state.registros.filter(r=>r.id!==ajuste.id);
+        store.splice(store.findIndex(r=>r.id===ajuste.id),1);
         limpiarAplicaMapRegistros([ajuste]);
         saveAndRender();
-        const res=await apiPost({action:'deleteRegistro',id:ajuste.id});
+        const res=await apiPost({action:apiActionRegistro('deleteRegistro'),id:ajuste.id});
         if(res.error)throw new Error(res.error);
       }
     }else if(ajuste){
       const prevM=ajuste.monto;
       ajuste.monto=ajusteMonto;
       saveAndRender();
-      const res=await apiPost({action:'updateRegistro',id:ajuste.id,data:{monto:ajusteMonto}});
+      const res=await apiPost({action:apiActionRegistro('updateRegistro'),id:ajuste.id,data:{monto:ajusteMonto}});
       if(res.error){ajuste.monto=prevM;throw new Error(res.error);}
     }else{
       const fecha=fact.fecha||document.getElementById('f-fecha').value||new Date().toISOString().split('T')[0];
       const data={fecha,proveedor:prov,tipo:'pago',monto:ajusteMonto,factura:fact.factura||'',concepto:'Ajuste manual',aplicaFacturaId:facturaId};
-      const res=await apiPost({action:'addRegistro',data});
+      const res=await apiPost({action:apiActionRegistro('addRegistro'),data});
       if(res.error)throw new Error(res.error);
       const reg={id:res.id,...data};
-      state.registros.push(reg);
-      const map=loadAplicaMap();map[res.id]=facturaId;saveAplicaMap(map);
+      store.push(reg);
+      const map=loadAplicaMapEntidad();map[res.id]=facturaId;saveAplicaMapEntidad(map);
     }
     refreshDesglosePopup();
     toast('Abonado actualizado',false,true);
@@ -3133,7 +3291,7 @@ function onDesgloseAbonadoBlur(facturaId,el){
   ajustarAbonadoFactura(facturaId,n,el);
 }
 function onDesglosePendienteBlur(facturaId,el){
-  const fact=state.registros.find(r=>r.id===facturaId);
+  const fact=getRegsStore().find(r=>r.id===facturaId);
   if(!fact)return;
   const total=parseFloat(fact.monto)||0;
   const n=parseMonto(el.value);
@@ -3304,17 +3462,19 @@ function getDesgloseOverlay(){
   }
   return ov;
 }
-function showDesglosePopup(proveedor,anchor){
+function showDesglosePopup(proveedor,anchor,entidad){
   closeDesglosePopup();desgloseOpen=true;
+  desgloseEntidad=entidad||desgloseEntidad||'cliente';
   desgloseSort={col:'fecha',dir:'desc'};
   desgloseProvTab='facturas';
   desgloseAbonarFacturaId='';
-  const regs=state.registros.filter(r=>r.proveedor===proveedor);
+  const regs=getRegsStore().filter(r=>r.proveedor===proveedor);
   const ov=getDesgloseOverlay();
   ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);
   ov.classList.add('open');
   ov.dataset.proveedor=proveedor;
-  document.querySelectorAll('#tabla-total .desglose-btn').forEach(b=>b.classList.remove('active'));
+  ov.dataset.entidad=desgloseEntidad;
+  document.querySelectorAll('#tabla-total .desglose-btn,#tabla-prov .desglose-btn').forEach(b=>b.classList.remove('active'));
   if(anchor)anchor.classList.add('active');
   document.body.style.overflow='hidden';
 }
@@ -3322,15 +3482,16 @@ function refreshDesglosePopup(){
   const ov=document.getElementById('desglose-overlay');
   const proveedor=ov&&ov.dataset.proveedor;
   if(!proveedor)return;
-  const regs=state.registros.filter(r=>r.proveedor===proveedor);
+  desgloseEntidad=ov.dataset.entidad||desgloseEntidad||'cliente';
+  const regs=getRegsStore().filter(r=>r.proveedor===proveedor);
   if(!regs.length){closeDesglosePopup();return;}
-  if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;}
+  if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;ov.dataset.entidad=desgloseEntidad;}
 }
 function closeDesglosePopup(){
   desgloseOpen=false;
   desgloseAbonarFacturaId='';
   const ov=document.getElementById('desglose-overlay');
-  if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;}
+  if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;delete ov.dataset.entidad;}
   document.body.style.overflow='';
   document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
 }
@@ -3765,10 +3926,10 @@ function findRegistrosForLog(log){
 }
 function limpiarAplicaMapRegistros(regs){
   if(!regs||!regs.length)return;
-  const map=loadAplicaMap();
+  const map=loadAplicaMapEntidad();
   let changed=false;
   regs.forEach(r=>{if(r.id&&map[r.id]){delete map[r.id];changed=true;}});
-  if(changed)saveAplicaMap(map);
+  if(changed)saveAplicaMapEntidad(map);
 }
 function removeLogsLocal_(logsToRemove){
   const keys=new Set(logsToRemove.map(l=>(l.localId||l.id||'')).filter(Boolean));
@@ -4162,6 +4323,27 @@ async function eliminarProveedor(nombre){
   try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Cliente eliminado');scheduleQuietSync();}
   catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
 }
+async function agregarCatalogoProveedor(){
+  const nombre=document.getElementById('new-prov-cat').value.trim().toUpperCase();if(!nombre)return;
+  const prev=state.catalogoProveedores.slice();
+  if(!state.catalogoProveedores.some(x=>x.toUpperCase()===nombre)){state.catalogoProveedores.push(nombre);state.catalogoProveedores.sort((a,b)=>a.localeCompare(b,'es'));}
+  saveAndRender();document.getElementById('new-prov-cat').value='';
+  try{const res=await apiPost({action:'addCatalogoProveedor',nombre});if(res.error)throw new Error(res.error);toast('✓ Proveedor agregado',false,true);scheduleQuietSync();}
+  catch(e){state.catalogoProveedores=prev;saveAndRender();toastError(e);}
+}
+async function eliminarCatalogoProveedor(nombre){
+  if(!confirm('¿Eliminar proveedor "'+nombre+'"?'))return;
+  const prevR=(state.registrosProveedores||[]).slice(),prevP=state.catalogoProveedores.slice();
+  state.catalogoProveedores=state.catalogoProveedores.filter(p=>p!==nombre);saveAndRender();
+  try{const res=await apiPost({action:'deleteCatalogoProveedor',nombre});if(res.error)throw new Error(res.error);toast('Proveedor eliminado');scheduleQuietSync();}
+  catch(e){state.registrosProveedores=prevR;state.catalogoProveedores=prevP;saveAndRender();toastError(e);}
+}
+function renderCatalogoProvManager(){
+  const el=document.getElementById('prov-cat-manager-list');
+  if(!el)return;
+  if(!state.catalogoProveedores.length){el.innerHTML='<div class="empty">Sin proveedores · agrega uno arriba</div>';return;}
+  el.innerHTML=state.catalogoProveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarCatalogoProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
+}
 function renderPreciosManager(){
   const el=document.getElementById('precios-list');
   if(!el)return;
@@ -4196,7 +4378,11 @@ async function guardarPrecioMini(prov,producto,btn){
     const res=await apiPost({action:'setPrecioProducto',data:{proveedor:prov,cliente:prov,producto,precio}});
     if(res&&res.error)throw new Error(res.error);
     upsertPrecioProductoLocal(prov,producto,precio);
-    localStorage.setItem(CACHE_KEY,JSON.stringify({registros:state.registros,proveedores:state.proveedores,precios:state.precios}));
+    localStorage.setItem(CACHE_KEY,JSON.stringify({
+      registros:state.registros,proveedores:state.proveedores,
+      catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
+      precios:state.precios
+    }));
     el.dataset.original=String(el.value||'').trim();
     el.dataset.dirty='false';
     toast('Precio guardado',false,true);
@@ -4258,7 +4444,7 @@ function renderProvManager(){
   el.innerHTML=state.proveedores.map(p=>'<div class="prov-item"><span style="font-family:var(--mono);font-size:13px;font-weight:600">'+esc(p)+'</span><button class="btn btn-sm btn-danger" onclick="eliminarProveedor(\''+esc(p)+'\')">✕ Eliminar</button></div>').join('');
 }
 function renderAll(){
-  renderProvSelect();renderTotales();renderProvManager();
+  renderProvSelect();renderTotales();renderProveedoresTotales();renderProvManager();renderCatalogoProvManager();
   if(isPageActive('precios'))renderPreciosManager();
   if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisis();
 }
