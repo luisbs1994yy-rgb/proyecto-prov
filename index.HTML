@@ -133,6 +133,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge-factura{background:var(--blue-bg)!important;color:#1e40af!important;border-color:var(--blue-border)!important;}
 .amount{font-family:var(--mono);font-weight:500;}
 .pct-cell{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
+.totales-nombre-cell{font-family:var(--mono);font-size:12px;font-weight:600;line-height:1.25;word-break:break-word;}
 .hint-text{font-size:11px;color:var(--text-faint);}
 .empty{text-align:center;padding:3rem;color:var(--text-faint);font-size:13px;}
 .loading{display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--text-muted);gap:8px;font-size:13px;}
@@ -647,15 +648,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     border: none;
     text-align: left;
   }
-  #page-totales #tabla-total td:first-child {
+  #page-totales #tabla-total td.totales-nombre-cell {
     flex: 1 1 0;
     min-width: 0;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 700;
     margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow: visible;
+    white-space: normal;
+    line-height: 1.2;
   }
   #page-totales #tabla-total td.amount {
     flex: 0 0 auto;
