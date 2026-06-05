@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.20">
+<html lang="es" data-app-version="3.21">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -926,7 +926,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
                 <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
                 <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
               </div>
-              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca una o más facturas pendientes. Si el pago excede lo seleccionado, podrás agregar otras o confirmar dos veces al guardar.</span>
+              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
             </div>
           </div>
           <div class="form-actions">
@@ -1411,8 +1411,28 @@ function registroEnSemana(r,weekStart,weekEnd){
 function nRegistros(n){return n+' registro'+(n!==1?'s':'');}
 function resumenPorProveedor(regs){
   const map={};
-  regs.forEach(r=>{const p=r.proveedor||'SIN CLIENTE',m=parseFloat(r.monto)||0;if(!map[p])map[p]={proveedor:p,facturas:0,pagos:0,saldo:0,movimientos:0};if(r.tipo==='pago')map[p].pagos+=m;else map[p].facturas+=m;map[p].saldo=map[p].facturas-map[p].pagos;map[p].movimientos+=1;});
+  regs.forEach(r=>{
+    const p=r.proveedor||'SIN CLIENTE',m=parseFloat(r.monto)||0;
+    if(!map[p])map[p]={proveedor:p,facturas:0,pagos:0,saldo:0,movimientos:0};
+    if(isTipoPago(r))map[p].pagos+=m;else map[p].facturas+=m;
+    map[p].saldo=map[p].facturas-map[p].pagos;map[p].movimientos+=1;
+  });
   return Object.values(map).sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
+}
+function calcTotalesNeto(resumen){
+  const deudas=resumen.reduce((a,r)=>a+(r.saldo>0?r.saldo:0),0);
+  const creditos=resumen.reduce((a,r)=>a+(r.saldo<0?-r.saldo:0),0);
+  return{deudas,creditos,neto:deudas-creditos};
+}
+function formatSaldoTotalesRow(saldo,deudas){
+  const v=Math.round(Math.abs(saldo)*100)/100;
+  if(v<0.001)return{text:fmt(0),color:'color:var(--green-text)',pct:'0.0%',pctColor:''};
+  if(saldo<0){
+    const pct=deudas>0?'−'+((v/deudas)*100).toFixed(1)+'%':'abono';
+    return{text:'+'+fmt(v),color:'color:var(--green-text)',pct,pctColor:'color:var(--green-text)'};
+  }
+  const pct=deudas>0?((saldo/deudas)*100).toFixed(1)+'%':'0.0%';
+  return{text:fmt(v),color:'color:var(--red-text)',pct,pctColor:''};
 }
 function resumenProveedoresActivos(regs){
   const activos=new Set(state.proveedores);
@@ -1704,8 +1724,8 @@ function confirmarRemanentePago(montoNum,aplicado,remanente,nFacturas){
   return true;
 }
 function confirmarPagoSinFacturas(prov,montoNum){
-  if(!confirm('Pago de '+fmt(montoNum)+' para '+prov+' SIN aplicar a ninguna factura.\n\n¿Continuar? (1 de 2)'))return false;
-  if(!confirm('Confirmación final: ¿Registrar el pago sin facturas? (2 de 2)'))return false;
+  if(!confirm('Abono de '+fmt(montoNum)+' para '+prov+' sin factura (préstamo/anticipo).\n\nAparecerá en verde (+) y restará del saldo total.\n\n¿Continuar? (1 de 2)'))return false;
+  if(!confirm('Confirmación final: ¿Registrar el abono sin facturas? (2 de 2)'))return false;
   return true;
 }
 function newPagoGrupoId(){return 'pg_'+Date.now()+'_'+Math.random().toString(36).slice(2,9);}
@@ -2004,7 +2024,7 @@ async function guardarRegistro(){
     try{
       const reg=await persistPagoRegistro({fecha,prov,tipo,monto:montoNum,factura,concepto,aplicaFacturaId:''});
       await addLogAwait(tipo,prov+' · '+fmt(montoNum),factura,concepto,reg.id);
-      saveAndRender();clearForm();toast('✓ Guardado (sin asignar)',false,true);
+      saveAndRender();clearForm();toast('✓ Abono guardado · aparece en verde (+) y resta del saldo total',false,true);
       setSyncStatus('Actualizado · '+fmtTime(new Date()));scheduleQuietSync();
     }catch(e){toastError(e);}
     finally{btn.disabled=false;btn.innerHTML='Guardar registro';}
@@ -2068,19 +2088,16 @@ function renderProvSelect(){
 
 function renderTotales(){
   const regs=state.registros,resumen=resumenProveedoresActivos(regs);
-  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
-  document.getElementById('k-total').textContent=fmt(sumSaldos);
+  const{deudas,neto}=calcTotalesNeto(resumen);
+  document.getElementById('k-total').textContent=fmt(neto);
   if(!regs.length){document.getElementById('tabla-total').innerHTML='<div class="empty">Sin registros aún</div>';closeDesglosePopup();return;}
   let rows='';
   resumen.forEach(r=>{
-    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
-    const isZero=saldoDisplay===0;
-    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
-    const color=isZero?'color:var(--green-text)':'color:var(--red-text)';
+    const cell=formatSaldoTotalesRow(r.saldo,deudas);
     rows+='<tr>'+
       '<td style="font-family:var(--mono);font-size:12px;font-weight:600;word-break:break-word">'+esc(r.proveedor)+'</td>'+
-      '<td class="amount" style="'+color+'">'+fmt(saldoDisplay)+'</td>'+
-      '<td class="pct-cell">'+pct+'%</td>'+
+      '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
+      '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this)">Cuenta</button></td>'+
       '</tr>';
   });
@@ -2114,8 +2131,7 @@ function downloadBlob(blob,name){
 function isMobileLike(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');}
 function isIOSLike(){return /iPhone|iPad|iPod/i.test(navigator.userAgent||'');}
 function getTotalesSaldoTotal(){
-  const resumen=resumenProveedoresActivos(state.registros);
-  return resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
+  return calcTotalesNeto(resumenProveedoresActivos(state.registros)).neto;
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2222,7 +2238,7 @@ function drawFitText(ctx,text,x,y,maxWidth){
 }
 function buildTotalesCanvas(){
   const resumen=resumenProveedoresActivos(state.registros);
-  const sumSaldos=resumen.reduce((acc,r)=>acc+Math.max(r.saldo,0),0);
+  const{deudas,neto}=calcTotalesNeto(resumen);
   const rows=resumen.slice(0,10);
   const hoyRes=getTotalesFotoResumenHoy();
   const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=50,scale=3;
@@ -2244,23 +2260,23 @@ function buildTotalesCanvas(){
   ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
   ctx.fillText('Saldo total',pad+5,40);
   ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(sumSaldos),w-pad-5,40);
+  ctx.fillText(fmt(neto),w-pad-5,40);
   ctx.textAlign='left';
   let y=8+headerH+gap;
   rows.forEach(r=>{
-    const saldoDisplay=Math.round(Math.abs(r.saldo)*100)/100;
-    const isZero=saldoDisplay===0;
-    const pct=sumSaldos>0?((Math.max(r.saldo,0)/sumSaldos)*100).toFixed(1):'0.0';
+    const cell=formatSaldoTotalesRow(r.saldo,deudas);
+    const isCredito=r.saldo<-0.001;
+    const isZero=Math.abs(r.saldo)<0.001;
     ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
     ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
     const innerX=pad+10, innerW=w-pad*2-20;
     const nameW=118, pctW=42, amountW=innerW-nameW-pctW;
     ctx.fillStyle='#1a1c2c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='left';
     drawFitText(ctx,r.proveedor,innerX,y+21,nameW);
-    ctx.fillStyle=isZero?'#047857':'#b91c1c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='center';
-    ctx.fillText(fmt(saldoDisplay),innerX+nameW+(amountW/2),y+21);
-    ctx.fillStyle='#6b7280';ctx.font='500 10px IBM Plex Mono, monospace';ctx.textAlign='right';
-    ctx.fillText(pct+'%',innerX+innerW,y+21);
+    ctx.fillStyle=isZero||isCredito?'#047857':'#b91c1c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(cell.text,innerX+nameW+(amountW/2),y+21);
+    ctx.fillStyle=isCredito?'#047857':'#6b7280';ctx.font='500 10px IBM Plex Mono, monospace';ctx.textAlign='right';
+    ctx.fillText(cell.pct,innerX+innerW,y+21);
     y+=rowH+gap;
   });
   y+=gap;
@@ -3210,6 +3226,7 @@ function buildDesgloseBitacoraHtml(proveedor){
 function buildDesglosePanelHtml(proveedor,regs){
   const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
   const saldo=sumMonto(facts)-sumMonto(pagos),pend=sumPendienteFacturas(facts,pagos);
+  const saldoVal=saldo<-0.001?'<span style="color:var(--green-text)">+'+fmt(-saldo)+'</span>':fmt(Math.max(saldo,0));
   const tab=desgloseProvTab;
   let body='';
   if(tab==='pagos')body=buildDesglosePagosHtml(facts,pagos);
@@ -3221,7 +3238,7 @@ function buildDesglosePanelHtml(proveedor,regs){
     '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
     '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
     '<div class="prov-kpi-row">'+
-      '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+fmt(Math.abs(saldo))+'</div></div>'+
+      '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+saldoVal+'</div></div>'+
       '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
       '<div class="prov-kpi pend"><div class="prov-kpi-lbl">Por pagar</div><div class="prov-kpi-val">'+fmt(pend)+'</div></div>'+
     '</div>'+
@@ -3982,7 +3999,7 @@ function getSemanaActualTotals(regs){
   return{fact,pago,nFact,nPago,semAct};
 }
 function renderAnalisis(){
-  const regs=state.registros,facts=regs.filter(r=>r.tipo==='factura'),pagos=regs.filter(r=>r.tipo==='pago');
+  const regs=state.registros,facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
   const sumF=sumMonto(facts),sumP=sumMonto(pagos),saldo=sumF-sumP;
   const resumen=resumenProveedoresActivos(regs);
   const pctPag=sumF>0?(sumP/sumF*100):0;
