@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.35">
+<html lang="es" data-app-version="3.36">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.35';
+const APP_VERSION=getAppVersion()||'3.36';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -346,6 +346,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-bitacora-table tr.log-day-a td{background:#f8fafc;}
 .prov-bitacora-table tr.log-day-b td{background:#fff;}
 .prov-fact-table .desglose-row td{padding:2px 3px!important;}
+.prov-litros-resumen{margin-top:8px;border:1px solid #fcd34d;border-radius:8px;background:#fffbeb;overflow:hidden;}
+.prov-litros-resumen-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#b45309;padding:6px 8px;border-bottom:1px solid #fde68a;background:#fef3c7;}
+.prov-litros-resumen table{width:100%;border-collapse:collapse;table-layout:fixed;}
+.prov-litros-resumen th{font-size:6px;padding:4px 3px;text-align:center;background:#fef3c7;color:#92400e;font-weight:700;text-transform:uppercase;}
+.prov-litros-resumen td{font-size:7px;padding:4px 3px;text-align:center;font-family:var(--mono);vertical-align:middle;border-top:1px solid #fde68a;}
+.prov-litros-resumen .col-lc-pag{color:var(--navy);font-weight:600;}
+.prov-litros-resumen .col-lc-cob input{width:100%;min-width:0;padding:2px 3px;font-size:7px;font-family:var(--mono);border:1px solid #fcd34d;border-radius:4px;background:#fff;text-align:center;}
+.prov-litros-resumen .col-lc-dif{color:#1e40af;font-weight:700;}
+.prov-litros-resumen .col-lc-din{color:#b45309;font-weight:700;}
 .prov-fact-table .desglose-inline-input{padding:2px 3px;line-height:1.2;min-height:0;}
 .analisis-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:1.5rem;}
 .kpi-flujo-card{grid-column:1/-1;background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow-md);position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.08);}
@@ -887,6 +896,7 @@ const DELETED_LOGS_KEY="pagos_v1_logs_deleted";
 const APLICA_KEY  = "pagos_v1_aplica";
 const APLICA_PROV_KEY = "pagos_v1_aplica_prov";
 const PRECIOS_KEY = "pagos_v1_precios_productos";
+const PROV_LITROS_COBRADOS_KEY = "pagos_v1_prov_litros_cobrados";
 const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 </script>
 
@@ -3675,8 +3685,104 @@ function buildAbonarBox(proveedor,facturaId,facts,pagos){
   return '<div class="prov-abonar-box"><strong>Abonar a:</strong> '+esc(facturaLabelById(facts,facturaId))+' · Pendiente: '+fmt(pend)+'<div>'+btns+'</div>'+
     '<button type="button" class="btn btn-sm" style="margin-top:6px" onclick="cancelAbonarPicker()">Cancelar</button></div>';
 }
-function buildDesgloseFacturasHtml(facts,pagos){
-  if(!facts.length)return '<div class="empty">Sin facturas</div>';
+function provLitrosSlug(proveedor){
+  return String(proveedor||'').replace(/[^a-zA-Z0-9_]/g,'_');
+}
+function loadProvLitrosCobradosMap(){
+  try{return JSON.parse(localStorage.getItem(PROV_LITROS_COBRADOS_KEY)||'{}');}catch{return{};}
+}
+function saveProvLitrosCobradosMap(map){
+  try{localStorage.setItem(PROV_LITROS_COBRADOS_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}
+}
+function getProvLitrosCobrados(proveedor){
+  const v=loadProvLitrosCobradosMap()[String(proveedor||'').trim()];
+  if(v==null||v==='')return NaN;
+  return parseLitros(v);
+}
+function setProvLitrosCobrados(proveedor,val){
+  const map=loadProvLitrosCobradosMap();
+  const k=String(proveedor||'').trim();
+  if(!k)return;
+  if(val===''||val==null||isNaN(val))delete map[k];
+  else map[k]=val;
+  saveProvLitrosCobradosMap(map);
+}
+function sumLitrosPagadosFacturas(facts){
+  return (facts||[]).reduce((acc,f)=>{
+    const r=enrichRegistroLitros(f);
+    const lt=parseLitros(r.litros);
+    return acc+(isNaN(lt)||lt<=0?0:lt);
+  },0);
+}
+function avgPrecioLitroFacturas(facts){
+  let sumL=0,sumM=0;
+  (facts||[]).forEach(f=>{
+    const r=enrichRegistroLitros(f);
+    const lt=parseLitros(r.litros),pl=parsePrecioLitro(r.precioLitro);
+    if(!isNaN(lt)&&lt>0&&!isNaN(pl)&&pl>0){sumL+=lt;sumM+=lt*pl;}
+  });
+  if(sumL<=0)return NaN;
+  return Math.round((sumM/sumL)*100)/100;
+}
+function calcProvLitrosCobradosResumen(proveedor,facts,cobradosRaw){
+  const pagados=sumLitrosPagadosFacturas(facts);
+  const pl=avgPrecioLitroFacturas(facts);
+  const hasCob=!isNaN(cobradosRaw);
+  const cobrados=hasCob?cobradosRaw:0;
+  const dif=hasCob?Math.round((pagados-cobrados)*100)/100:NaN;
+  const dinero=(hasCob&&!isNaN(pl)&&pl>0&&!isNaN(dif))?Math.round(dif*pl*100)/100:NaN;
+  return{pagados,cobrados:hasCob?cobrados:NaN,dif,dinero,pl};
+}
+function updateProvLitrosCobradosCalc(proveedor){
+  const slug=provLitrosSlug(proveedor);
+  const elIn=document.getElementById('prov-lc-cob-'+slug);
+  const elDif=document.getElementById('prov-lc-dif-'+slug);
+  const elDin=document.getElementById('prov-lc-din-'+slug);
+  if(!elIn||!elDif||!elDin)return;
+  const facts=getRegsStore().filter(r=>r.proveedor===proveedor&&isTipoFactura(r));
+  const cob=parseLitros(elIn.value);
+  const res=calcProvLitrosCobradosResumen(proveedor,facts,elIn.value.trim()&&!isNaN(cob)?cob:NaN);
+  elDif.textContent=isNaN(res.dif)?'—':formatLitrosDisplay(res.dif);
+  elDin.textContent=isNaN(res.dinero)?'—':fmt(res.dinero);
+}
+function onProvLitrosCobradosInput(proveedor,el){
+  el.value=sanitizeLitrosTyping(el.value);
+  updateProvLitrosCobradosCalc(proveedor);
+}
+function onProvLitrosCobradosBlur(proveedor,el){
+  const raw=String(el.value||'').trim();
+  if(!raw){
+    setProvLitrosCobrados(proveedor,'');
+    updateProvLitrosCobradosCalc(proveedor);
+    return;
+  }
+  const n=parseLitros(raw);
+  if(isNaN(n)){toast('Litros cobrados inválidos',true);refreshDesglosePopup();return;}
+  el.value=formatLitrosDisplay(n);
+  setProvLitrosCobrados(proveedor,n);
+  updateProvLitrosCobradosCalc(proveedor);
+}
+function buildDesgloseLitrosCobradosHtml(proveedor,facts){
+  if(!isDesgloseProveedor())return '';
+  const slug=provLitrosSlug(proveedor);
+  const cobrados=getProvLitrosCobrados(proveedor);
+  const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
+  const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
+  const plHint=!isNaN(res.pl)&&res.pl>0?' · $/L prom. '+formatPrecioLitroDisplay(res.pl):'';
+  return '<div class="prov-litros-resumen">'+
+    '<div class="prov-litros-resumen-title">Control litros · pagados vs cobrados'+esc(plHint)+'</div>'+
+    '<table><thead><tr>'+
+    '<th>Litros pagados</th><th>Litros cobrados</th><th>Dif litros</th><th>Dinero restante</th>'+
+    '</tr></thead><tbody><tr>'+
+    '<td class="col-lc-pag">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
+    '<td class="col-lc-cob"><input type="text" id="prov-lc-cob-'+slug+'" inputmode="decimal" placeholder="Manual" value="'+esc(cobVal)+'" data-proveedor="'+esc(proveedor)+'" oninput="onProvLitrosCobradosInput(\''+esc(proveedor)+'\',this)" onblur="onProvLitrosCobradosBlur(\''+esc(proveedor)+'\',this)"></td>'+
+    '<td class="col-lc-dif" id="prov-lc-dif-'+slug+'">'+(isNaN(res.dif)?'—':esc(formatLitrosDisplay(res.dif)))+'</td>'+
+    '<td class="col-lc-din" id="prov-lc-din-'+slug+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>'+
+    '</tr></tbody></table></div>';
+}
+function buildDesgloseFacturasHtml(proveedor,facts,pagos){
+  const litrosResumen=buildDesgloseLitrosCobradosHtml(proveedor,facts);
+  if(!facts.length)return '<div class="empty">Sin facturas</div>'+litrosResumen;
   const sorted=sortDesgloseRegs(facts,'fecha','desc');
   const conPend=[];
   const saldadas=[];
@@ -3694,7 +3800,7 @@ function buildDesgloseFacturasHtml(facts,pagos){
     const lbl=desgloseShowSaldadas?'Ocultar saldadas ('+saldadas.length+')':'Ver saldadas · pend. $0 ('+saldadas.length+')';
     toolbar='<div class="desglose-fact-toolbar"><button type="button" class="btn btn-sm'+(desgloseShowSaldadas?' btn-primary':'')+'" onclick="toggleDesgloseSaldadas()">'+lbl+'</button></div>';
   }
-  if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>';
+  if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>'+litrosResumen;
   let rows='';
   lista.forEach(({f,total,ab,pend})=>{
     const warnCls=ab>total+0.001?' warn':'';
@@ -3717,7 +3823,7 @@ function buildDesgloseFacturasHtml(facts,pagos){
   });
   return toolbar+'<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
     '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th class="prov-actions-col"></th>'+
-    '</tr></thead><tbody>'+rows+'</tbody></table>';
+    '</tr></thead><tbody>'+rows+'</tbody></table>'+litrosResumen;
 }
 function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
   const abiertas=facts.filter(f=>{
@@ -3793,7 +3899,7 @@ function buildDesglosePanelHtml(proveedor,regs){
   if(tab==='pagos')body=buildDesglosePagosHtml(facts,pagos);
   else if(tab==='bitacora')body=buildDesgloseBitacoraHtml(proveedor);
   else{
-    body=(desgloseAbonarFacturaId?buildAbonarBox(proveedor,desgloseAbonarFacturaId,facts,pagos):'')+buildDesgloseFacturasHtml(facts,pagos);
+    body=(desgloseAbonarFacturaId?buildAbonarBox(proveedor,desgloseAbonarFacturaId,facts,pagos):'')+buildDesgloseFacturasHtml(proveedor,facts,pagos);
   }
   return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
     '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
