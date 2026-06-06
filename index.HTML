@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.43">
+<html lang="es" data-app-version="3.44">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.43';
+const APP_VERSION=getAppVersion()||'3.44';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -267,7 +267,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-list-dif-badge{font-family:var(--mono);font-size:9px;font-weight:700;line-height:1.2;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid var(--border);border-top:2px solid #94a3b8;white-space:nowrap;}
 .prov-list-dif-badge.pos{color:var(--green-text);border-top-color:#22c55e;}
 .prov-list-dif-badge.neg{color:var(--red-text);border-top-color:#ef4444;}
-.prov-lc-cob-input{width:74px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
+.prov-lc-cob-input{width:88px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
 .prov-lc-cob-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);}
 .prov-litros-bar{display:flex;flex-wrap:nowrap;align-items:center;gap:4px 8px;padding:5px 8px;background:#fffbeb;border-bottom:2px solid #fcd34d;position:relative;z-index:3;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;}
 .prov-litros-bar-item{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;}
@@ -351,7 +351,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-fact-table.prov-facturas-table .col-total{width:14%;}
 .prov-fact-table.prov-facturas-table .col-abon{width:15%;}
 .prov-fact-table.prov-facturas-table .col-pend{width:12%;}
-.prov-fact-table.prov-facturas-table .col-lc-cob{width:10%;}
+.prov-fact-table.prov-facturas-table .col-lc-cob{width:12%;min-width:72px;}
 .prov-fact-table.prov-facturas-table .col-lc-dif{width:8%;}
 .prov-fact-table.prov-facturas-table .col-lc-din{width:10%;}
 .prov-fact-table thead th.col-lc-cob{background:#fef3c7;color:#92400e;}
@@ -2237,7 +2237,9 @@ function applyPrecioProductoDefault(overwrite=true){
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
 function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
 const LITROS_AVISO_MIN=10000;
-function getLitrosMaxDigitosEnteros(){return isRegistrarProveedor()?6:5;}
+const LITROS_MAX_ENTEROS=6;
+const PROV_LC_RECIBIDOS_LABEL='Litros recibidos';
+function getLitrosMaxDigitosEnteros(){return LITROS_MAX_ENTEROS;}
 function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizePrecioLitroTyping(el.value);updateMontoFromLitros();}
 function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parsePrecioLitro(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatPrecioLitroDisplay(n);updateMontoFromLitros();}
 function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
@@ -3812,7 +3814,7 @@ function isProvLcInputFocused(){
   return !!document.querySelector('.prov-lc-cob-input:focus');
 }
 function provLcInputHtml(proveedor,cobVal,placeholder){
-  return '<input type="text" class="prov-lc-cob-input" inputmode="decimal" placeholder="'+esc(placeholder||'Cobrados')+'" value="'+esc(cobVal)+'" data-proveedor="'+esc(provLcAttrEncode(proveedor))+'" autocomplete="off" autocorrect="off" spellcheck="false">';
+  return '<input type="text" class="prov-lc-cob-input" inputmode="decimal" placeholder="'+esc(placeholder||PROV_LC_RECIBIDOS_LABEL)+'" value="'+esc(cobVal)+'" data-proveedor="'+esc(provLcAttrEncode(proveedor))+'" autocomplete="off" autocorrect="off" spellcheck="false">';
 }
 function loadProvLitrosCobradosMap(){
   try{return JSON.parse(localStorage.getItem(PROV_LITROS_COBRADOS_KEY)||'{}');}catch{return{};}
@@ -3886,7 +3888,7 @@ function buildProvListLitrosCellHtml(proveedor){
   const key=provLcAttrEncode(proveedor);
   return '<td class="prov-list-litros-cell">'+
     '<div class="prov-list-dif-badge'+(difCls?' '+difCls:'')+'" data-prov-lc-kpi="'+esc(key)+'" title="Dif litros">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div>'+
-    provLcInputHtml(proveedor,cobVal,'Cobrados')+
+    provLcInputHtml(proveedor,cobVal,PROV_LC_RECIBIDOS_LABEL)+
     '<span class="prov-list-dinero" data-prov-lc-din="'+esc(key)+'" title="Dinero restante">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
     '</td>';
 }
@@ -3966,7 +3968,7 @@ async function onProvLitrosCobradosBlur(proveedor,el){
     return;
   }
   const n=parseLitros(raw);
-  if(isNaN(n)){toast('Litros cobrados inválidos',true);return;}
+  if(isNaN(n)){toast('Litros recibidos inválidos',true);return;}
   const fmtVal=formatLitrosDisplay(n);
   const key=provLcAttrEncode(proveedor);
   Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(x=>x.getAttribute('data-proveedor')===key).forEach(x=>{x.value=fmtVal;});
@@ -3982,7 +3984,7 @@ function buildProvLitrosControlCellsHtml(proveedor){
   const res=calcProvLitrosCobradosResumen(proveedor,regs,cobrados);
   const difCls=fmtProvDifLitrosClass(res.dif);
   const key=provLcAttrEncode(proveedor);
-  return '<td class="col-lc-cob">'+provLcInputHtml(proveedor,cobVal,'Manual')+'</td>'+
+  return '<td class="col-lc-cob">'+provLcInputHtml(proveedor,cobVal,PROV_LC_RECIBIDOS_LABEL)+'</td>'+
     '<td class="col-lc-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(key)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</td>'+
     '<td class="col-lc-din" data-prov-lc-din="'+esc(key)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>';
 }
@@ -3992,7 +3994,7 @@ function buildProvLitrosEmptyCellsHtml(){
 function buildDesgloseFacturasTableShell(bodyRows){
   const prov=isDesgloseProveedor();
   const abonHead=prov?'':'<th class="col-abon">Abonado</th>';
-  const lcHead=prov?'<th class="col-lc-cob">Cobrados</th><th class="col-lc-dif">Dif L</th><th class="col-lc-din">Dinero</th>':'';
+  const lcHead=prov?'<th class="col-lc-cob">'+PROV_LC_RECIBIDOS_LABEL+'</th><th class="col-lc-dif">Dif L</th><th class="col-lc-din">Dinero</th>':'';
   return '<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
     '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th>'+abonHead+'<th class="col-pend">Pend.</th>'+
     lcHead+'<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
