@@ -20,7 +20,7 @@
  * - PreciosProductos
  */
 
-const APP_VERSION = '3.25';
+const APP_VERSION = '3.66';
 
 const SHEET_REGISTROS = 'Registros';
 const SHEET_PROVEEDORES = 'Proveedores';
