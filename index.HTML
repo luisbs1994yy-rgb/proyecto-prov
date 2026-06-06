@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.37">
+<html lang="es" data-app-version="3.38">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.37';
+const APP_VERSION=getAppVersion()||'3.38';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -256,13 +256,20 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-day-b td{background:#fff4e8;}
 #logs-list tbody tr:hover td{filter:brightness(.98);}
 .prov-kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px;background:#f8fafc;border-bottom:1px solid var(--border);}
-.prov-kpi-row.prov-kpi-row-4{grid-template-columns:repeat(4,1fr);}
 .prov-kpi{ border-radius:8px;padding:8px 6px;text-align:center;border-top:3px solid var(--kpi-c,#3a86ff);background:#fff; }
 .prov-kpi-lbl{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--text-faint);letter-spacing:.06em;}
 .prov-kpi-val{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:3px;color:var(--navy);}
 .prov-kpi.saldo{--kpi-c:#7c3aed;} .prov-kpi.fact{--kpi-c:#3a86ff;} .prov-kpi.pend{--kpi-c:#f59e0b;}
-.prov-kpi.dif-lit{--kpi-c:#94a3b8;} .prov-kpi.dif-lit.pos{--kpi-c:#22c55e;} .prov-kpi.dif-lit.neg{--kpi-c:#ef4444;}
-.prov-kpi.dif-lit.pos .prov-kpi-val{color:var(--green-text);} .prov-kpi.dif-lit.neg .prov-kpi-val{color:var(--red-text);}
+.prov-list-litros-cell{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 2px;}
+.prov-list-dif-badge{font-family:var(--mono);font-size:9px;font-weight:700;line-height:1.2;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid var(--border);border-top:2px solid #94a3b8;white-space:nowrap;}
+.prov-list-dif-badge.pos{color:var(--green-text);border-top-color:#22c55e;}
+.prov-list-dif-badge.neg{color:var(--red-text);border-top-color:#ef4444;}
+.prov-lc-cob-input{width:74px;max-width:100%;padding:2px 4px;font-size:9px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:4px;background:#fff;}
+.prov-lc-cob-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);}
+.prov-list-dinero{font-size:8px;font-family:var(--mono);color:#b45309;font-weight:600;white-space:nowrap;}
+#tabla-prov .prov-list-litros-cell .prov-lc-dif{font-size:8px;font-family:var(--mono);font-weight:700;}
+#tabla-prov .prov-list-litros-cell .prov-lc-dif.pos{color:var(--green-text);}
+#tabla-prov .prov-list-litros-cell .prov-lc-dif.neg{color:var(--red-text);}
 .prov-tabs{display:flex;gap:4px;padding:6px 8px;background:#eef2f7;border-bottom:1px solid var(--border);}
 .prov-tab{flex:1;padding:7px 4px;font-size:10px;font-weight:600;border:none;border-radius:8px;background:transparent;color:var(--text-muted);cursor:pointer;}
 .prov-tab.active{background:#fff;color:var(--navy);box-shadow:var(--shadow-sm);}
@@ -658,7 +665,6 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .desglose-overlay { padding: 46px 8px 8px; }
   .desglose-overlay .popup-desglose { max-height: min(520px, 82vh); border-radius: 8px; }
   .prov-kpi-row { grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 6px; }
-  .prov-kpi-row.prov-kpi-row-4 { grid-template-columns: repeat(4, 1fr); }
   .prov-kpi-val { font-size: 9px; }
   .prov-tab { font-size: 9px; padding: 6px 2px; }
   .prov-fact-table th, .prov-fact-table td { font-size: 7px; padding: 2px 3px; }
@@ -724,6 +730,17 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     margin: 0;
     text-align: right;
   }
+  #page-proveedores #tabla-prov td.prov-list-litros-cell {
+    flex: 0 0 auto;
+    min-width: 78px;
+    max-width: 92px;
+  }
+  #page-proveedores #tabla-prov .prov-lc-cob-input {
+    width: 100%;
+    font-size: 8px;
+    padding: 2px 3px;
+  }
+  #page-proveedores #tabla-prov .prov-list-dif-badge { font-size: 8px; padding: 1px 4px; }
   #page-totales #tabla-total td:last-child,
   #page-proveedores #tabla-prov td:last-child {
     flex: 0 0 auto;
@@ -1228,7 +1245,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <div class="toast" id="toast"></div>
 
 <script>
-let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], precios:[] };
+let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[] };
 let logsMemory = [];
 let syncTimer = null, desgloseOpen = false;
 let desgloseEntidad = 'cliente';
@@ -1261,6 +1278,7 @@ document.addEventListener('DOMContentLoaded', () => {
       state.proveedores=d.proveedores||[];
       state.catalogoProveedores=d.catalogoProveedores||[];
       state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
+      state.provLitrosCobrados=d.provLitrosCobrados||loadProvLitrosCobradosMap();
       state.precios=normalizePreciosList(d.precios||loadPreciosLocal());
       mergeAplicaIntoRegs();mergeAplicaIntoRegsProv();
       ensureStateArrays();
@@ -1272,6 +1290,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   loadAll();
+  document.addEventListener('input',e=>{
+    const el=e.target;
+    if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return;
+    const prov=el.getAttribute('data-proveedor');
+    if(!prov)return;
+    el.value=sanitizeLitrosTyping(el.value);
+    updateProvLitrosCobradosCalc(prov);
+  });
+  document.addEventListener('focusout',e=>{
+    const el=e.target;
+    if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return;
+    const prov=el.getAttribute('data-proveedor');
+    if(!prov)return;
+    onProvLitrosCobradosBlur(prov,el);
+  });
   setInterval(() => { syncQuiet(); }, 60000);
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
@@ -1286,6 +1319,7 @@ function ensureStateArrays(){
   if(!Array.isArray(state.proveedores))state.proveedores=[];
   if(!Array.isArray(state.catalogoProveedores))state.catalogoProveedores=[];
   if(!Array.isArray(state.registrosProveedores))state.registrosProveedores=[];
+  if(!state.provLitrosCobrados||typeof state.provLitrosCobrados!=='object')state.provLitrosCobrados={};
   if(!Array.isArray(state.precios))state.precios=[];
 }
 function saveAndRender(){
@@ -1298,7 +1332,7 @@ function saveAndRender(){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
     }));
   }catch(e){console.warn('cache save',e);}
   renderAll();
@@ -1759,6 +1793,12 @@ function updateStateFromSheetData(d){
   mergeAplicaIntoRegsProv();
   state.registrosProveedores=state.registrosProveedores.map(enrichRegistroLitros);
   state.catalogoProveedores=mergeCatalogoProveedoresList(d.catalogoProveedores,state.registrosProveedores);
+  if(d.provLitrosCobrados&&typeof d.provLitrosCobrados==='object'){
+    state.provLitrosCobrados=Object.assign({},loadProvLitrosCobradosMap(),d.provLitrosCobrados);
+  }else if(!Object.keys(state.provLitrosCobrados||{}).length){
+    state.provLitrosCobrados=loadProvLitrosCobradosMap();
+  }
+  saveProvLitrosCobradosMap(state.provLitrosCobrados);
   state.precios=normalizePreciosList(d.precios||d.preciosProductos||d.listaPrecios||loadPreciosLocal());
   savePreciosLocal(state.precios);
   try{if(Array.isArray(d.logs))saveLogs(mergeLogsPreservingDetails(d.logs));}catch(e){console.warn('logs',e);}
@@ -2393,6 +2433,7 @@ function renderTotales(){
   syncDesgloseActiveBtns();
 }
 function renderProveedoresTotales(){
+  const lcEdit=captureProvLcEditState();
   const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
   const{deudas,neto}=calcTotalesNeto(resumen);
   const elTotal=document.getElementById('k-total-prov');
@@ -2407,16 +2448,17 @@ function renderProveedoresTotales(){
       '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
       '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
       '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
+      buildProvListLitrosCellHtml(r.proveedor)+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="proveedor" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'proveedor\')">Cuenta</button></td>'+
       '</tr>';
   });
-  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Dif / Cob</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  restoreProvLcEditState(lcEdit);
   syncDesgloseActiveBtns();
 }
 function syncDesgloseActiveBtns(){
   const ov=document.getElementById('desglose-overlay');
   if(!ov||!ov.classList.contains('open')||!ov.dataset.proveedor)return;
-  refreshDesglosePopup();
   document.querySelectorAll('#tabla-total .desglose-btn,#tabla-prov .desglose-btn').forEach(b=>{
     b.classList.toggle('active',b.dataset.proveedor===ov.dataset.proveedor&&b.dataset.entidad===(ov.dataset.entidad||'cliente'));
   });
@@ -3702,17 +3744,60 @@ function saveProvLitrosCobradosMap(map){
   try{localStorage.setItem(PROV_LITROS_COBRADOS_KEY,JSON.stringify(map||{}));}catch(e){console.warn(e);}
 }
 function getProvLitrosCobrados(proveedor){
-  const v=loadProvLitrosCobradosMap()[String(proveedor||'').trim()];
+  const k=String(proveedor||'').trim();
+  if(!k)return NaN;
+  const v=(state.provLitrosCobrados&&state.provLitrosCobrados[k])!=null?state.provLitrosCobrados[k]:loadProvLitrosCobradosMap()[k];
   if(v==null||v==='')return NaN;
   return parseLitros(v);
 }
-function setProvLitrosCobrados(proveedor,val){
-  const map=loadProvLitrosCobradosMap();
+function setProvLitrosCobradosLocal(proveedor,val){
   const k=String(proveedor||'').trim();
   if(!k)return;
-  if(val===''||val==null||isNaN(val))delete map[k];
-  else map[k]=val;
-  saveProvLitrosCobradosMap(map);
+  ensureStateArrays();
+  if(val===''||val==null||isNaN(val))delete state.provLitrosCobrados[k];
+  else state.provLitrosCobrados[k]=val;
+  saveProvLitrosCobradosMap(state.provLitrosCobrados);
+}
+async function saveProvLitrosCobradosApi(proveedor,val){
+  const res=await apiPost({action:'setProvLitrosCobrados',proveedor:proveedor,litrosCobrados:val===''||val==null||isNaN(val)?'':String(val)});
+  if(res.error)throw new Error(res.error);
+  if(res.provLitrosCobrados&&typeof res.provLitrosCobrados==='object'){
+    state.provLitrosCobrados=res.provLitrosCobrados;
+    saveProvLitrosCobradosMap(state.provLitrosCobrados);
+  }
+}
+function captureProvLcEditState(){
+  const el=document.activeElement;
+  if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return null;
+  return{proveedor:el.getAttribute('data-proveedor'),value:el.value,selStart:el.selectionStart,selEnd:el.selectionEnd};
+}
+function restoreProvLcEditState(st){
+  if(!st||!st.proveedor)return;
+  const el=Array.from(document.querySelectorAll('.prov-lc-cob-input')).find(x=>x.getAttribute('data-proveedor')===st.proveedor);
+  if(!el)return;
+  el.value=st.value;
+  try{el.focus();if(typeof st.selStart==='number')el.setSelectionRange(st.selStart,st.selEnd);}catch(_){}
+  updateProvLitrosCobradosCalc(st.proveedor);
+}
+function forEachProvLcEl(kind,proveedor,fn){
+  document.querySelectorAll('[data-prov-lc-'+kind+']').forEach(el=>{
+    if(el.getAttribute('data-prov-lc-'+kind)===proveedor)fn(el);
+  });
+}
+function getProvFacts(proveedor){
+  return (state.registrosProveedores||[]).filter(r=>r.proveedor===proveedor&&isTipoFactura(r));
+}
+function buildProvListLitrosCellHtml(proveedor){
+  const facts=getProvFacts(proveedor);
+  const cobrados=getProvLitrosCobrados(proveedor);
+  const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
+  const difCls=fmtProvDifLitrosClass(res.dif);
+  const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
+  return '<td class="prov-list-litros-cell">'+
+    '<div class="prov-list-dif-badge'+(difCls?' '+difCls:'')+'" data-prov-lc-kpi="'+esc(proveedor)+'" title="Dif litros">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div>'+
+    '<input type="text" class="prov-lc-cob-input" data-proveedor="'+esc(proveedor)+'" inputmode="decimal" placeholder="Cobrados" value="'+esc(cobVal)+'">'+
+    '<span class="prov-list-dinero" data-prov-lc-din="'+esc(proveedor)+'" title="Dinero restante">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
+    '</td>';
 }
 function sumLitrosPagadosFacturas(facts){
   return (facts||[]).reduce((acc,f)=>{
@@ -3752,55 +3837,47 @@ function fmtProvDifLitrosClass(dif){
   if(dif<-0.001)return'neg';
   return'';
 }
-function buildProvLitrosKpiHtml(proveedor,facts){
-  if(!isDesgloseProveedor())return'';
-  const slug=provLitrosSlug(proveedor);
-  const cobrados=getProvLitrosCobrados(proveedor);
-  const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
-  const cls=fmtProvDifLitrosClass(res.dif);
-  return '<div class="prov-kpi dif-lit'+(cls?' '+cls:'')+'" id="prov-lc-kpi-'+slug+'"><div class="prov-kpi-lbl">Dif litros</div><div class="prov-kpi-val">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div></div>';
-}
 function updateProvLitrosCobradosCalc(proveedor){
-  const slug=provLitrosSlug(proveedor);
-  const elIn=document.getElementById('prov-lc-cob-'+slug);
-  const elDif=document.getElementById('prov-lc-dif-'+slug);
-  const elDin=document.getElementById('prov-lc-din-'+slug);
-  const elKpi=document.getElementById('prov-lc-kpi-'+slug);
-  if(!elIn)return;
-  const facts=getRegsStore().filter(r=>r.proveedor===proveedor&&isTipoFactura(r));
+  const inputs=Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(el=>el.getAttribute('data-proveedor')===proveedor);
+  if(!inputs.length)return;
+  const elIn=inputs.find(el=>el===document.activeElement)||inputs[0];
+  const facts=getProvFacts(proveedor);
   const cob=parseLitros(elIn.value);
-  const res=calcProvLitrosCobradosResumen(proveedor,facts,elIn.value.trim()&&!isNaN(cob)?cob:NaN);
-  if(elDif){
-    const difCls=fmtProvDifLitrosClass(res.dif);
-    elDif.textContent=isNaN(res.dif)?'—':fmtProvDifLitrosSigned(res.dif);
-    elDif.classList.remove('pos','neg');
-    if(difCls)elDif.classList.add(difCls);
-  }
-  if(elDin)elDin.textContent=isNaN(res.dinero)?'—':fmt(res.dinero);
-  if(elKpi){
-    const difCls=fmtProvDifLitrosClass(res.dif);
-    const valEl=elKpi.querySelector('.prov-kpi-val');
-    if(valEl)valEl.textContent=isNaN(res.dif)?'—':fmtProvDifLitrosSigned(res.dif);
-    elKpi.classList.remove('pos','neg');
-    if(difCls)elKpi.classList.add(difCls);
-  }
+  const cobRaw=elIn.value.trim()&&!isNaN(cob)?cob:NaN;
+  const res=calcProvLitrosCobradosResumen(proveedor,facts,cobRaw);
+  const difCls=fmtProvDifLitrosClass(res.dif);
+  const difTxt=isNaN(res.dif)?'—':fmtProvDifLitrosSigned(res.dif);
+  const dinTxt=isNaN(res.dinero)?'—':fmt(res.dinero);
+  inputs.forEach(el=>{if(el!==elIn&&document.activeElement!==el)el.value=elIn.value.trim()&&!isNaN(cobRaw)?formatLitrosDisplay(cobRaw):(elIn.value.trim()?elIn.value:'');});
+  forEachProvLcEl('dif',proveedor,el=>{
+    el.textContent=difTxt;
+    el.classList.remove('pos','neg');
+    if(difCls)el.classList.add(difCls);
+  });
+  forEachProvLcEl('din',proveedor,el=>{el.textContent=dinTxt;});
+  forEachProvLcEl('kpi',proveedor,el=>{
+    el.textContent=difTxt;
+    el.classList.remove('pos','neg');
+    if(difCls)el.classList.add(difCls);
+  });
 }
-function onProvLitrosCobradosInput(proveedor,el){
-  el.value=sanitizeLitrosTyping(el.value);
-  updateProvLitrosCobradosCalc(proveedor);
-}
-function onProvLitrosCobradosBlur(proveedor,el){
+async function onProvLitrosCobradosBlur(proveedor,el){
   const raw=String(el.value||'').trim();
   if(!raw){
-    setProvLitrosCobrados(proveedor,'');
+    setProvLitrosCobradosLocal(proveedor,'');
     updateProvLitrosCobradosCalc(proveedor);
+    try{await saveProvLitrosCobradosApi(proveedor,'');setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
+    catch(e){toastError(e);scheduleQuietSync();}
     return;
   }
   const n=parseLitros(raw);
-  if(isNaN(n)){toast('Litros cobrados inválidos',true);refreshDesglosePopup();return;}
-  el.value=formatLitrosDisplay(n);
-  setProvLitrosCobrados(proveedor,n);
+  if(isNaN(n)){toast('Litros cobrados inválidos',true);return;}
+  const fmtVal=formatLitrosDisplay(n);
+  Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(x=>x.getAttribute('data-proveedor')===proveedor).forEach(x=>{x.value=fmtVal;});
+  setProvLitrosCobradosLocal(proveedor,n);
   updateProvLitrosCobradosCalc(proveedor);
+  try{await saveProvLitrosCobradosApi(proveedor,n);setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
+  catch(e){toastError(e);scheduleQuietSync();}
 }
 function buildDesgloseLitrosExtraHeadHtml(){
   if(!isDesgloseProveedor())return'';
@@ -3812,7 +3889,6 @@ function buildDesgloseLitrosExtraCellsHtml(){
 }
 function buildDesgloseLitrosCobradosRowHtml(proveedor,facts){
   if(!isDesgloseProveedor())return'';
-  const slug=provLitrosSlug(proveedor);
   const cobrados=getProvLitrosCobrados(proveedor);
   const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
   const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
@@ -3823,9 +3899,9 @@ function buildDesgloseLitrosCobradosRowHtml(proveedor,facts){
     '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
     '<td class="col-pl">'+esc(plTxt)+'</td>'+
     '<td class="col-total"></td><td class="col-abon"></td><td class="col-pend"></td>'+
-    '<td class="col-lc-cob"><input type="text" id="prov-lc-cob-'+slug+'" inputmode="decimal" placeholder="Manual" value="'+esc(cobVal)+'" data-proveedor="'+esc(proveedor)+'" oninput="onProvLitrosCobradosInput(\''+esc(proveedor)+'\',this)" onblur="onProvLitrosCobradosBlur(\''+esc(proveedor)+'\',this)"></td>'+
-    '<td class="col-lc-dif'+(difCls?' '+difCls:'')+'" id="prov-lc-dif-'+slug+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</td>'+
-    '<td class="col-lc-din" id="prov-lc-din-'+slug+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>'+
+    '<td class="col-lc-cob"><input type="text" class="prov-lc-cob-input" inputmode="decimal" placeholder="Manual" value="'+esc(cobVal)+'" data-proveedor="'+esc(proveedor)+'"></td>'+
+    '<td class="col-lc-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(proveedor)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</td>'+
+    '<td class="col-lc-din" data-prov-lc-din="'+esc(proveedor)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>'+
     '<td class="prov-actions prov-actions-col"></td></tr>';
 }
 function buildDesgloseFacturasTableShell(headExtra,bodyRows){
@@ -3958,11 +4034,10 @@ function buildDesglosePanelHtml(proveedor,regs){
   return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
     '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
     '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
-    '<div class="prov-kpi-row'+(isDesgloseProveedor()?' prov-kpi-row-4':'')+'">'+
+    '<div class="prov-kpi-row">'+
       '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+saldoVal+'</div></div>'+
       '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
       '<div class="prov-kpi pend"><div class="prov-kpi-lbl">Por pagar</div><div class="prov-kpi-val">'+fmt(pend)+'</div></div>'+
-      buildProvLitrosKpiHtml(proveedor,facts)+
     '</div>'+
     '<div class="prov-tabs">'+
       '<button type="button" class="prov-tab'+(tab==='facturas'?' active':'')+'" onclick="setDesgloseTab(\'facturas\')">Facturas</button>'+
@@ -3999,6 +4074,7 @@ function showDesglosePopup(proveedor,anchor,entidad){
   document.body.style.overflow='hidden';
 }
 function refreshDesglosePopup(){
+  const lcEdit=captureProvLcEditState();
   const ov=document.getElementById('desglose-overlay');
   const proveedor=ov&&ov.dataset.proveedor;
   if(!proveedor)return;
@@ -4006,6 +4082,7 @@ function refreshDesglosePopup(){
   const regs=getRegsStore().filter(r=>r.proveedor===proveedor);
   if(!regs.length){closeDesglosePopup();return;}
   if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;ov.dataset.entidad=desgloseEntidad;}
+  restoreProvLcEditState(lcEdit);
 }
 function closeDesglosePopup(){
   desgloseOpen=false;
@@ -4976,7 +5053,7 @@ async function guardarPrecioMini(prov,producto,btn,tipo){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
     }));
     el.dataset.original=String(el.value||'').trim();
     el.dataset.dirty='false';

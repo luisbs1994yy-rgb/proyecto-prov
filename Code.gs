@@ -1,6 +1,6 @@
 /**
- * ESTADO DE CUENTA  |  Versión 3.24
- * Compatible con index.HTML v3.24+ (pegar HTML después del ID de implementación)
+ * ESTADO DE CUENTA  |  Versión 3.25
+ * Compatible con index.HTML v3.38+ (pegar HTML después del ID de implementación)
  *
  * Clientes (quienes te deben): hoja Proveedores + Registros (campo proveedor = cliente)
  * Proveedores (a quienes les debes): hoja CatalogoProveedores + RegistrosProveedores
@@ -20,7 +20,7 @@
  * - PreciosProductos
  */
 
-const APP_VERSION = '3.24';
+const APP_VERSION = '3.25';
 
 const SHEET_REGISTROS = 'Registros';
 const SHEET_PROVEEDORES = 'Proveedores';
@@ -36,7 +36,7 @@ const REG_HEADERS = ['id', 'fecha', 'proveedor', 'tipo', 'monto', 'factura', 'co
 const PROV_HEADERS = ['nombre'];
 
 /* ===== Lista proveedores (catálogo) ===== */
-const CAT_PROV_HEADERS = ['nombre'];
+const CAT_PROV_HEADERS = ['nombre', 'litrosCobrados'];
 
 /* ===== Precios por cliente/producto ===== */
 const PRODUCTOS_HEADERS = ['cliente', 'producto', 'precio', 'updatedAt'];
@@ -107,6 +107,7 @@ function route_(action, payload) {
         registros: getRegistros_(),
         proveedores: getProveedores_(),
         catalogoProveedores: getCatalogoProveedores_(),
+        provLitrosCobrados: getProvLitrosCobrados_(),
         registrosProveedores: getRegistrosProveedores_(),
         logs: getLogs_(),
         precios: getPreciosProductos_().precios
@@ -146,6 +147,9 @@ function route_(action, payload) {
       return addCatalogoProveedor_(payload.nombre);
     case 'deleteCatalogoProveedor':
       return deleteCatalogoProveedor_(payload.nombre);
+
+    case 'setProvLitrosCobrados':
+      return setProvLitrosCobrados_(payload.proveedor, payload.litrosCobrados);
 
     case 'setPrecioProducto':
       return setPrecioProducto_(payload.data || {});
@@ -481,7 +485,69 @@ function deleteProveedor_(nombre) {
 
 /* ===================== CATÁLOGO PROVEEDORES ===================== */
 
+function getCatalogoProvRows_() {
+  const sh = sheet_(SHEET_CATALOGO_PROV);
+  ensureCatalogoProveedoresLayout_(sh);
+  const map = ensureHeaders_(sh, CAT_PROV_HEADERS);
+  const rows = readData_(sh, 2);
+  let list = rows
+    .map((r) => ({
+      nombre: cell_(r, map, 'nombre'),
+      litrosCobrados: cell_(r, map, 'litroscobrados')
+    }))
+    .filter((r) => r.nombre);
+  if (!list.length) {
+    list = readProveedoresColA_(sh).map((nombre) => ({ nombre: nombre, litrosCobrados: '' }));
+  }
+  return list;
+}
+
+function getProvLitrosCobrados_() {
+  const map = {};
+  getCatalogoProvRows_().forEach((r) => {
+    if (r.litrosCobrados) map[r.nombre] = r.litrosCobrados;
+  });
+  return map;
+}
+
+function setProvLitrosCobrados_(proveedor, litrosCobrados) {
+  const nombre = str_(proveedor);
+  if (!nombre) return { ok: false, error: 'Proveedor requerido' };
+
+  const sh = sheet_(SHEET_CATALOGO_PROV);
+  ensureCatalogoProveedoresLayout_(sh);
+  const map = ensureHeaders_(sh, CAT_PROV_HEADERS);
+  const colNombre = map.nombre;
+  const colLc = map.litroscobrados;
+  if (!colNombre) return { ok: false, error: 'Hoja catálogo sin columna nombre' };
+
+  const value = litrosCobrados == null || litrosCobrados === '' ? '' : str_(litrosCobrados);
+  const lastRow = sh.getLastRow();
+  let found = false;
+
+  if (lastRow >= 2) {
+    const nombres = sh.getRange(2, colNombre, lastRow - 1, 1).getValues();
+    for (let i = 0; i < nombres.length; i++) {
+      if (str_(nombres[i][0]).toUpperCase() === nombre.toUpperCase()) {
+        if (colLc) sh.getRange(i + 2, colLc).setValue(value);
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    appendByMap_(sh, map, { nombre: nombre, litrosCobrados: value });
+  }
+
+  return { ok: true, provLitrosCobrados: getProvLitrosCobrados_() };
+}
+
 function getCatalogoProveedores_() {
+  const rows = getCatalogoProvRows_();
+  if (rows.length) {
+    return Array.from(new Set(rows.map((r) => r.nombre))).sort((a, b) => a.localeCompare(b, 'es'));
+  }
   return getNombresFromSheet_(sheet_(SHEET_CATALOGO_PROV), CAT_PROV_HEADERS, ensureCatalogoProveedoresLayout_);
 }
 
