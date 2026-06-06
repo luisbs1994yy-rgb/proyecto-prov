@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.41">
+<html lang="es" data-app-version="3.42">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.41';
+const APP_VERSION=getAppVersion()||'3.42';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -618,7 +618,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     gap: 6px;
     grid-column: 1 / -1;
   }
-  #page-registrar.modo-factura #f-litros-row {
+  #page-registrar.modo-factura #f-litros-row,
+  #page-registrar.modo-pago-proveedor #f-litros-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
@@ -2220,8 +2221,8 @@ function updateRegistrarLitrosUI(){
 }
 function applyPrecioProductoDefault(overwrite=true){
   const tipo=document.getElementById('f-tipo').value;
-  const prov=isRegistrarProveedor();
-  if(tipo!=='factura'&&!(prov&&tipo==='pago'))return;
+  const isProv=isRegistrarProveedor();
+  if(tipo!=='factura'&&!(isProv&&tipo==='pago'))return;
   const prov=document.getElementById('f-proveedor').value;
   const producto=document.getElementById('f-producto').value;
   const inp=document.getElementById('f-precio-litro');
@@ -4067,7 +4068,7 @@ function buildDesglosePagosHtml(facts,pagos){
   if(!pagos.length)return '<div class="empty">Sin pagos</div>';
   const libres=pagos.filter(p=>!String(p.aplicaFacturaId||''));
   let aplicarHtml='';
-  if(libres.length){
+  if(libres.length&&!isDesgloseProveedor()){
     aplicarHtml='<div class="prov-aplicar-box"><strong>Aplicar</strong> · pagos sin asignar';
     sortDesgloseRegs(libres,'fecha','desc').forEach(p=>{
       const sid='aplica-sel-'+String(p.id).replace(/[^a-zA-Z0-9_]/g,'_');
