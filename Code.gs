@@ -936,10 +936,20 @@ function deleteByField_(sh, map, field, value, insensitive) {
   return true;
 }
 
+function formatRegistroFecha_(v) {
+  if (v == null || v === '') return '';
+  if (v instanceof Date && !isNaN(v.getTime())) {
+    return Utilities.formatDate(v, 'America/Mexico_City', "yyyy-MM-dd'T'HH:mm:ss");
+  }
+  return str_(v);
+}
+
 function cell_(row, map, field) {
   const col = map[field.toLowerCase()];
   if (!col) return '';
-  return str_(row[col - 1]);
+  const val = row[col - 1];
+  if (field.toLowerCase() === 'fecha') return formatRegistroFecha_(val);
+  return str_(val);
 }
 
 function str_(v) {
