@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.44">
+<html lang="es" data-app-version="3.45">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.44';
+const APP_VERSION=getAppVersion()||'3.45';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -263,10 +263,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-kpi-lbl{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--text-faint);letter-spacing:.06em;}
 .prov-kpi-val{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:3px;color:var(--navy);}
 .prov-kpi.saldo{--kpi-c:#7c3aed;} .prov-kpi.fact{--kpi-c:#3a86ff;} .prov-kpi.pend{--kpi-c:#f59e0b;}
-.prov-list-litros-cell{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 2px;}
-.prov-list-dif-badge{font-family:var(--mono);font-size:9px;font-weight:700;line-height:1.2;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid var(--border);border-top:2px solid #94a3b8;white-space:nowrap;}
-.prov-list-dif-badge.pos{color:var(--green-text);border-top-color:#22c55e;}
-.prov-list-dif-badge.neg{color:var(--red-text);border-top-color:#ef4444;}
+.prov-list-litros-cell{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 2px;}
+.prov-list-dif-box{width:100%;min-width:72px;max-width:92px;padding:4px 6px;font-size:11px;font-family:var(--mono);font-weight:700;text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:30px;display:flex;align-items:center;justify-content:center;white-space:nowrap;}
+.prov-list-dif-box.pos{color:var(--green-text);border-color:#86efac;background:#f0fdf4;}
+.prov-list-dif-box.neg{color:var(--red-text);border-color:#fca5a5;background:#fef2f2;}
 .prov-lc-cob-input{width:88px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
 .prov-lc-cob-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);}
 .prov-litros-bar{display:flex;flex-wrap:nowrap;align-items:center;gap:4px 8px;padding:5px 8px;background:#fffbeb;border-bottom:2px solid #fcd34d;position:relative;z-index:3;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;}
@@ -279,10 +279,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-litros-bar-dif.pos{color:var(--green-text);}.prov-litros-bar-dif.neg{color:var(--red-text);}
 .prov-litros-bar-din{color:#b45309;}
 .popup-desglose.prov-lc-focus,.popup-desglose.prov-lc-focus .popup-body{overflow:visible;}
-.prov-list-dinero{font-size:8px;font-family:var(--mono);color:#b45309;font-weight:600;white-space:nowrap;}
-#tabla-prov .prov-list-litros-cell .prov-lc-dif{font-size:8px;font-family:var(--mono);font-weight:700;}
-#tabla-prov .prov-list-litros-cell .prov-lc-dif.pos{color:var(--green-text);}
-#tabla-prov .prov-list-litros-cell .prov-lc-dif.neg{color:var(--red-text);}
+.prov-list-dinero{font-size:9px;font-family:var(--mono);font-weight:700;white-space:nowrap;}
+.prov-list-dinero.pos{color:var(--green-text);}
+.prov-list-dinero.neg{color:var(--red-text);}
+.prov-dif-summary{background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:space-between;gap:8px 10px;}
+.prov-dif-kpi{flex:1 1 120px;min-width:0;background:rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,.12);border-top:3px solid #f59e0b;display:flex;flex-direction:column;gap:4px;}
+.prov-dif-kpi-dinero{border-top-color:#22c55e;}
+.prov-dif-kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);}
+.prov-dif-kpi-val{font-family:var(--mono);font-size:clamp(14px,3.5vw,18px);font-weight:600;line-height:1.1;word-break:break-word;}
+.prov-dif-kpi-val.pos{color:#4ade80;}
+.prov-dif-kpi-val.neg{color:#f87171;}
 .prov-tabs{display:flex;gap:4px;padding:6px 8px;background:#eef2f7;border-bottom:1px solid var(--border);}
 .prov-tab{flex:1;padding:7px 4px;font-size:10px;font-weight:600;border:none;border-radius:8px;background:transparent;color:var(--text-muted);cursor:pointer;}
 .prov-tab.active{background:#fff;color:var(--navy);box-shadow:var(--shadow-sm);}
@@ -669,9 +675,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .btn-captura-cliente { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
-  #page-proveedores .totales-summary { padding: 8px 10px; gap: 2px 8px; }
-  #page-proveedores .totales-summary-label { font-size: 9px; }
-  #page-proveedores .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
+  #page-proveedores .prov-dif-summary { padding: 8px 10px; gap: 6px 8px; }
+  #page-proveedores .prov-dif-kpi { padding: 7px 10px; }
+  #page-proveedores .prov-dif-kpi-val { font-size: clamp(.85rem, 4vw, 1.1rem); }
   #page-proveedores .btn-captura-proveedor { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .totales-actions { gap: 5px; }
@@ -746,15 +752,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   }
   #page-proveedores #tabla-prov td.prov-list-litros-cell {
     flex: 0 0 auto;
-    min-width: 78px;
-    max-width: 92px;
+    min-width: 80px;
+    max-width: 96px;
   }
-  #page-proveedores #tabla-prov .prov-lc-cob-input {
-    width: 100%;
-    font-size: 8px;
-    padding: 2px 3px;
-  }
-  #page-proveedores #tabla-prov .prov-list-dif-badge { font-size: 8px; padding: 1px 4px; }
+  #page-proveedores #tabla-prov .prov-list-dif-box { font-size: 9px; min-height: 26px; padding: 3px 4px; }
+  #page-proveedores #tabla-prov .prov-list-dinero { font-size: 8px; }
   #page-totales #tabla-total td:last-child,
   #page-proveedores #tabla-prov td:last-child {
     flex: 0 0 auto;
@@ -1066,14 +1068,18 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       <div class="page-title screen-capture-hide">Proveedores</div>
       <div class="card totales-panel" id="proveedores-captura">
         <div id="proveedores-shot-zone" class="totales-shot-zone">
-          <div class="totales-summary">
-            <div class="totales-summary-main">
-              <span class="totales-summary-label">Saldo total proveedores</span>
-              <span class="totales-summary-value" id="k-total-prov">—</span>
+          <div class="prov-dif-summary">
+            <div class="prov-dif-kpi">
+              <span class="prov-dif-kpi-lbl">Dif litros</span>
+              <span class="prov-dif-kpi-val" id="k-prov-dif-litros">—</span>
+            </div>
+            <div class="prov-dif-kpi prov-dif-kpi-dinero">
+              <span class="prov-dif-kpi-lbl">Dinero</span>
+              <span class="prov-dif-kpi-val" id="k-prov-dif-dinero">—</span>
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-prov" onclick="capturarProveedores()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-proveedor" id="btn-captura-proveedor" onclick="capturarProveedoresMovil()" title="WhatsApp: foto saldo proveedores">📷</button>
+              <button type="button" class="btn-captura-proveedor" id="btn-captura-proveedor" onclick="capturarProveedoresMovil()" title="WhatsApp: foto proveedores">📷</button>
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-prov"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
@@ -2495,14 +2501,42 @@ function renderTotales(){
   elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   syncDesgloseActiveBtns();
 }
+function calcProvLitrosTotalesGlobales(resumen){
+  let sumDif=0,sumDin=0,hasDif=false,hasDin=false;
+  (resumen||[]).forEach(r=>{
+    const regs=getProvLitrosRegs(r.proveedor);
+    const cob=getProvLitrosCobrados(r.proveedor);
+    const res=calcProvLitrosCobradosResumen(r.proveedor,regs,cob);
+    if(!isNaN(res.dif)){sumDif+=res.dif;hasDif=true;}
+    if(!isNaN(res.dinero)){sumDin+=res.dinero;hasDin=true;}
+  });
+  return{dif:hasDif?Math.round(sumDif*100)/100:NaN,dinero:hasDin?Math.round(sumDin*100)/100:NaN};
+}
+function updateProvLitrosTotalesGlobalesUI(resumen){
+  const list=resumen||resumenCatalogoProveedoresActivos(state.registrosProveedores||[]);
+  const t=calcProvLitrosTotalesGlobales(list);
+  const elDif=document.getElementById('k-prov-dif-litros');
+  const elDin=document.getElementById('k-prov-dif-dinero');
+  if(elDif){
+    elDif.textContent=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
+    elDif.classList.remove('pos','neg');
+    const c=fmtProvDifLitrosClass(t.dif);
+    if(c)elDif.classList.add(c);
+  }
+  if(elDin){
+    elDin.textContent=isNaN(t.dinero)?'—':fmt(t.dinero);
+    elDin.classList.remove('pos','neg');
+    const c=fmtProvDifLitrosClass(t.dinero);
+    if(c)elDin.classList.add(c);
+  }
+}
 function renderProveedoresTotales(){
   if(isProvLcInputFocused())return;
   const lcEdit=captureProvLcEditState();
   const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
-  const{deudas,neto}=calcTotalesNeto(resumen);
-  const elTotal=document.getElementById('k-total-prov');
+  const{deudas}=calcTotalesNeto(resumen);
   const elTabla=document.getElementById('tabla-prov');
-  if(elTotal)elTotal.textContent=fmt(neto);
+  updateProvLitrosTotalesGlobalesUI(resumen);
   if(!elTabla)return;
   if(!regs.length&&!resumen.length){elTabla.innerHTML='<div class="empty">Sin registros de proveedores</div>';return;}
   let rows='';
@@ -2516,7 +2550,7 @@ function renderProveedoresTotales(){
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="proveedor" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'proveedor\')">Cuenta</button></td>'+
       '</tr>';
   });
-  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Dif / Cob</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Diferencia</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   restoreProvLcEditState(lcEdit);
   syncDesgloseActiveBtns();
 }
@@ -2554,7 +2588,10 @@ function getProveedoresSaldoTotal(){
   return calcTotalesNeto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[])).neto;
 }
 function buildProveedoresWhatsappText(){
-  return 'Saldo proveedores '+fmt(getProveedoresSaldoTotal())+'    '+formatTotalesCopiaFecha(new Date());
+  const t=calcProvLitrosTotalesGlobales(resumenCatalogoProveedoresActivos(state.registrosProveedores||[]));
+  const difTxt=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
+  const dinTxt=isNaN(t.dinero)?'—':fmt(t.dinero);
+  return 'Dif litros '+difTxt+' · Dinero '+dinTxt+'    '+formatTotalesCopiaFecha(new Date());
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -3884,12 +3921,13 @@ function buildProvListLitrosCellHtml(proveedor){
   const cobrados=getProvLitrosCobrados(proveedor);
   const res=calcProvLitrosCobradosResumen(proveedor,regs,cobrados);
   const difCls=fmtProvDifLitrosClass(res.dif);
-  const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
+  const dinCls=fmtProvDifLitrosClass(res.dinero);
   const key=provLcAttrEncode(proveedor);
+  const difTxt=isNaN(res.dif)?'—':fmtProvDifLitrosSigned(res.dif);
+  const dinTxt=isNaN(res.dinero)?'—':fmt(res.dinero);
   return '<td class="prov-list-litros-cell">'+
-    '<div class="prov-list-dif-badge'+(difCls?' '+difCls:'')+'" data-prov-lc-kpi="'+esc(key)+'" title="Dif litros">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div>'+
-    provLcInputHtml(proveedor,cobVal,PROV_LC_RECIBIDOS_LABEL)+
-    '<span class="prov-list-dinero" data-prov-lc-din="'+esc(key)+'" title="Dinero restante">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
+    '<div class="prov-list-dif-box'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(key)+'" title="Diferencia litros">'+esc(difTxt)+'</div>'+
+    '<span class="prov-list-dinero'+(dinCls?' '+dinCls:'')+'" data-prov-lc-din="'+esc(key)+'" title="Dinero">'+esc(dinTxt)+'</span>'+
     '</td>';
 }
 function sumLitrosPagadosFacturas(facts){
@@ -3946,17 +3984,18 @@ function updateProvLitrosCobradosCalc(proveedor){
     const syncVal=elIn.value.trim()&&!isNaN(cobRaw)?formatLitrosDisplay(cobRaw):(elIn.value.trim()?elIn.value:'');
     inputs.forEach(el=>{if(el!==elIn)el.value=syncVal;});
   }
+  const dinCls=fmtProvDifLitrosClass(res.dinero);
   forEachProvLcEl('dif',proveedor,el=>{
     el.textContent=difTxt;
     el.classList.remove('pos','neg');
     if(difCls)el.classList.add(difCls);
   });
-  forEachProvLcEl('din',proveedor,el=>{el.textContent=dinTxt;});
-  forEachProvLcEl('kpi',proveedor,el=>{
-    el.textContent=difTxt;
+  forEachProvLcEl('din',proveedor,el=>{
+    el.textContent=dinTxt;
     el.classList.remove('pos','neg');
-    if(difCls)el.classList.add(difCls);
+    if(dinCls)el.classList.add(dinCls);
   });
+  updateProvLitrosTotalesGlobalesUI();
 }
 async function onProvLitrosCobradosBlur(proveedor,el){
   const raw=String(el.value||'').trim();
