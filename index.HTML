@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.31">
+<html lang="es" data-app-version="3.32">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.31';
+const APP_VERSION=getAppVersion()||'3.32';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -217,13 +217,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
 #logs-list .log-col-fecha{width:20%;text-align:left;}
-#logs-list .log-col-tipo{width:9%;text-align:center;}
+#logs-list .log-col-tipo{width:8%;text-align:center;}
+#logs-list .log-col-cp{width:9%;text-align:center;font-size:8px;font-weight:700;color:var(--navy);}
+#logs-list .log-col-cp.cp-cliente{color:#1e40af;}
+#logs-list .log-col-cp.cp-proveedor{color:#b45309;}
 #logs-list .log-col-fact{width:9%;text-align:left;}
 #logs-list .log-col-pl{width:8%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
 #logs-list .log-col-lit{width:10%;text-align:center;font-family:var(--mono);font-size:9px;color:var(--navy);}
 #logs-list .log-col-conc{width:10%;text-align:left;}
 #logs-list .log-col-com{width:14%;text-align:left;}
-#logs-list .log-col-desc{width:26%;text-align:left;}
+#logs-list .log-col-desc{width:22%;text-align:left;}
 #logs-list .log-col-act{width:5%;text-align:center;vertical-align:middle;}
 #logs-list .logs-table .log-col-fact,#logs-list .logs-table .log-col-conc{display:none;}
 #logs-list .logs-table.logs-show-extra .log-col-fact,#logs-list .logs-table.logs-show-extra .log-col-conc{display:table-cell;}
@@ -316,12 +319,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-inline-input.saving{opacity:1;border-color:#86efac;background:#e6f7ed;color:#0d7a3e;}
 .desglose-inline-input.warn{border-color:var(--red-border);background:var(--red-bg);}
 .prov-actions{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:3px;padding:2px 3px!important;white-space:nowrap;}
-.prov-fact-table .col-fecha{width:9%;max-width:40px;}
-.prov-fact-table .col-ref{width:14%;}
-.prov-fact-table .prov-actions-col{width:9%;max-width:32px;min-width:26px;padding:2px 1px!important;}
-.prov-fact-table.prov-facturas-table .col-total{width:18%;}
-.prov-fact-table.prov-facturas-table .col-abon{width:20%;}
-.prov-fact-table.prov-facturas-table .col-pend{width:20%;}
+.prov-fact-table .col-fecha{width:8%;max-width:36px;}
+.prov-fact-table .col-ref{width:8%;}
+.prov-fact-table .col-lit,.prov-fact-table .col-pl{font-family:var(--mono);font-size:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prov-fact-table.prov-facturas-table .col-lit{width:9%;}
+.prov-fact-table.prov-facturas-table .col-pl{width:8%;}
+.prov-fact-table .prov-actions-col{width:7%;max-width:26px;min-width:20px;padding:2px 1px!important;}
+.prov-fact-table.prov-facturas-table .col-total{width:14%;}
+.prov-fact-table.prov-facturas-table .col-abon{width:15%;}
+.prov-fact-table.prov-facturas-table .col-pend{width:15%;}
 .prov-fact-table.prov-pagos-table .col-total{width:22%;}
 .prov-fact-table.prov-pagos-table .col-aplica{width:38%;font-size:6px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .prov-fact-table .btn-abonar-mini{padding:2px 5px;font-size:7px;font-weight:600;line-height:1.15;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--navy);cursor:pointer;font-family:var(--font);min-height:0;height:auto;flex-shrink:0;}
@@ -725,10 +731,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
   #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
   #logs-list .log-col-fecha { width: 28%; }
-  #logs-list .log-col-tipo { width: 10%; }
+  #logs-list .log-col-tipo { width: 9%; }
+  #logs-list .log-col-cp { width: 11%; font-size: 7px; }
   #logs-list .log-col-pl { width: 11%; font-size: 7px; }
   #logs-list .log-col-lit { width: 12%; font-size: 7px; }
-  #logs-list .log-col-desc { width: 28%; }
+  #logs-list .log-col-desc { width: 24%; }
   #logs-list .log-col-com { width: 18%; }
   #logs-list .log-col-act { width: 6%; }
   #logs-list .log-fecha-bitacora { font-size: 10px; }
@@ -1033,7 +1040,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <span class="card-title">Bitácora general</span>
           <div class="logs-header-actions">
             <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal()" title="Foto bitácora · movimientos">📷</button>
-            <button type="button" class="btn-captura-cliente-bitacora" id="btn-bitacora-captura-cliente" onclick="capturarPantallaMovil(this)" title="WhatsApp: foto saldo clientes">📷</button>
+            <button type="button" class="btn-captura-cliente-bitacora" id="btn-bitacora-captura-filtro" onclick="capturarBitacoraFiltrada(this)" title="WhatsApp: foto bitácora filtrada">📷</button>
           </div>
         </div>
         <div class="logs-filters" id="logs-filters">
@@ -2885,7 +2892,7 @@ function getBitacoraCanvasExtra(l){
 }
 function getBitacoraWideLayout(rowData){
   const mcv=document.createElement('canvas').getContext('2d');
-  const dateW=76,tipoW=64,gap=5;
+  const dateW=76,tipoW=58,entW=52,gap=5;
   let maxClient=76,maxPl=36,maxLit=46,maxMonto=90;
   rowData.forEach(r=>{
     mcv.font='700 14px IBM Plex Sans, Arial';
@@ -2896,13 +2903,13 @@ function getBitacoraWideLayout(rowData){
     mcv.font='700 13px IBM Plex Mono, monospace';
     if(r.monto)maxMonto=Math.max(maxMonto,mcv.measureText(r.monto).width);
   });
-  const clientW=Math.min(132,Math.ceil(maxClient)+10);
+  const clientW=Math.min(120,Math.ceil(maxClient)+8);
   const plW=Math.ceil(maxPl)+10;
   const litW=Math.ceil(maxLit)+10;
   const montoW=Math.ceil(maxMonto)+10;
-  const contentW=dateW+gap+tipoW+gap+clientW+gap+plW+gap+litW+gap+montoW;
-  const xNums=dateW+gap+tipoW+gap+clientW+gap;
-  return{dateW,tipoW,clientW,plW,litW,montoW,gap,contentW,xNums};
+  const contentW=dateW+gap+tipoW+gap+entW+gap+clientW+gap+plW+gap+litW+gap+montoW;
+  const xNums=dateW+gap+tipoW+gap+entW+gap+clientW+gap;
+  return{dateW,tipoW,entW,clientW,plW,litW,montoW,gap,contentW,xNums};
 }
 function getBitacoraCanvasWidth(logs,desde,hasta,layout){
   if(layout)return layout.contentW+56;
@@ -3064,7 +3071,8 @@ function getLogRowData(l){
     if(!isNaN(fd.litros)&&fd.litros>0)litros=formatLitrosDisplay(fd.litros);
     if(precioLitro||litros)rowH=40;
   }
-  return{fecha,hora,tipo,cliente,monto,extra,precioLitro,litros,rowH};
+  const entidad=getLogEntidadLabel(l);
+  return{fecha,hora,tipo,entidad,cliente,monto,extra,precioLitro,litros,rowH};
 }
 function logTipoCanvasStyle(tipo){
   const t=String(tipo||'').toUpperCase();
@@ -3075,12 +3083,13 @@ function logTipoCanvasStyle(tipo){
   return{bg:'#f1f5f9',fg:'#475569',lbl:(t||'—').slice(0,8)};
 }
 function drawBitacoraColHeaders(ctx,y,pad,layout){
-  const{dateW,tipoW,clientW,plW,litW,montoW,gap,xNums}=layout;
+  const{dateW,tipoW,entW,clientW,plW,litW,montoW,gap,xNums}=layout;
   let x=pad+8;
   ctx.fillStyle='#94a3b8';ctx.font='600 10px IBM Plex Sans, Arial';ctx.textAlign='left';
   ctx.fillText('Fecha',x,y);x+=dateW+gap;
   ctx.fillText('Tipo',x,y);x+=tipoW+gap;
-  ctx.fillText('Cliente',x,y);
+  ctx.fillText('C/P',x,y);x+=entW+gap;
+  ctx.fillText('Nombre',x,y);
   x=pad+8+xNums;
   ctx.textAlign='center';
   ctx.fillText('P/L',x+plW/2,y);x+=plW+gap;
@@ -3095,7 +3104,7 @@ function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout){
   ctx.fillStyle=bg;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.fill();
   ctx.strokeStyle='#e8ecf4';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,10);ctx.stroke();
   if(wide&&layout){
-    const{dateW,tipoW,clientW,plW,litW,montoW,gap,xNums}=layout;
+    const{dateW,tipoW,entW,clientW,plW,litW,montoW,gap,xNums}=layout;
     let x=pad+8;
     const midY=r.extra?y+17:y+Math.round(rowH/2)+1;
     ctx.fillStyle='#64748b';ctx.font='600 12px IBM Plex Mono, monospace';ctx.textAlign='left';
@@ -3107,6 +3116,11 @@ function drawBitacoraRowCanvas(ctx,r,y,rowH,w,pad,wide,layout){
     ctx.fillStyle=st.fg;ctx.font='700 9px IBM Plex Sans, Arial';ctx.textAlign='center';
     ctx.fillText(st.lbl,x+tipoW/2,y+24);
     x+=tipoW+gap;
+    ctx.textAlign='center';
+    ctx.fillStyle=r.entidad==='Proveedor'?'#b45309':'#1e40af';
+    ctx.font='700 8px IBM Plex Sans, Arial';
+    ctx.fillText(r.entidad==='—'?'—':r.entidad,x+entW/2,midY);
+    x+=entW+gap;
     ctx.textAlign='left';
     ctx.fillStyle='#1a1c2c';ctx.font='700 14px IBM Plex Sans, Arial';
     drawFitText(ctx,r.cliente,x,midY,clientW);
@@ -3276,6 +3290,67 @@ function guardarBitacoraPreviewClick(){
   if(!p||!p.blob){toast('Sin foto',true);return;}
   downloadBlob(p.blob,p.name);
   toast('Foto guardada · ábrela y compártela por WhatsApp',false,true);
+}
+function getBitacoraFiltroRango(logs){
+  if(logsFiltro.desde&&logsFiltro.hasta){
+    const d0=parseDateInputValue(logsFiltro.desde);
+    const d1=parseDateInputValue(logsFiltro.hasta);
+    if(d0&&d1)return{desde:startOfDay(d0),hasta:endOfDay(d1)};
+  }
+  let min=null,max=null;
+  (logs||[]).forEach(l=>{
+    const d=parseLogDate(l);
+    if(!d)return;
+    if(!min||d<min)min=d;
+    if(!max||d>max)max=d;
+  });
+  if(min&&max)return{desde:startOfDay(min),hasta:endOfDay(max)};
+  const hoy=startOfDay(new Date());
+  return{desde:hoy,hasta:endOfDay(hoy)};
+}
+function bitacoraFiltroResumenTexto(){
+  const parts=[];
+  if(logsFiltro.desde||logsFiltro.hasta)parts.push((logsFiltro.desde||'…')+' — '+(logsFiltro.hasta||'…'));
+  if(logsFiltro.tipo)parts.push(logsFiltro.tipo);
+  if(logsFiltro.cliente)parts.push(logsFiltro.cliente);
+  return parts.length?parts.join(' · '):'filtros actuales';
+}
+async function capturarBitacoraFiltrada(btnEl){
+  const btn=btnEl||document.getElementById('btn-bitacora-captura-filtro');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const logsRaw=getLogsFiltrados().map(l=>({...l}));
+    if(!logsRaw.length){toast('No hay movimientos con los filtros actuales',true);return;}
+    const logsForInfer=logsRaw.map(l=>({...l}));
+    inferPagoGruposForDisplay(logsForInfer);
+    const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
+    const rango=getBitacoraFiltroRango(logsFoto);
+    const canvas=buildBitacoraCanvas(logsFoto,rango.desde,rango.hasta);
+    const blob=await canvasToBlob(canvas,20000);
+    if(!blob)throw new Error('No se pudo crear la imagen');
+    const tag=toDateInputValue(rango.desde)+'_'+toDateInputValue(rango.hasta);
+    const name='bitacora-filtro-'+tag+'.png';
+    const file=new File([blob],name,{type:'image/png'});
+    const titulo='Bitácora · '+bitacoraFiltroResumenTexto()+' · '+logsFoto.length+' mov.';
+    if(navigator.share){
+      try{
+        const payload={files:[file],title:titulo,text:titulo};
+        if(!navigator.canShare||navigator.canShare(payload)){
+          await navigator.share(payload);
+          toast('Elige WhatsApp · foto bitácora filtrada',false,true);
+          return;
+        }
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    if(!isIOSLike()&&await copyImageToClipboard(blob,3000)){
+      toast('Imagen copiada · bitácora filtrada',false,true);
+      return;
+    }
+    downloadBlob(blob,name);
+    toast('Foto bitácora guardada · Galería o WhatsApp',false,true);
+  }catch(e){toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷';}}
 }
 async function generarBitacoraWhatsapp(){
   const btn=document.getElementById('btn-bitacora-generar');
@@ -3589,16 +3664,20 @@ function buildDesgloseFacturasHtml(facts,pagos){
     const abVal=formatMontoDisplay(ab);
     const pendVal=formatMontoDisplay(pend);
     const saldadaCls=pend<=0.001?' desglose-row-saldada':'';
+    const litTxt=fmtDesgloseLitrosCell(f);
+    const plTxt=fmtDesglosePrecioLitroCell(f);
     rows+='<tr class="desglose-row desglose-row-factura'+saldadaCls+'">'+
       '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtFechaMini(f.fecha))+'</span></td>'+
       '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
+      '<td class="col-lit">'+esc(litTxt)+'</td>'+
+      '<td class="col-pl">'+esc(plTxt)+'</td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
   return toolbar+'<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
-    '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th class="prov-actions-col"></th>'+
+    '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th><th class="prov-actions-col"></th>'+
     '</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
@@ -4134,19 +4213,8 @@ function findLogsForRegistro(reg){
     return true;
   });
 }
-function findRegistrosForLog(log){
-  if(!log||log.tipo==='eliminar'||log.tipo==='proveedor')return[];
-  const ids=registroIdsFromLog(log);
-  if(ids.length){
-    const porId=ids.map(id=>state.registros.find(x=>x.id===id)).filter(Boolean);
-    if(porId.length)return porId;
-  }
-  const b=parseDescBasics(log.descripcion);
-  if(!b)return[];
-  const ex=parseLogExtraFields(log);
-  const factList=facturasFromLogStr(ex.factura);
-  const lt=String(log.tipo||'').toLowerCase();
-  const matched=state.registros.filter(r=>{
+function matchRegistrosForLogInStore(regs,log,b,ex,factList){
+  return regs.filter(r=>{
     if(!logTipoCoincideRegistro(r,log))return false;
     if(r.proveedor!==b.proveedor||!montoCerca(r.monto,b.monto))return false;
     if(factList.length&&r.factura){
@@ -4156,14 +4224,71 @@ function findRegistrosForLog(log){
     if(ex.concepto&&r.concepto&&ex.concepto!==r.concepto)return false;
     return true;
   });
+}
+function findRegistrosForLog(log){
+  if(!log||log.tipo==='eliminar'||log.tipo==='proveedor')return[];
+  const ids=registroIdsFromLog(log);
+  if(ids.length){
+    const porId=[];
+    ids.forEach(id=>{
+      const c=state.registros.find(x=>x.id===id);
+      const p=(state.registrosProveedores||[]).find(x=>x.id===id);
+      if(c)porId.push(c);
+      if(p)porId.push(p);
+    });
+    if(porId.length)return porId;
+  }
+  const b=parseDescBasics(log.descripcion);
+  if(!b)return[];
+  const ex=parseLogExtraFields(log);
+  const factList=facturasFromLogStr(ex.factura);
+  const lt=String(log.tipo||'').toLowerCase();
+  let matched=matchRegistrosForLogInStore(state.registros,log,b,ex,factList);
+  if(matched.length)return matched;
+  matched=matchRegistrosForLogInStore(state.registrosProveedores||[],log,b,ex,factList);
   if(matched.length)return matched;
   if(lt.includes('pago')&&factList.length){
-    const byRef=state.registros.filter(r=>isTipoPago(r)&&r.proveedor===b.proveedor&&factList.some(f=>String(r.factura||'').trim()===f));
-    const byMonto=byRef.filter(r=>montoCerca(r.monto,b.monto));
-    if(byMonto.length)return byMonto;
-    if(byRef.length===1)return byRef;
+    const stores=[state.registros,state.registrosProveedores||[]];
+    for(let i=0;i<stores.length;i++){
+      const byRef=stores[i].filter(r=>isTipoPago(r)&&r.proveedor===b.proveedor&&factList.some(f=>String(r.factura||'').trim()===f));
+      const byMonto=byRef.filter(r=>montoCerca(r.monto,b.monto));
+      if(byMonto.length)return byMonto;
+      if(byRef.length===1)return byRef;
+    }
   }
   return [];
+}
+function getLogEntidadLabel(l){
+  const ids=registroIdsFromLog(l);
+  for(let i=0;i<ids.length;i++){
+    if((state.registrosProveedores||[]).some(r=>r.id===ids[i]))return 'Proveedor';
+    if(state.registros.some(r=>r.id===ids[i]))return 'Cliente';
+  }
+  const regs=findRegistrosForLog(l);
+  if(regs.length&&regs[0].id){
+    if((state.registrosProveedores||[]).some(r=>r.id===regs[0].id))return 'Proveedor';
+    if(state.registros.some(r=>r.id===regs[0].id))return 'Cliente';
+  }
+  const nombre=getLogClienteNombre(l);
+  if(nombre){
+    const hitP=(state.registrosProveedores||[]).some(r=>r.proveedor===nombre);
+    const hitC=state.registros.some(r=>r.proveedor===nombre);
+    if(hitP&&!hitC)return 'Proveedor';
+    if(hitC&&!hitP)return 'Cliente';
+  }
+  return '—';
+}
+function fmtDesgloseLitrosCell(f){
+  const r=enrichRegistroLitros(f);
+  const lt=parseLitros(r.litros);
+  if(isNaN(lt)||lt<=0)return '—';
+  return formatLitrosDisplay(lt);
+}
+function fmtDesglosePrecioLitroCell(f){
+  const r=enrichRegistroLitros(f);
+  const pl=parsePrecioLitro(r.precioLitro);
+  if(isNaN(pl)||pl<=0)return '—';
+  return formatPrecioLitroDisplay(pl);
 }
 function limpiarAplicaMapRegistros(regs){
   if(!regs||!regs.length)return;
@@ -4282,9 +4407,12 @@ function renderLogs(){
     const descCell=formatLogDescCell(l);
     const plCell=fmtLogPrecioLitroCell(l);
     const litCell=fmtLogLitrosCell(l);
+    const entLbl=getLogEntidadLabel(l);
+    const entCls=entLbl==='Proveedor'?' cp-proveedor':entLbl==='Cliente'?' cp-cliente':'';
     tableRows+='<tr class="'+rowCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
       '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
+      '<td class="log-col-cp'+entCls+'">'+esc(entLbl)+'</td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
       '<td class="log-col-lit'+(litCell.empty?' log-empty':'')+'">'+litCell.html+'</td>'+
@@ -4298,7 +4426,7 @@ function renderLogs(){
   const tblCls='logs-table'+(logsShowExtraCols?' logs-show-extra':'');
   el.innerHTML=hint+
     '<div class="table-wrap"><table class="'+tblCls+'"><thead><tr>'+
-      '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th>'+
+      '<th class="log-col-fecha">Fecha</th><th class="log-col-tipo">Tipo</th><th class="log-col-cp">Cli/Prov</th>'+
       '<th class="log-col-fact">Fact.</th><th class="log-col-pl">P/L</th><th class="log-col-lit">Litros</th>'+
       '<th class="log-col-conc">Conc.</th><th class="log-col-desc">Detalle</th><th class="log-col-com">Comentario</th><th class="log-col-act"></th>'+
     '</tr></thead><tbody>'+tableRows+'</tbody></table></div>';
