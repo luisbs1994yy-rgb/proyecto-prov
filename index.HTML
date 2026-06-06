@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.51">
+<html lang="es" data-app-version="3.52">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,8 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.51';
+const APP_VERSION=getAppVersion()||'3.52';
+const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -265,6 +266,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-kpi-lbl{font-size:8px;font-weight:700;text-transform:uppercase;color:var(--text-faint);letter-spacing:.06em;}
 .prov-kpi-val{font-family:var(--mono);font-size:11px;font-weight:600;margin-top:3px;color:var(--navy);}
 .prov-kpi.saldo{--kpi-c:#7c3aed;} .prov-kpi.fact{--kpi-c:#3a86ff;} .prov-kpi.pend{--kpi-c:#f59e0b;}
+.prov-producto-cell{font-size:10px;font-weight:600;text-align:center;color:var(--navy);white-space:nowrap;}
 .prov-list-litros-cell{flex:0 0 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 2px;}
 .prov-list-dif-box{width:100%;min-width:72px;max-width:92px;padding:4px 6px;font-size:11px;font-family:var(--mono);font-weight:700;text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:30px;display:flex;align-items:center;justify-content:center;white-space:nowrap;}
 .prov-list-dif-box.pos{color:var(--green-text);border-color:#86efac;background:#f0fdf4;}
@@ -285,7 +287,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-list-dinero.pos{color:var(--green-text);}
 .prov-list-dinero.neg{color:var(--red-text);}
 .prov-dif-summary{background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:space-between;gap:8px 10px;}
-.prov-dif-kpi{flex:1 1 120px;min-width:0;background:rgba(255,255,255,.08);border-radius:10px;padding:8px 12px;border:1px solid rgba(255,255,255,.12);border-top:3px solid #f59e0b;display:flex;flex-direction:column;gap:4px;}
+.prov-dif-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1 1 100%;min-width:0;}
+.prov-dif-prod{background:rgba(255,255,255,.06);border-radius:10px;padding:6px 8px;border:1px solid rgba(255,255,255,.1);}
+.prov-dif-prod-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.85);margin-bottom:5px;text-align:center;}
+.prov-dif-prod-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.prov-dif-kpi{flex:1 1 120px;min-width:0;background:rgba(255,255,255,.08);border-radius:8px;padding:6px 8px;border:1px solid rgba(255,255,255,.12);border-top:2px solid #f59e0b;display:flex;flex-direction:column;gap:3px;}
+.prov-dif-prod .prov-dif-kpi{flex:none;}
 .prov-dif-kpi-dinero{border-top-color:#22c55e;}
 .prov-dif-kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);}
 .prov-dif-kpi-val{font-family:var(--mono);font-size:clamp(14px,3.5vw,18px);font-weight:600;line-height:1.1;word-break:break-word;}
@@ -680,8 +687,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
   #page-proveedores .prov-dif-summary { padding: 8px 10px; gap: 6px 8px; }
-  #page-proveedores .prov-dif-kpi { padding: 7px 10px; }
-  #page-proveedores .prov-dif-kpi-val { font-size: clamp(.85rem, 4vw, 1.1rem); }
+  #page-proveedores .prov-dif-kpi-grid { grid-template-columns: 1fr; gap: 6px; }
+  #page-proveedores .prov-dif-kpi { padding: 6px 8px; }
+  #page-proveedores .prov-dif-kpi-val { font-size: clamp(.8rem, 3.8vw, 1rem); }
   #page-proveedores .btn-captura-proveedor { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .totales-actions { gap: 5px; }
@@ -1078,13 +1086,28 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       <div class="card totales-panel" id="proveedores-captura">
         <div id="proveedores-shot-zone" class="totales-shot-zone">
           <div class="prov-dif-summary">
-            <div class="prov-dif-kpi">
-              <span class="prov-dif-kpi-lbl">Dif litros</span>
-              <span class="prov-dif-kpi-val" id="k-prov-dif-litros">—</span>
-            </div>
-            <div class="prov-dif-kpi prov-dif-kpi-dinero">
-              <span class="prov-dif-kpi-lbl">Dinero</span>
-              <span class="prov-dif-kpi-val" id="k-prov-dif-dinero">—</span>
+            <div class="prov-dif-kpi-grid">
+              <div class="prov-dif-prod">
+                <div class="prov-dif-prod-title">Etanol</div>
+                <div class="prov-dif-prod-row">
+                  <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-etanol-dif">—</span></div>
+                  <div class="prov-dif-kpi prov-dif-kpi-dinero"><span class="prov-dif-kpi-lbl">Dinero</span><span class="prov-dif-kpi-val" id="k-prov-etanol-din">—</span></div>
+                </div>
+              </div>
+              <div class="prov-dif-prod">
+                <div class="prov-dif-prod-title">Nafta</div>
+                <div class="prov-dif-prod-row">
+                  <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-nafta-dif">—</span></div>
+                  <div class="prov-dif-kpi prov-dif-kpi-dinero"><span class="prov-dif-kpi-lbl">Dinero</span><span class="prov-dif-kpi-val" id="k-prov-nafta-din">—</span></div>
+                </div>
+              </div>
+              <div class="prov-dif-prod">
+                <div class="prov-dif-prod-title">Regular</div>
+                <div class="prov-dif-prod-row">
+                  <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-regular-dif">—</span></div>
+                  <div class="prov-dif-kpi prov-dif-kpi-dinero"><span class="prov-dif-kpi-lbl">Dinero</span><span class="prov-dif-kpi-val" id="k-prov-regular-din">—</span></div>
+                </div>
+              </div>
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-prov" onclick="capturarProveedores()" title="Copiar foto">📋</button>
@@ -2559,34 +2582,70 @@ function renderTotales(){
   elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Saldo</th><th>%</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   syncDesgloseActiveBtns();
 }
-function calcProvLitrosTotalesGlobales(resumen){
-  let sumDif=0,sumDin=0,hasDif=false,hasDin=false;
+function provProdKpiSlug(producto){
+  return String(producto||'').trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
+}
+function calcProvLitrosTotalesPorProducto(resumen){
+  const out={};
+  PROV_PRODUCTOS_KPI.forEach(p=>out[p]={dif:0,dinero:0,hasDif:false,hasDin:false});
   (resumen||[]).forEach(r=>{
-    const regs=getProvLitrosRegs(r.proveedor);
-    const cob=getProvLitrosCobrados(r.proveedor);
-    const res=calcProvLitrosCobradosResumen(r.proveedor,regs,cob);
-    if(!isNaN(res.dif)){sumDif+=res.dif;hasDif=true;}
-    if(!isNaN(res.dinero)){sumDin+=res.dinero;hasDin=true;}
+    const proveedor=r.proveedor;
+    const regs=getProvLitrosRegs(proveedor);
+    const cobradosTotal=getProvLitrosCobrados(proveedor);
+    const hasCob=!isNaN(cobradosTotal);
+    const pagosPorProd={};
+    let totalPag=0;
+    regs.forEach(reg=>{
+      const er=enrichRegistroLitros(reg);
+      const prod=String(er.producto||'').trim();
+      if(!PROV_PRODUCTOS_KPI.includes(prod))return;
+      const lt=parseLitros(er.litros);
+      if(isNaN(lt)||lt<=0)return;
+      pagosPorProd[prod]=(pagosPorProd[prod]||0)+lt;
+      totalPag+=lt;
+    });
+    PROV_PRODUCTOS_KPI.forEach(prod=>{
+      const pag=pagosPorProd[prod]||0;
+      if(pag<=0)return;
+      const cobProd=hasCob&&totalPag>0?Math.round((pag/totalPag)*cobradosTotal*100)/100:NaN;
+      const dif=hasCob?Math.round((pag-cobProd)*100)/100:NaN;
+      let sumL=0,sumM=0;
+      regs.forEach(reg=>{
+        const er=enrichRegistroLitros(reg);
+        if(String(er.producto||'').trim()!==prod)return;
+        const lt=parseLitros(er.litros),pl=parsePrecioLitro(er.precioLitro);
+        if(!isNaN(lt)&&lt>0&&!isNaN(pl)&&pl>0){sumL+=lt;sumM+=lt*pl;}
+      });
+      const pl=sumL>0?Math.round((sumM/sumL)*100)/100:avgPrecioLitroProveedor(regs);
+      const dinero=(hasCob&&!isNaN(pl)&&pl>0&&!isNaN(dif))?Math.round(dif*pl*100)/100:NaN;
+      if(!isNaN(dif)){out[prod].dif+=dif;out[prod].hasDif=true;}
+      if(!isNaN(dinero)){out[prod].dinero+=dinero;out[prod].hasDin=true;}
+    });
   });
-  return{dif:hasDif?Math.round(sumDif*100)/100:NaN,dinero:hasDin?Math.round(sumDin*100)/100:NaN};
+  PROV_PRODUCTOS_KPI.forEach(prod=>{
+    if(out[prod].hasDif)out[prod].dif=Math.round(out[prod].dif*100)/100;
+    if(out[prod].hasDin)out[prod].dinero=Math.round(out[prod].dinero*100)/100;
+  });
+  return out;
+}
+function setProvProdKpiVal(idSuffix,val,isMoney){
+  const el=document.getElementById('k-prov-'+idSuffix+(isMoney?'-din':'-dif'));
+  if(!el)return;
+  const txt=isMoney?(isNaN(val)?'—':fmt(val)):(isNaN(val)?'—':fmtProvDifLitrosSigned(val));
+  el.textContent=txt;
+  el.classList.remove('pos','neg');
+  const c=fmtProvDifLitrosClass(val);
+  if(c)el.classList.add(c);
 }
 function updateProvLitrosTotalesGlobalesUI(resumen){
   const list=resumen||resumenCatalogoProveedoresActivos(state.registrosProveedores||[]);
-  const t=calcProvLitrosTotalesGlobales(list);
-  const elDif=document.getElementById('k-prov-dif-litros');
-  const elDin=document.getElementById('k-prov-dif-dinero');
-  if(elDif){
-    elDif.textContent=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
-    elDif.classList.remove('pos','neg');
-    const c=fmtProvDifLitrosClass(t.dif);
-    if(c)elDif.classList.add(c);
-  }
-  if(elDin){
-    elDin.textContent=isNaN(t.dinero)?'—':fmt(t.dinero);
-    elDin.classList.remove('pos','neg');
-    const c=fmtProvDifLitrosClass(t.dinero);
-    if(c)elDin.classList.add(c);
-  }
+  const byProd=calcProvLitrosTotalesPorProducto(list);
+  PROV_PRODUCTOS_KPI.forEach(prod=>{
+    const slug=provProdKpiSlug(prod);
+    const t=byProd[prod]||{};
+    setProvProdKpiVal(slug,t.dif,false);
+    setProvProdKpiVal(slug,t.dinero,true);
+  });
 }
 function renderProveedoresTotales(force){
   if(!force&&isProvLcInputFocused())return;
@@ -2603,13 +2662,12 @@ function renderProveedoresTotales(force){
     rows+='<tr>'+
       '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
       '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
-      '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
       buildProvProductoCellHtml(r.proveedor)+
       buildProvListLitrosCellHtml(r.proveedor)+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="proveedor" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'proveedor\')">Cuenta</button></td>'+
       '</tr>';
   });
-  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Producto</th><th>Diferencia</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>Producto</th><th>Diferencia</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   restoreProvLcEditState(lcEdit);
   syncDesgloseActiveBtns();
 }
@@ -2647,10 +2705,14 @@ function getProveedoresSaldoTotal(){
   return calcTotalesNeto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[])).neto;
 }
 function buildProveedoresWhatsappText(){
-  const t=calcProvLitrosTotalesGlobales(resumenCatalogoProveedoresActivos(state.registrosProveedores||[]));
-  const difTxt=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
-  const dinTxt=isNaN(t.dinero)?'—':fmt(t.dinero);
-  return 'Dif litros '+difTxt+' · Dinero '+dinTxt+'    '+formatTotalesCopiaFecha(new Date());
+  const byProd=calcProvLitrosTotalesPorProducto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[]));
+  const parts=PROV_PRODUCTOS_KPI.map(prod=>{
+    const t=byProd[prod]||{};
+    const d=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
+    const $=isNaN(t.dinero)?'—':fmt(t.dinero);
+    return prod+': '+d+' / '+$;
+  }).join(' · ');
+  return parts+'    '+formatTotalesCopiaFecha(new Date());
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
