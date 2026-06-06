@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.47">
+<html lang="es" data-app-version="3.48">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.47';
+const APP_VERSION=getAppVersion()||'3.48';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -97,7 +97,7 @@ body{
 .form-group{display:flex;flex-direction:column;gap:5px;min-width:0;}
 .label-long{font-size:inherit;}
 label{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
-input,select,textarea{width:100%;min-width:0;padding:9px 12px;font-size:13px;font-family:var(--font);border:1.5px solid var(--border);border-radius:8px;background:#faf9f7;color:var(--text);transition:all .14s;}
+input,select,textarea{width:100%;min-width:0;padding:9px 12px;font-size:13px;font-family:var(--font);border:2px solid #1a1c2c;border-radius:8px;background:#fff;color:var(--text);transition:all .14s;}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px rgba(58,134,255,.12);}
 input#f-monto,input#f-precio-litro,input#f-litros{font-family:var(--mono);font-size:14px;}
 textarea{resize:vertical;min-height:60px;}
@@ -117,7 +117,9 @@ textarea{resize:vertical;min-height:60px;}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
 .form-row-duo{display:contents;}
 #page-registrar #f-litros-row{display:none;}
-#page-registrar.modo-factura #f-litros-row,#page-registrar.modo-pago-proveedor #f-litros-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;grid-column:1/-1;}
+#page-registrar.modo-factura #f-litros-row,#page-registrar.modo-pago-proveedor #f-litros-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;grid-column:1/-1;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row{display:grid;grid-template-columns:1fr;gap:14px;grid-column:1/-1;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row>.form-group:not(#f-monto-inline-group){display:none;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="factura"]{display:none;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="pago"]{flex:1 1 100%;}
 #page-registrar.registrar-modo-proveedor .f-aplica-multi,#page-registrar.registrar-modo-proveedor #f-factura-hint{display:none!important;}
@@ -267,7 +269,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-list-dif-box{width:100%;min-width:72px;max-width:92px;padding:4px 6px;font-size:11px;font-family:var(--mono);font-weight:700;text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:30px;display:flex;align-items:center;justify-content:center;white-space:nowrap;}
 .prov-list-dif-box.pos{color:var(--green-text);border-color:#86efac;background:#f0fdf4;}
 .prov-list-dif-box.neg{color:var(--red-text);border-color:#fca5a5;background:#fef2f2;}
-.prov-lc-cob-input{width:88px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
+.prov-lc-cob-input{width:88px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:2px solid #1a1c2c;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
 .prov-lc-cob-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);}
 .prov-litros-bar{display:flex;flex-wrap:nowrap;align-items:center;gap:4px 8px;padding:5px 8px;background:#fffbeb;border-bottom:2px solid #fcd34d;position:relative;z-index:3;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;}
 .prov-litros-bar-item{display:inline-flex;align-items:center;gap:3px;flex-shrink:0;}
@@ -342,7 +344,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-over-abon{color:var(--red-text);font-weight:600;}
 .desglose-fact-toolbar{display:flex;justify-content:flex-end;padding:8px 10px;background:#f8fafc;border-bottom:1px solid var(--border);}
 .desglose-fact-toolbar .btn-sm{font-size:9px;}
-.desglose-inline-input{width:100%;min-width:0;padding:4px 6px;font-size:10px;font-family:var(--font);border:1px solid var(--border);border-radius:5px;background:#fff;color:var(--text);box-sizing:border-box;}
+.desglose-inline-input{width:100%;min-width:0;padding:4px 6px;font-size:10px;font-family:var(--font);border:1.5px solid #1a1c2c;border-radius:5px;background:#fff;color:var(--text);box-sizing:border-box;}
 .desglose-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.15);background:#fff;}
 .desglose-inline-input.monto{font-family:var(--mono);text-align:right;}
 .desglose-inline-input.saving{opacity:1;border-color:#86efac;background:#e6f7ed;color:#0d7a3e;}
@@ -1009,15 +1011,13 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               </div>
               <div class="form-group"><label id="f-precio-litro-label" for="f-precio-litro">Precio x litro ($)</label><input type="text" id="f-precio-litro" inputmode="decimal" placeholder="" autocomplete="off" maxlength="6"></div>
               <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
+              <div class="form-group" id="f-monto-inline-group"><label for="f-monto">Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
             <div class="form-row-duo">
               <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
               <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
             </div>
             <p class="registrar-fecha-preview" id="f-fecha-preview">Se registrará con la fecha y hora de arriba (hora México).</p>
-            <div class="form-row-duo">
-              <div class="form-group" style="grid-column:1/-1"><label>Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
-            </div>
             <div class="form-row-duo form-fact-concept-row">
               <div class="form-group form-factura-num">
                 <label id="f-factura-label">Núm. factura</label>
