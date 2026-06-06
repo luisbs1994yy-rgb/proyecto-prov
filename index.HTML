@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.61">
+<html lang="es" data-app-version="3.62">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.61';
+const APP_VERSION=getAppVersion()||'3.62';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -126,8 +126,9 @@ textarea{resize:vertical;min-height:60px;}
 #page-registrar.registrar-modo-proveedor .f-aplica-multi,#page-registrar.registrar-modo-proveedor #f-factura-hint{display:none!important;}
 #page-registrar #f-proveedor-group.prov-btn-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px;width:100%;}
 #page-registrar #f-proveedor-group.prov-btn-grid .btn-select{
-  flex:0 0 calc((100% - 18px) / 7);max-width:calc((100% - 18px) / 7);min-width:0;margin:0;
-  padding:4px 2px;font-size:9px;line-height:1.1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  flex:0 0 calc((100% - 15px) / 6);max-width:calc((100% - 15px) / 6);min-width:0;margin:0;
+  padding:4px 3px;font-size:9px;line-height:1.15;text-align:center;white-space:nowrap;
+  font-family:var(--mono);letter-spacing:-.02em;
 }
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
@@ -719,12 +720,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-registrar #f-tipo-group .btn-select { flex: 1 1 calc(50% - 3px); padding: 6px 8px; font-size: 11px; }
   #page-registrar #f-proveedor-group.prov-btn-grid { gap: 2px; }
   #page-registrar #f-proveedor-group.prov-btn-grid .btn-select {
-    flex: 0 0 calc((100% - 12px) / 7);
-    max-width: calc((100% - 12px) / 7);
-    padding: 3px 1px;
-    font-size: 8px;
-    border-radius: 5px;
-    min-height: 24px;
+    flex: 0 0 calc((100% - 8px) / 5);
+    max-width: calc((100% - 8px) / 5);
+    padding: 4px 2px;
+    font-size: 9px;
+    border-radius: 6px;
+    min-height: 26px;
   }
   #page-registrar .form-row-duo {
     display: grid;
@@ -2687,7 +2688,7 @@ function renderProvSelect(){
   const vacio=isRegistrarProveedor()?'Sin proveedores':'Sin clientes';
   group.classList.add('prov-btn-grid');
   if(!lista.length){group.classList.remove('prov-btn-grid');group.innerHTML='<div style="color:var(--text-faint);font-size:11px;padding:4px 0;">'+vacio+'</div>';return;}
-  group.innerHTML=lista.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(p)+'</button>').join('');
+  group.innerHTML=lista.map(p=>'<button type="button" class="btn-select" data-val="'+esc(p)+'" title="'+esc(p)+'" onclick="setSelectBtn(this,\'f-proveedor\')">'+esc(formatProvBtnLabel(p))+'</button>').join('');
   if(cur){const match=group.querySelector('[data-val="'+esc(cur)+'"]');if(match)match.classList.add('active');}
   updateRegistrarAplicaUI();
 }
@@ -2998,6 +2999,17 @@ function drawFitText(ctx,text,x,y,maxWidth){
   while(t.length>2&&ctx.measureText(t).width>maxWidth)t=t.slice(0,-1);
   if(t!==String(text||''))t=t.slice(0,-1)+'…';
   ctx.fillText(t,x,y);
+}
+function formatProvBtnLabel(nombre){
+  const s=String(nombre||'').trim();
+  if(!s)return'';
+  const parts=s.split(/\s+/).filter(Boolean);
+  if(parts.length<2)return s;
+  const first=parts[0];
+  const initial=(parts[1].replace(/[^A-Za-z0-9ÁÉÍÓÚÑáéíóúñ]/g,'')[0]||'').toUpperCase();
+  if(!initial)return s;
+  const fmtFirst=first.charAt(0).toUpperCase()+first.slice(1).toLowerCase();
+  return fmtFirst+' '+initial+'.';
 }
 function splitClienteNombreLineas(nombre){
   const s=String(nombre||'').trim();
