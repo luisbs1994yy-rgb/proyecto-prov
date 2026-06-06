@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.34">
+<html lang="es" data-app-version="3.35">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.34';
+const APP_VERSION=getAppVersion()||'3.35';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -2951,9 +2951,16 @@ function isLogProveedor(l){
   return getLogEntidadLabel(l)==='Proveedor';
 }
 function getLogsBitacoraParaFoto(desde,hasta){
-  let logs=getLogsBitacoraEnRango(desde,hasta);
-  if(bitacoraModalSoloProveedores)logs=logs.filter(isLogProveedor);
-  return logs;
+  const t0=startOfDay(desde).getTime(),t1=endOfDay(hasta).getTime();
+  let pool=bitacoraModalSoloProveedores
+    ? getLogsFiltrados().filter(isLogProveedor)
+    : getLogsVisibles().filter(logCuentaEnResumenBitacora);
+  return sortLogsNewestFirst(pool.filter(l=>{
+    const d=parseLogDate(l);
+    if(!d)return false;
+    const t=d.getTime();
+    return t>=t0&&t<=t1;
+  }));
 }
 function updateBitacoraRangoHint(){
   const hint=document.getElementById('bitacora-rango-hint');
@@ -2984,13 +2991,17 @@ function openBitacoraRangoModal(soloProveedores){
   bitacoraModalSoloProveedores=!!soloProveedores;
   const tit=document.querySelector('#bitacora-rango-overlay h3');
   if(tit)tit.textContent=bitacoraModalSoloProveedores?'Bitácora · foto WhatsApp (solo proveedores)':'Bitácora · foto WhatsApp';
-  if(bitacoraModalSoloProveedores&&(logsFiltro.desde||logsFiltro.hasta)){
+  if(bitacoraModalSoloProveedores){
     const elD=document.getElementById('bitacora-desde'),elH=document.getElementById('bitacora-hasta');
-    if(elD&&logsFiltro.desde)elD.value=logsFiltro.desde;
-    if(elH&&logsFiltro.hasta)elH.value=logsFiltro.hasta;
-    bitacoraPresetActivo='';
-    document.querySelectorAll('.bitacora-preset').forEach(b=>b.classList.remove('active'));
-    updateBitacoraRangoHint();
+    if(logsFiltro.desde&&elD)elD.value=logsFiltro.desde;
+    if(logsFiltro.hasta&&elH)elH.value=logsFiltro.hasta;
+    if(logsFiltro.desde||logsFiltro.hasta){
+      bitacoraPresetActivo='';
+      document.querySelectorAll('.bitacora-preset').forEach(b=>b.classList.remove('active'));
+      updateBitacoraRangoHint();
+    }else{
+      setBitacoraPreset('ultimos7');
+    }
   }else{
     setBitacoraPreset(bitacoraPresetActivo||'hoy');
   }
@@ -4003,7 +4014,7 @@ function logCuentaEnResumenBitacora(l){
   if(t==='eliminar'||t==='proveedor')return false;
   if(!t.includes('pago')&&!t.includes('factura'))return false;
   const ids=registroIdsFromLog(l);
-  if(ids.length&&!ids.some(id=>state.registros.some(r=>r.id===id)))return false;
+  if(ids.length&&!ids.some(id=>state.registros.some(r=>r.id===id)||(state.registrosProveedores||[]).some(r=>r.id===id)))return false;
   return true;
 }
 function getLogsVisibles(){return getLogs().filter(l=>!isLogSuppressed(l));}
