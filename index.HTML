@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.49">
+<html lang="es" data-app-version="3.50">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.49';
+const APP_VERSION=getAppVersion()||'3.50';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -4037,7 +4037,6 @@ function updateProvLitrosCobradosCalc(proveedor){
     if(dinCls)el.classList.add(dinCls);
   });
   updateProvLitrosTotalesGlobalesUI();
-  if(isPageActive('proveedores'))renderProveedoresTotales(true);
 }
 function flushProvLitrosCobradosInputs(){
   const seen=new Set();
@@ -4354,6 +4353,7 @@ function refreshDesglosePopup(){
   if(!regs.length){closeDesglosePopup();return;}
   if(ov&&ov.classList.contains('open')){ov.innerHTML=buildDesglosePanelHtml(proveedor,regs);ov.dataset.proveedor=proveedor;ov.dataset.entidad=desgloseEntidad;}
   restoreProvLcEditState(lcEdit);
+  if(isDesgloseProveedor())renderProveedoresTotales(true);
 }
 function closeDesglosePopup(){
   const ov=document.getElementById('desglose-overlay');
