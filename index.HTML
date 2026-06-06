@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.65">
+<html lang="es" data-app-version="3.66">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.65';
+const APP_VERSION=getAppVersion()||'3.66';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -5740,12 +5740,67 @@ async function agregarProveedor(){
   try{const res=await apiPost({action:'addProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Agregado: '+nombre);toast('✓ Cliente agregado',false,true);scheduleQuietSync();}
   catch(e){state.proveedores=prevP;saveAndRender();toastError(e);}
 }
+function nombreClienteMatch(a,b){
+  return String(a||'').trim().toUpperCase()===String(b||'').trim().toUpperCase();
+}
+function findLogsForCliente(nombre){
+  const regs=state.registros.filter(r=>nombreClienteMatch(r.proveedor,nombre));
+  const logMap=new Map();
+  regs.forEach(reg=>{
+    findLogsForRegistro(reg).forEach(l=>{
+      const k=l.localId||l.id||'';
+      if(k)logMap.set(k,l);
+    });
+  });
+  getLogs().forEach(l=>{
+    const t=String(l.tipo||'').toLowerCase();
+    if(t==='proveedor'||t==='eliminar')return;
+    const b=parseDescBasics(l.descripcion);
+    if(b&&nombreClienteMatch(b.proveedor,nombre)){
+      const k=l.localId||l.id||'';
+      if(k)logMap.set(k,l);
+    }
+  });
+  return Array.from(logMap.values());
+}
+function limpiarAplicaMapClientRegistros(regs){
+  if(!regs||!regs.length)return;
+  const map=loadAplicaMap();
+  let changed=false;
+  regs.forEach(r=>{if(r.id&&map[r.id]){delete map[r.id];changed=true;}});
+  if(changed)saveAplicaMap(map);
+}
 async function eliminarProveedor(nombre){
-  if(!confirm('¿Eliminar cliente "'+nombre+'"?'))return;
-  const prevR=state.registros.slice(),prevP=state.proveedores.slice();
-  state.proveedores=state.proveedores.filter(p=>p!==nombre);saveAndRender();
-  try{const res=await apiPost({action:'deleteProveedor',nombre});if(res.error)throw new Error(res.error);addLog('proveedor','Eliminado: '+nombre);toast('Cliente eliminado');scheduleQuietSync();}
-  catch(e){state.registros=prevR;state.proveedores=prevP;saveAndRender();toastError(e);}
+  const n=String(nombre||'').trim();
+  if(!n)return;
+  const regsCliente=state.registros.filter(r=>nombreClienteMatch(r.proveedor,n));
+  const nMovs=regsCliente.length;
+  if(!confirm('¿Eliminar cliente "'+n+'"? (1 de 2)'))return;
+  const msg2=nMovs
+    ?'Se borrarán '+nMovs+' movimiento'+(nMovs!==1?'s':'')+' (facturas y pagos) de la base de datos.\n\nEsta acción NO se puede deshacer.\n\n¿Confirmar eliminación? (2 de 2)'
+    :'Se eliminará el cliente de la lista.\n\n¿Confirmar eliminación? (2 de 2)';
+  if(!confirm(msg2))return;
+  const prevR=state.registros.slice(),prevP=state.proveedores.slice(),prevPrecios=(state.precios||[]).slice(),prevLogs=getLogs().slice();
+  const logsToRemove=findLogsForCliente(n);
+  state.proveedores=state.proveedores.filter(p=>!nombreClienteMatch(p,n));
+  state.registros=state.registros.filter(r=>!nombreClienteMatch(r.proveedor,n));
+  state.precios=(state.precios||[]).filter(p=>!nombreClienteMatch(p.proveedor||p.cliente,n));
+  limpiarAplicaMapClientRegistros(regsCliente);
+  removeLogsLocal_(logsToRemove);
+  const ov=document.getElementById('desglose-overlay');
+  if(ov&&ov.classList.contains('open')&&nombreClienteMatch(ov.dataset.proveedor,n)&&(ov.dataset.entidad||'cliente')==='cliente')closeDesglosePopup(true);
+  saveAndRender();
+  try{
+    const res=await apiPost({action:'deleteProveedor',nombre:n});
+    if(res.error)throw new Error(res.error);
+    await deleteLogsRemote_(logsToRemove);
+    addLog('proveedor','Eliminado cliente: '+n+(nMovs?' · '+nMovs+' movs':''));
+    toast('✓ Cliente y movimientos eliminados',false,true);
+    scheduleQuietSync();
+  }catch(e){
+    state.registros=prevR;state.proveedores=prevP;state.precios=prevPrecios;
+    saveLogs(prevLogs);saveAndRender();toastError(e);
+  }
 }
 async function agregarCatalogoProveedor(){
   const nombre=document.getElementById('new-prov-cat').value.trim().toUpperCase();if(!nombre)return;
