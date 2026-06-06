@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.60">
+<html lang="es" data-app-version="3.61">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.60';
+const APP_VERSION=getAppVersion()||'3.61';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1519,8 +1519,8 @@ function renderAllSafe(){
   }
 }
 function isPageActive(page){const el=document.getElementById('page-'+page);return !!el&&el.classList.contains('active');}
-function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(v);}
-function fmt3(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:3,maximumFractionDigits:3}).format(v);}
+function fmt(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:2}).format(v);}
+function fmt3(n){const v=parseFloat(n);if(isNaN(v))return'—';return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:2}).format(v);}
 function fmtShort(n){const v=parseFloat(n);if(isNaN(v))return'—';if(Math.abs(v)>=1000000)return'$'+(v/1000000).toFixed(1)+'M';if(Math.abs(v)>=1000)return'$'+(v/1000).toFixed(1)+'k';return fmt(v);}
 function fmtTime(d){return d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});}
 const MESES_ES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -2500,7 +2500,11 @@ function sanitizeLitrosTyping(raw){
   return wc+'.'+dec;
 }
 function parseLitros(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
-function formatLitrosDisplay(n){const v=parseFloat(n);if(isNaN(v))return'';const f=(Math.round(v*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
+function formatLitrosDisplay(n){
+  const v=parseFloat(n);
+  if(isNaN(v))return'';
+  return new Intl.NumberFormat('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}).format(Math.round(v*100)/100);
+}
 function isRegistrarLitrosMode(){
   const tipo=String(document.getElementById('f-tipo').value||'');
   return tipo==='factura'||(isRegistrarProveedor()&&tipo==='pago');
