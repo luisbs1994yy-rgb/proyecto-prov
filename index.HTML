@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.48">
+<html lang="es" data-app-version="3.49">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.48';
+const APP_VERSION=getAppVersion()||'3.49';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -367,7 +367,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-fact-table thead th.col-lc-din{background:#fef3c7;color:#92400e;}
 .prov-fact-table tr.prov-litros-row td,.prov-fact-table tr.prov-litros-inline td{background:#fffbeb;}
 .prov-fact-table tr.prov-litros-row td{border-top:2px solid #fcd34d;}
-.prov-fact-table tr.prov-litros-inline .col-lc-cob .prov-lc-cob-input,.prov-fact-table .col-lc-cob .prov-lc-cob-input{width:100%;min-width:0;min-height:22px!important;height:22px!important;padding:1px 4px;font-size:11px!important;font-family:var(--mono);border:1px solid #fcd34d;border-radius:4px;background:#fff;text-align:center;}
+.prov-fact-table tr.prov-litros-inline .col-lc-cob .prov-lc-cob-input,.prov-fact-table .col-lc-cob .prov-lc-cob-input{width:100%;min-width:0;min-height:22px!important;height:22px!important;padding:1px 4px;font-size:11px!important;font-family:var(--mono);border:1.5px solid #1a1c2c;border-radius:4px;background:#fff;text-align:center;}
 .prov-fact-table .col-lc-dif{font-family:var(--mono);font-size:6px;font-weight:700;text-align:center;}
 .prov-fact-table .col-lc-dif.pos{color:var(--green-text);} .prov-fact-table .col-lc-dif.neg{color:var(--red-text);}
 .prov-fact-table .col-lc-din{font-family:var(--mono);font-size:6px;font-weight:700;text-align:center;color:#b45309;}
@@ -2567,8 +2567,8 @@ function updateProvLitrosTotalesGlobalesUI(resumen){
     if(c)elDin.classList.add(c);
   }
 }
-function renderProveedoresTotales(){
-  if(isProvLcInputFocused())return;
+function renderProveedoresTotales(force){
+  if(!force&&isProvLcInputFocused())return;
   const lcEdit=captureProvLcEditState();
   const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
   const{deudas}=calcTotalesNeto(resumen);
@@ -3759,6 +3759,10 @@ async function guardarDesgloseCampo(regId,campo,valor,el){
     const res=await apiPost({action:apiActionRegistro('updateRegistro'),id:regId,data});
     if(res.error)throw new Error(res.error);
     refreshDesglosePopup();
+    if(isDesgloseProveedor()){
+      updateProvLitrosCobradosCalc(reg.proveedor);
+      renderProveedoresTotales(true);
+    }
     toast('Actualizado',false,true);
   }catch(e){
     reg[campo]=prev;
@@ -4033,6 +4037,30 @@ function updateProvLitrosCobradosCalc(proveedor){
     if(dinCls)el.classList.add(dinCls);
   });
   updateProvLitrosTotalesGlobalesUI();
+  if(isPageActive('proveedores'))renderProveedoresTotales(true);
+}
+function flushProvLitrosCobradosInputs(){
+  const seen=new Set();
+  document.querySelectorAll('#desglose-overlay .prov-lc-cob-input').forEach(el=>{
+    const prov=getProvLcProveedor(el);
+    if(!prov||seen.has(prov))return;
+    seen.add(prov);
+    const raw=String(el.value||'').trim();
+    if(!raw)setProvLitrosCobradosLocal(prov,'');
+    else{const n=parseLitros(raw);if(!isNaN(n))setProvLitrosCobradosLocal(prov,n);}
+  });
+}
+function saveProvLitrosCobradosPending(){
+  const seen=new Set();
+  document.querySelectorAll('#desglose-overlay .prov-lc-cob-input').forEach(el=>{
+    const prov=getProvLcProveedor(el);
+    if(!prov||seen.has(prov))return;
+    seen.add(prov);
+    const raw=String(el.value||'').trim();
+    const n=raw?parseLitros(raw):NaN;
+    const val=raw&&!isNaN(n)?n:'';
+    saveProvLitrosCobradosApi(prov,val).catch(e=>{toastError(e);scheduleQuietSync();});
+  });
 }
 async function onProvLitrosCobradosBlur(proveedor,el){
   const raw=String(el.value||'').trim();
@@ -4041,6 +4069,7 @@ async function onProvLitrosCobradosBlur(proveedor,el){
     updateProvLitrosCobradosCalc(proveedor);
     try{await saveProvLitrosCobradosApi(proveedor,'');setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
     catch(e){toastError(e);scheduleQuietSync();}
+    renderProveedoresTotales(true);
     return;
   }
   const n=parseLitros(raw);
@@ -4052,6 +4081,7 @@ async function onProvLitrosCobradosBlur(proveedor,el){
   updateProvLitrosCobradosCalc(proveedor);
   try{await saveProvLitrosCobradosApi(proveedor,n);setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
   catch(e){toastError(e);scheduleQuietSync();}
+  renderProveedoresTotales(true);
 }
 function buildProvLitrosControlCellsHtml(proveedor){
   const regs=getProvLitrosRegs(proveedor);
@@ -4326,12 +4356,20 @@ function refreshDesglosePopup(){
   restoreProvLcEditState(lcEdit);
 }
 function closeDesglosePopup(){
+  const ov=document.getElementById('desglose-overlay');
+  const entidad=ov&&ov.dataset.entidad||desgloseEntidad||'cliente';
+  const proveedor=ov&&ov.dataset.proveedor;
+  flushProvLitrosCobradosInputs();
+  if(proveedor)updateProvLitrosCobradosCalc(proveedor);
+  saveProvLitrosCobradosPending();
   desgloseOpen=false;
   desgloseAbonarFacturaId='';
-  const ov=document.getElementById('desglose-overlay');
   if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;delete ov.dataset.entidad;}
   document.body.style.overflow='';
   document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
+  document.getElementById('desglose-popup')?.classList.remove('prov-lc-focus');
+  if(entidad==='proveedor')renderProveedoresTotales(true);
+  else renderTotales();
 }
 
 function parseLogExtraFields(log){
