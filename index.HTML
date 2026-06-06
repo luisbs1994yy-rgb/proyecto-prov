@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.50">
+<html lang="es" data-app-version="3.51">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.50';
+const APP_VERSION=getAppVersion()||'3.51';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -350,8 +350,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-inline-input.saving{opacity:1;border-color:#86efac;background:#e6f7ed;color:#0d7a3e;}
 .desglose-inline-input.warn{border-color:var(--red-border);background:var(--red-bg);}
 .prov-actions{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:center;gap:3px;padding:2px 3px!important;white-space:nowrap;}
-.prov-fact-table .col-fecha{width:8%;max-width:36px;}
-.prov-fact-table .col-ref{width:8%;}
+.prov-fact-table .col-fecha{width:10%;min-width:46px;max-width:none;}
+.prov-fact-table .col-ref{width:7%;}
+.prov-fact-table .col-prod{font-size:6px;text-align:center;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.prov-fact-table.prov-facturas-table .col-prod{width:8%;}
 .prov-fact-table .col-lit,.prov-fact-table .col-pl{font-family:var(--mono);font-size:6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .prov-fact-table.prov-facturas-table .col-lit{width:9%;}
 .prov-fact-table.prov-facturas-table .col-pl{width:8%;}
@@ -751,6 +753,13 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     font-size: 10px;
     margin: 0;
     text-align: right;
+  }
+  #page-proveedores #tabla-prov td.prov-producto-cell {
+    flex: 0 0 44px;
+    font-size: 8px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--navy);
   }
   #page-proveedores #tabla-prov td.prov-list-litros-cell {
     flex: 0 0 auto;
@@ -1410,11 +1419,14 @@ function fmtFechaMini(fecha){
   if(fecha==null||fecha==='')return'—';
   const raw=String(fecha).trim();
   if(!raw)return'—';
-  let d;
-  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw+'T12:00:00');
-  else d=new Date(raw);
-  if(isNaN(d.getTime()))return raw.length>8?raw.slice(0,8):raw;
-  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+  const d=parseRegistroDate(fecha);
+  if(d){
+    const p=getMexicoParts(d);
+    return pad2(p.day)+'/'+pad2(p.month)+'/'+String(p.year).slice(-2);
+  }
+  const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m)return pad2(+m[3])+'/'+pad2(+m[2])+'/'+m[1].slice(-2);
+  return raw.length>10?raw.slice(0,10):raw;
 }
 function beginBtnSaving(btn,label){
   if(!btn)return;
@@ -1619,13 +1631,22 @@ function normalizeRegistroFecha(r){
   const p=getMexicoParts(d);
   return{...r,fecha:p.year+'-'+pad2(p.month)+'-'+pad2(p.day)+'T'+pad2(p.hour)+':'+pad2(p.minute)+':00'};
 }
-function fmtDesgloseFechaCell(fecha){
-  if(fecha==null||fecha==='')return'—';
-  const mini=fmtFechaMini(fecha);
-  if(mini&&mini!=='—')return mini;
-  const d=parseRegistroDate(fecha);
-  if(!d)return'—';
-  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getFullYear()).slice(-2);
+function fmtDesgloseFechaCell(fecha){return fmtFechaMini(fecha);}
+function fmtDesgloseProductoCell(f){
+  const p=String(enrichRegistroLitros(f).producto||'').trim();
+  return p||'—';
+}
+function getProveedorProductoDisplay(proveedor){
+  const regs=sortDesgloseRegs(getProvLitrosRegs(proveedor),'fecha','desc');
+  for(let i=0;i<regs.length;i++){
+    const p=String(regs[i].producto||'').trim();
+    if(p)return p;
+  }
+  return'—';
+}
+function buildProvProductoCellHtml(proveedor){
+  const txt=getProveedorProductoDisplay(proveedor);
+  return'<td class="prov-producto-cell">'+esc(txt)+'</td>';
 }
 function parseRegistroDateMs(fecha){const d=parseRegistroDate(fecha);return d?d.getTime():0;}
 function sortDesgloseRegs(regs,col,dir){
@@ -2583,11 +2604,12 @@ function renderProveedoresTotales(force){
       '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
       '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
       '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
+      buildProvProductoCellHtml(r.proveedor)+
       buildProvListLitrosCellHtml(r.proveedor)+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="proveedor" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'proveedor\')">Cuenta</button></td>'+
       '</tr>';
   });
-  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Diferencia</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  elTabla.innerHTML='<div class="table-wrap"><table><thead><tr><th>Proveedor</th><th>Saldo</th><th>%</th><th>Producto</th><th>Diferencia</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   restoreProvLcEditState(lcEdit);
   syncDesgloseActiveBtns();
 }
@@ -4100,8 +4122,9 @@ function buildDesgloseFacturasTableShell(bodyRows){
   const prov=isDesgloseProveedor();
   const abonHead=prov?'':'<th class="col-abon">Abonado</th>';
   const lcHead=prov?'<th class="col-lc-cob">'+PROV_LC_RECIBIDOS_LABEL+'</th><th class="col-lc-dif">Dif L</th><th class="col-lc-din">Dinero</th>':'';
+  const prodHead=prov?'<th class="col-prod">Producto</th>':'';
   return '<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
-    '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th>'+abonHead+'<th class="col-pend">Pend.</th>'+
+    '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th>'+prodHead+'<th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th>'+abonHead+'<th class="col-pend">Pend.</th>'+
     lcHead+'<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
 }
 function getDesgloseProvEventos(pagos,facts){
@@ -4117,7 +4140,7 @@ function buildDesgloseProvEventosHtml(proveedor,pagos,facts){
     const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
     return buildDesgloseFacturasTableShell(
       '<tr class="prov-litros-row prov-litros-inline">'+
-      '<td class="col-fecha"></td><td class="col-ref"></td>'+
+      '<td class="col-fecha"></td><td class="col-ref"></td><td class="col-prod"></td>'+
       '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
       '<td class="col-pl">'+esc(plTxt)+'</td>'+
       '<td class="col-total"></td><td class="col-pend"></td>'+
@@ -4138,6 +4161,7 @@ function buildDesgloseProvEventosHtml(proveedor,pagos,facts){
     rows+='<tr class="desglose-row desglose-row-evento'+(mergeLc?' prov-litros-inline':'')+'">'+
       '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtDesgloseFechaCell(f.fecha))+'</span></td>'+
       '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
+      '<td class="col-prod">'+esc(fmtDesgloseProductoCell(f))+'</td>'+
       '<td class="col-lit">'+esc(litTxt)+'</td>'+
       '<td class="col-pl">'+esc(plTxt)+'</td>'+
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
@@ -4150,7 +4174,7 @@ function buildDesgloseProvEventosHtml(proveedor,pagos,facts){
     const res=calcProvLitrosCobradosResumen(proveedor,regs,getProvLitrosCobrados(proveedor));
     const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
     rows+='<tr class="prov-litros-row">'+
-      '<td class="col-fecha"></td><td class="col-ref" style="font-size:6px;font-weight:700;text-transform:uppercase;color:#92400e;">Total</td>'+
+      '<td class="col-fecha"></td><td class="col-ref" style="font-size:6px;font-weight:700;text-transform:uppercase;color:#92400e;">Total</td><td class="col-prod"></td>'+
       '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
       '<td class="col-pl">'+esc(plTxt)+'</td>'+
       '<td class="col-total">'+esc(formatMontoDisplay(sumM))+'</td>'+
@@ -4182,7 +4206,7 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
     toolbar='<div class="desglose-fact-toolbar"><button type="button" class="btn btn-sm'+(desgloseShowSaldadas?' btn-primary':'')+'" onclick="toggleDesgloseSaldadas()">'+lbl+'</button></div>';
   }
   if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>'+buildDesgloseFacturasTableShell(
-    prov?('<tr class="prov-litros-row"><td colspan="2"></td><td class="col-lit">'+esc(formatLitrosDisplay(sumLitrosPagadosProveedor(getProvLitrosRegs(proveedor))))+'</td><td class="col-pl"></td><td class="col-total"></td><td class="col-pend"></td>'+buildProvLitrosControlCellsHtml(proveedor)+'<td class="prov-actions prov-actions-col"></td></tr>'):''
+    prov?('<tr class="prov-litros-row"><td colspan="2"></td><td class="col-prod"></td><td class="col-lit">'+esc(formatLitrosDisplay(sumLitrosPagadosProveedor(getProvLitrosRegs(proveedor))))+'</td><td class="col-pl"></td><td class="col-total"></td><td class="col-pend"></td>'+buildProvLitrosControlCellsHtml(proveedor)+'<td class="prov-actions prov-actions-col"></td></tr>'):''
   );
   const mergeLc=prov&&lista.length===1;
   let rows='';
