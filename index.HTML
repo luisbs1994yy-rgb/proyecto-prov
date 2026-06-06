@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.33">
+<html lang="es" data-app-version="3.34">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.33';
+const APP_VERSION=getAppVersion()||'3.34';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -1040,7 +1040,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           <span class="card-title">Bitácora general</span>
           <div class="logs-header-actions">
             <button type="button" class="btn-bitacora-share" id="btn-bitacora-share" onclick="openBitacoraRangoModal(false)" title="Foto bitácora · todos los movimientos">📷</button>
-            <button type="button" class="btn-captura-cliente-bitacora" id="btn-bitacora-captura-filtro" onclick="openBitacoraRangoModal(true)" title="Bitácora · foto WhatsApp (filtros)">📷</button>
+            <button type="button" class="btn-captura-cliente-bitacora" id="btn-bitacora-captura-filtro" onclick="openBitacoraRangoModal(true)" title="Bitácora · foto WhatsApp (solo proveedores)">📷</button>
           </div>
         </div>
         <div class="logs-filters" id="logs-filters">
@@ -2858,7 +2858,7 @@ async function capturarTotales(){
 const BITACORA_RANGO_MAX_DIAS=30;
 const BITACORA_CANVAS_MAX_FILAS=48;
 let bitacoraPresetActivo='hoy';
-let bitacoraModalConFiltros=false;
+let bitacoraModalSoloProveedores=false;
 function toDateInputValue(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
@@ -2947,9 +2947,12 @@ function readBitacoraRangoFromUI(){
   if(desde.getTime()>hasta.getTime()){const t=desde;desde=startOfDay(d1);hasta=endOfDay(d0);}
   return{desde,hasta};
 }
+function isLogProveedor(l){
+  return getLogEntidadLabel(l)==='Proveedor';
+}
 function getLogsBitacoraParaFoto(desde,hasta){
   let logs=getLogsBitacoraEnRango(desde,hasta);
-  if(bitacoraModalConFiltros)logs=logs.filter(logMatchesFiltro);
+  if(bitacoraModalSoloProveedores)logs=logs.filter(isLogProveedor);
   return logs;
 }
 function updateBitacoraRangoHint(){
@@ -2959,11 +2962,7 @@ function updateBitacoraRangoHint(){
   const dias=diasEnRangoBitacora(r.desde,r.hasta);
   const logs=getLogsBitacoraParaFoto(r.desde,r.hasta);
   let msg=fmtBitacoraRangoLabel(r.desde,r.hasta)+' · '+dias+' día'+(dias!==1?'s':'')+' · '+logs.length+' movimiento'+(logs.length!==1?'s':'')+' (vigentes)';
-  if(bitacoraModalConFiltros){
-    const fx=bitacoraFiltroResumenTexto();
-    if(fx&&fx!=='filtros actuales')msg+=' · Filtro: '+fx;
-    else msg+=' · Con filtros de la tabla';
-  }
+  if(bitacoraModalSoloProveedores)msg+=' · Solo proveedores (sin clientes)';
   if(dias>BITACORA_RANGO_MAX_DIAS)msg+=' · ⚠️ Máximo '+BITACORA_RANGO_MAX_DIAS+' días';
   hint.textContent=msg;
 }
@@ -2981,11 +2980,11 @@ function onBitacoraFechaChange(){
   document.querySelectorAll('.bitacora-preset').forEach(b=>b.classList.remove('active'));
   updateBitacoraRangoHint();
 }
-function openBitacoraRangoModal(conFiltros){
-  bitacoraModalConFiltros=!!conFiltros;
+function openBitacoraRangoModal(soloProveedores){
+  bitacoraModalSoloProveedores=!!soloProveedores;
   const tit=document.querySelector('#bitacora-rango-overlay h3');
-  if(tit)tit.textContent=bitacoraModalConFiltros?'Bitácora · foto WhatsApp (filtros)':'Bitácora · foto WhatsApp';
-  if(bitacoraModalConFiltros&&(logsFiltro.desde||logsFiltro.hasta)){
+  if(tit)tit.textContent=bitacoraModalSoloProveedores?'Bitácora · foto WhatsApp (solo proveedores)':'Bitácora · foto WhatsApp';
+  if(bitacoraModalSoloProveedores&&(logsFiltro.desde||logsFiltro.hasta)){
     const elD=document.getElementById('bitacora-desde'),elH=document.getElementById('bitacora-hasta');
     if(elD&&logsFiltro.desde)elD.value=logsFiltro.desde;
     if(elH&&logsFiltro.hasta)elH.value=logsFiltro.hasta;
@@ -2999,7 +2998,7 @@ function openBitacoraRangoModal(conFiltros){
 }
 function closeBitacoraRangoModal(){
   document.getElementById('bitacora-rango-overlay')?.classList.remove('open');
-  bitacoraModalConFiltros=false;
+  bitacoraModalSoloProveedores=false;
   const tit=document.querySelector('#bitacora-rango-overlay h3');
   if(tit)tit.textContent='Bitácora · foto WhatsApp';
 }
@@ -3386,7 +3385,7 @@ async function generarBitacoraWhatsapp(){
   if(dias>BITACORA_RANGO_MAX_DIAS){toast('Máximo '+BITACORA_RANGO_MAX_DIAS+' días de rango',true);return;}
   const logsRaw=getLogsBitacoraParaFoto(r.desde,r.hasta);
   if(!logsRaw.length){
-    toast(bitacoraModalConFiltros?'No hay movimientos con los filtros en ese rango':'No hay movimientos vigentes en ese rango',true);
+    toast(bitacoraModalSoloProveedores?'No hay movimientos de proveedores en ese rango':'No hay movimientos vigentes en ese rango',true);
     return;
   }
   const logsForInfer=logsRaw.map(l=>({...l}));
@@ -4302,6 +4301,10 @@ function getLogEntidadLabel(l){
   if(nombre){
     const hitP=(state.registrosProveedores||[]).some(r=>r.proveedor===nombre);
     const hitC=state.registros.some(r=>r.proveedor===nombre);
+    const inCatProv=(state.catalogoProveedores||[]).includes(nombre);
+    const inCatCli=(state.proveedores||[]).includes(nombre);
+    if(hitP||(inCatProv&&!inCatCli&&!hitC))return 'Proveedor';
+    if(hitC||(inCatCli&&!inCatProv&&!hitP))return 'Cliente';
     if(hitP&&!hitC)return 'Proveedor';
     if(hitC&&!hitP)return 'Cliente';
   }
