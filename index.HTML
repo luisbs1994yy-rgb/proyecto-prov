@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.64">
+<html lang="es" data-app-version="3.65">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.64';
+const APP_VERSION=getAppVersion()||'3.65';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -517,6 +517,12 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .decision-pct.ok{color:var(--green-text);font-weight:600;}
 .decision-pct.warn{color:var(--amber-text);font-weight:600;}
 .decision-pct.bad{color:var(--red-text);font-weight:600;}
+.decision-dif{font-family:var(--mono);font-size:10px;text-align:right;font-weight:600;}
+.decision-dif.pos{color:var(--green-text);}
+.decision-dif.neg{color:var(--red-text);}
+.decision-num.pos{color:var(--green-text);}
+.decision-num.neg{color:var(--red-text);}
+.decision-prod{font-size:9px;color:var(--text-muted);text-align:center;white-space:nowrap;}
 .decision-detail-row td{padding:0!important;border-bottom:1px solid var(--border);}
 .decision-detail-inner{padding:10px 12px;background:#fafbfd;font-size:11px;color:var(--text-muted);line-height:1.5;}
 .decision-detail-inner b{color:var(--navy);}
@@ -1427,7 +1433,7 @@ let desgloseProvTab = 'facturas';
 let desgloseAbonarFacturaId = '';
 let desgloseShowSaldadas = false;
 let analisisSortDecision = 'pendiente';
-let analisisSortDecisionProv = 'pendiente';
+let analisisSortDecisionProv = 'saldo';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
 let analisisDecisionOpenProvCat = '';
@@ -1435,8 +1441,6 @@ let analisisRenderTimer = null;
 let analisisHeavyTimer = null;
 let analisisDataCache = null;
 let analisisDataCacheSig = '';
-let analisisProvDataCache = null;
-let analisisProvDataCacheSig = '';
 const ANALISIS_MAX_WEEKS_CHART = 8;
 const ANALISIS_MAX_WEEKS_LOOKBACK = 40;
 let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
@@ -1543,8 +1547,6 @@ function shouldForceUppercaseInput(el){
 function invalidateAnalisisCache(){
   analisisDataCache=null;
   analisisDataCacheSig='';
-  analisisProvDataCache=null;
-  analisisProvDataCacheSig='';
 }
 function saveAndRender(){
   invalidateAnalisisCache();
@@ -1895,6 +1897,9 @@ function resumenProveedoresActivos(regs){
 function resumenCatalogoProveedoresActivos(regs){
   const activos=new Set(state.catalogoProveedores||[]);
   return resumenPorProveedor(regs).filter(r=>activos.has(r.proveedor));
+}
+function getProveedoresResumenActivo(){
+  return resumenCatalogoProveedoresActivos(state.registrosProveedores||[]);
 }
 function getRegistrarEntidad(){return document.getElementById('f-entidad')?.value||'cliente';}
 function isRegistrarProveedor(){return getRegistrarEntidad()==='proveedor';}
@@ -2837,7 +2842,7 @@ function updateProvLitrosTotalesGlobalesUI(resumen){
 function renderProveedoresTotales(force){
   if(!force&&isProvLcInputFocused())return;
   const lcEdit=captureProvLcEditState();
-  const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
+  const regs=state.registrosProveedores||[],resumen=getProveedoresResumenActivo();
   const{deudas}=calcTotalesNeto(resumen);
   const elTabla=document.getElementById('tabla-prov');
   updateProvLitrosTotalesGlobalesUI(resumen);
@@ -5403,17 +5408,7 @@ function analisisDataSignature(){
   }
   return sig;
 }
-function analisisProvDataSignature(){
-  const regs=state.registrosProveedores||[];
-  let sig='P|'+String(regs.length)+'|'+String((state.catalogoProveedores||[]).length);
-  const step=Math.max(1,Math.floor(regs.length/6));
-  for(let i=0;i<regs.length;i+=step){
-    const r=regs[i];
-    sig+=';'+String(r.id||'')+':'+String(r.monto||'')+':'+String(r.fecha||'').slice(0,10);
-  }
-  return sig;
-}
-function computeAnalisisData(regs,entity){
+function computeAnalisisData(regs){
   const list=regs||[];
   const semStart=mondayOfDate(new Date());
   const semEnd=new Date(semStart);
@@ -5469,7 +5464,7 @@ function computeAnalisisData(regs,entity){
     const pctPte=w.fact>0?(pte/w.fact*100):0;
     return{...w,end,label:fmtWeekLabel(w.start,end),pte,pctPag,pctPte};
   }).filter(w=>w.fact>0||w.pago>0||w.pte>0);
-  const resumen=entity==='proveedor'?resumenCatalogoProveedoresActivos(list):resumenProveedoresActivos(list);
+  const resumen=resumenProveedoresActivos(list);
   return{sumF,sumP,nFact,nPago,semFact,semPago,nSemFact,nSemPago,saldo:sumF-sumP,monthData,weekData,resumen,byProv};
 }
 function getAnalisisData(){
@@ -5479,12 +5474,27 @@ function getAnalisisData(){
   analisisDataCacheSig=sig;
   return analisisDataCache;
 }
-function getAnalisisProvData(){
-  const sig=analisisProvDataSignature();
-  if(analisisProvDataCache&&analisisProvDataCacheSig===sig)return analisisProvDataCache;
-  analisisProvDataCache=computeAnalisisData(state.registrosProveedores||[],'proveedor');
-  analisisProvDataCacheSig=sig;
-  return analisisProvDataCache;
+function buildProvAnalisisRows(resumen){
+  const{deudas}=calcTotalesNeto(resumen||[]);
+  return(resumen||[]).map(r=>{
+    const regs=getProvLitrosRegs(r.proveedor);
+    const litRes=calcProvLitrosCobradosResumen(r.proveedor,regs,getProvLitrosCobrados(r.proveedor));
+    const saldoCell=formatSaldoTotalesRow(r.saldo,deudas);
+    return{
+      proveedor:r.proveedor,saldo:r.saldo,saldoText:saldoCell.text,saldoColor:saldoCell.color,
+      dif:litRes.dif,difTxt:isNaN(litRes.dif)?'—':fmtProvDifLitrosSigned(litRes.dif),difCls:fmtProvDifLitrosClass(litRes.dif),
+      dinero:litRes.dinero,dineroTxt:isNaN(litRes.dinero)?'—':fmt(litRes.dinero),dineroCls:fmtProvDifLitrosClass(litRes.dinero),
+      pagados:litRes.pagados,cobrados:litRes.cobrados,producto:getProveedorProductoDisplay(r.proveedor),movimientos:r.movimientos
+    };
+  });
+}
+function sortProvAnalisisRows(rows,sort){
+  const arr=rows.slice();
+  if(sort==='dif')arr.sort((a,b)=>(Math.abs(isNaN(b.dif)?0:b.dif))-(Math.abs(isNaN(a.dif)?0:a.dif)));
+  else if(sort==='dinero')arr.sort((a,b)=>(Math.abs(isNaN(b.dinero)?0:b.dinero))-(Math.abs(isNaN(a.dinero)?0:a.dinero)));
+  else if(sort==='nombre')arr.sort((a,b)=>a.proveedor.localeCompare(b.proveedor,'es'));
+  else arr.sort((a,b)=>Math.abs(b.saldo)-Math.abs(a.saldo));
+  return arr;
 }
 function buildDecisionRows(resumen,byProv){
   const hoy=new Date().toISOString().slice(0,10);
@@ -5507,34 +5517,28 @@ function sortDecisionRows(rows,sort){
 }
 function setDecisionSort(sort,which){
   const w=which||'cliente';
-  if(w==='proveedor'){analisisSortDecisionProv=sort;renderDecisionPanel(getAnalisisProvData(),'proveedor');}
-  else{analisisSortDecision=sort;renderDecisionPanel(getAnalisisData(),'cliente');}
+  if(w==='proveedor'){analisisSortDecisionProv=sort;renderDecisionPanelProv();}
+  else{analisisSortDecision=sort;renderDecisionPanel(getAnalisisData());}
 }
 function toggleDecisionRow(prov,which){
   const w=which||'cliente';
   if(w==='proveedor'){
     analisisDecisionOpenProvCat=analisisDecisionOpenProvCat===prov?'':prov;
-    renderDecisionPanel(getAnalisisProvData(),'proveedor');
+    renderDecisionPanelProv();
   }else{
     analisisDecisionOpenProv=analisisDecisionOpenProv===prov?'':prov;
-    renderDecisionPanel(getAnalisisData(),'cliente');
+    renderDecisionPanel(getAnalisisData());
   }
 }
-function renderDecisionPanel(data,which){
-  const w=which||'cliente';
-  const isProv=w==='proveedor';
-  const elId=isProv?'chart-decisiones-prov':'chart-decisiones';
-  const el=document.getElementById(elId);
+function renderDecisionPanel(data){
+  const el=document.getElementById('chart-decisiones');
   if(!el)return;
   const resumen=data.resumen||[];
-  if(!resumen.length){
-    el.innerHTML='<div class="empty">'+(isProv?'Sin proveedores con movimientos':'Sin clientes con movimientos')+'</div>';
-    return;
-  }
-  const sortKey=isProv?analisisSortDecisionProv:analisisSortDecision;
-  const openKey=isProv?analisisDecisionOpenProvCat:analisisDecisionOpenProv;
-  const sorts=[{k:'pendiente',l:'Mayor deuda'},{k:'facturado',l:'Más facturado'},{k:'cobrado',l:isProv?'Menos % pagado':'Menos % cobrado'},{k:'reciente',l:'Factura reciente'}];
-  const toolbar='<div class="decision-toolbar"><span>Ordenar:</span>'+sorts.map(s=>'<button type="button" class="decision-sort'+(sortKey===s.k?' active':'')+'" onclick="setDecisionSort(\''+s.k+'\',\''+w+'\')">'+s.l+'</button>').join('')+'</div>';
+  if(!resumen.length){el.innerHTML='<div class="empty">Sin clientes con movimientos</div>';return;}
+  const sortKey=analisisSortDecision;
+  const openKey=analisisDecisionOpenProv;
+  const sorts=[{k:'pendiente',l:'Mayor deuda'},{k:'facturado',l:'Más facturado'},{k:'cobrado',l:'Menos % cobrado'},{k:'reciente',l:'Factura reciente'}];
+  const toolbar='<div class="decision-toolbar"><span>Ordenar:</span>'+sorts.map(s=>'<button type="button" class="decision-sort'+(sortKey===s.k?' active':'')+'" onclick="setDecisionSort(\''+s.k+'\')">'+s.l+'</button>').join('')+'</div>';
   const rows=sortDecisionRows(buildDecisionRows(resumen,data.byProv||{}),sortKey);
   let tbody='';
   rows.forEach(r=>{
@@ -5545,7 +5549,7 @@ function renderDecisionPanel(data,which){
       (r.ultP?' · Último pago: <b>'+esc(fmtFechaCorta(r.ultP.fecha))+'</b> ('+fmt(r.ultP.monto)+')':' · Sin pagos registrados')+
       '<br>'+r.nFacts+' factura'+(r.nFacts!==1?'s':'')+' · '+r.nPagos+' pago'+(r.nPagos!==1?'s':'')+
       (r.diasFact!=null?' · Hace <b>'+r.diasFact+'</b> día'+(r.diasFact!==1?'s':'')+' sin factura nueva':'');
-    tbody+='<tr class="decision-row'+(open?' open':'')+'" onclick="toggleDecisionRow(\''+jsQuote(r.proveedor)+'\',\''+w+'\')">'+
+    tbody+='<tr class="decision-row'+(open?' open':'')+'" onclick="toggleDecisionRow(\''+jsQuote(r.proveedor)+'\')">'+
       '<td><span class="decision-prov">'+esc(r.proveedor)+'</span></td>'+
       '<td class="decision-num">'+fmtShort(r.facturas)+'</td>'+
       '<td class="decision-pct '+pctCls+'">'+(r.facturas>0?r.pctCob.toFixed(0)+'%':'—')+'</td>'+
@@ -5554,10 +5558,36 @@ function renderDecisionPanel(data,which){
       '</tr>';
     if(open)tbody+='<tr class="decision-detail-row"><td colspan="5"><div class="decision-detail-inner">'+det+'</div></td></tr>';
   });
-  const entityLabel=isProv?'Proveedor':'Cliente';
-  const pctLabel=isProv?'% pagado':'% cobrado';
   el.innerHTML=toolbar+'<div class="table-wrap"><table class="decision-table"><thead><tr>'+
-    '<th>'+entityLabel+'</th><th class="num">Facturado</th><th class="num">'+pctLabel+'</th><th class="num">Pendiente</th><th class="num">Días</th>'+
+    '<th>Cliente</th><th class="num">Facturado</th><th class="num">% cobrado</th><th class="num">Pendiente</th><th class="num">Días</th>'+
+    '</tr></thead><tbody>'+tbody+'</tbody></table></div>';
+}
+function renderDecisionPanelProv(){
+  const el=document.getElementById('chart-decisiones-prov');
+  if(!el)return;
+  const resumen=getProveedoresResumenActivo();
+  if(!resumen.length){el.innerHTML='<div class="empty">Sin proveedores con movimientos</div>';return;}
+  const sorts=[{k:'saldo',l:'Mayor saldo'},{k:'dif',l:'Mayor dif L'},{k:'dinero',l:'Mayor $'},{k:'nombre',l:'Nombre'}];
+  const toolbar='<div class="decision-toolbar"><span>Ordenar:</span>'+sorts.map(s=>'<button type="button" class="decision-sort'+(analisisSortDecisionProv===s.k?' active':'')+'" onclick="setDecisionSort(\''+s.k+'\',\'proveedor\')">'+s.l+'</button>').join('')+'</div>';
+  const rows=sortProvAnalisisRows(buildProvAnalisisRows(resumen),analisisSortDecisionProv);
+  let tbody='';
+  rows.forEach(r=>{
+    const open=analisisDecisionOpenProvCat===r.proveedor;
+    const det='Litros pagados <b>'+esc(formatLitrosDisplay(r.pagados))+'</b>'+
+      (isNaN(r.cobrados)?'':' · Cobrados <b>'+esc(formatLitrosDisplay(r.cobrados))+'</b>')+
+      ' · Producto <b>'+esc(r.producto)+'</b><br>'+
+      'Saldo cuenta <b>'+esc(r.saldoText)+'</b> · '+r.movimientos+' movimiento'+(r.movimientos!==1?'s':'');
+    tbody+='<tr class="decision-row'+(open?' open':'')+'" onclick="toggleDecisionRow(\''+jsQuote(r.proveedor)+'\',\'proveedor\')">'+
+      '<td><span class="decision-prov">'+esc(r.proveedor)+'</span></td>'+
+      '<td class="decision-num" style="'+r.saldoColor+'">'+esc(r.saldoText)+'</td>'+
+      '<td class="decision-dif'+(r.difCls?' '+r.difCls:'')+'">'+esc(r.difTxt)+'</td>'+
+      '<td class="decision-num'+(r.dineroCls?' '+r.dineroCls:'')+'">'+esc(r.dineroTxt)+'</td>'+
+      '<td class="decision-prod">'+esc(r.producto)+'</td>'+
+      '</tr>';
+    if(open)tbody+='<tr class="decision-detail-row"><td colspan="5"><div class="decision-detail-inner">'+det+'</div></td></tr>';
+  });
+  el.innerHTML=toolbar+'<div class="table-wrap"><table class="decision-table"><thead><tr>'+
+    '<th>Proveedor</th><th class="num">Saldo</th><th class="num">Dif L</th><th class="num">Dinero</th><th class="num">Prod</th>'+
     '</tr></thead><tbody>'+tbody+'</tbody></table></div>';
 }
 function getCurrentTrendWeekIndex(weekData){
@@ -5638,8 +5668,8 @@ function renderAnalisisKpis(data){
 }
 function renderAnalisisHeavy(data){
   const d=data||getAnalisisData();
-  renderDecisionPanel(d,'cliente');
-  renderDecisionPanel(getAnalisisProvData(),'proveedor');
+  renderDecisionPanel(d);
+  renderDecisionPanelProv();
   renderAnalisisTrend(d);
 }
 function renderAnalisisTrend(data){
