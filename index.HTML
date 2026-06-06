@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.56">
+<html lang="es" data-app-version="3.57">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.56';
+const APP_VERSION=getAppVersion()||'3.57';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1319,6 +1319,9 @@ let desgloseShowSaldadas = false;
 let analisisSortDecision = 'pendiente';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
+let analisisRenderTimer = null;
+const ANALISIS_MAX_WEEKS_CHART = 28;
+const ANALISIS_MAX_WEEKS_LOOKBACK = 78;
 let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 let logsShowExtraCols=false;
 
@@ -1704,28 +1707,6 @@ function mondayOfDate(d){
   return x;
 }
 function weekKeyForDate(d){return mondayOfDate(d).toISOString().slice(0,10);}
-function getTrendWeeks(){
-  const weeks=[];
-  let start=new Date('2026-05-04T12:00:00');
-  const endLimit=new Date();
-  endLimit.setMonth(endLimit.getMonth()+2);
-  endLimit.setHours(12,0,0,0);
-  const allRegs=[...(state.registros||[]),...(state.registrosProveedores||[])];
-  allRegs.forEach(r=>{
-    const d=parseRegistroDate(r.fecha);
-    if(!d)return;
-    const ws=mondayOfDate(d);
-    if(ws<start)start=ws;
-  });
-  const cur=new Date(start);
-  while(cur<=endLimit){
-    const wStart=new Date(cur),wEnd=new Date(cur);
-    wEnd.setDate(wEnd.getDate()+6);
-    weeks.push({start:wStart,end:wEnd,key:wStart.toISOString().slice(0,10)});
-    cur.setDate(cur.getDate()+7);
-  }
-  return weeks;
-}
 function fmtWeekLabel(start,end){
   if(start.getMonth()===end.getMonth())return start.getDate()+'-'+end.getDate()+' '+MESES_CORTOS[start.getMonth()];
   return start.getDate()+' '+MESES_CORTOS[start.getMonth()]+'-'+end.getDate()+' '+MESES_CORTOS[end.getMonth()];
@@ -1797,8 +1778,21 @@ function setRegistrarViewportNoZoom(on){
   const vp=document.querySelector('meta[name=viewport]');
   if(vp)vp.setAttribute('content',on?VIEWPORT_NO_ZOOM:VIEWPORT_DEFAULT);
 }
+function forceUnlockUi(){
+  document.body.style.overflow='';
+  document.getElementById('desglose-overlay')?.classList.remove('open');
+  document.getElementById('sidebar-overlay')?.classList.remove('open');
+  document.getElementById('bitacora-rango-overlay')?.classList.remove('open');
+  document.getElementById('bitacora-share-overlay')?.classList.remove('open');
+}
+function scheduleRenderAnalisis(){
+  if(analisisRenderTimer)clearTimeout(analisisRenderTimer);
+  analisisRenderTimer=setTimeout(()=>{analisisRenderTimer=null;renderAnalisisSafe();},0);
+}
 function navTo(page,el){
-  closeDesglosePopup(true);closeMobileMenu();
+  forceUnlockUi();
+  closeDesglosePopup(true);
+  closeMobileMenu();
   const pageEl=document.getElementById('page-'+page);
   if(!pageEl){console.warn('navTo: página desconocida',page);return;}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1812,7 +1806,7 @@ function navTo(page,el){
   else if(page==='config')renderProvManager();
   else if(page==='config-prov')renderCatalogoProvManager();
   else if(page==='precios')renderPreciosManager();
-  else if(page==='analisis')renderAnalisisSafe();
+  else if(page==='analisis')scheduleRenderAnalisis();
   if(page==='registrar')updateRegistrarEntidadUI();
 }
 
@@ -4584,18 +4578,21 @@ function closeDesglosePopup(skipListRender){
   const ov=document.getElementById('desglose-overlay');
   const entidad=ov&&ov.dataset.entidad||desgloseEntidad||'cliente';
   const proveedor=ov&&ov.dataset.proveedor;
-  flushProvLitrosCobradosInputs();
-  if(proveedor)updateProvLitrosCobradosCalc(proveedor);
-  saveProvLitrosCobradosPending();
-  desgloseOpen=false;
-  desgloseAbonarFacturaId='';
-  if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;delete ov.dataset.entidad;}
-  document.body.style.overflow='';
-  document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
-  document.getElementById('desglose-popup')?.classList.remove('prov-lc-focus');
-  if(skipListRender)return;
-  if(entidad==='proveedor'&&isPageActive('proveedores'))renderProveedoresTotales(true);
-  else if(isPageActive('totales'))renderTotales();
+  try{
+    flushProvLitrosCobradosInputs();
+    if(proveedor)updateProvLitrosCobradosCalc(proveedor);
+    saveProvLitrosCobradosPending();
+    desgloseOpen=false;
+    desgloseAbonarFacturaId='';
+    if(ov){ov.innerHTML='';ov.classList.remove('open');delete ov.dataset.proveedor;delete ov.dataset.entidad;}
+    document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
+    document.getElementById('desglose-popup')?.classList.remove('prov-lc-focus');
+    if(skipListRender)return;
+    if(entidad==='proveedor'&&isPageActive('proveedores'))renderProveedoresTotales(true);
+    else if(isPageActive('totales'))renderTotales();
+  }finally{
+    document.body.style.overflow='';
+  }
 }
 
 function parseLogExtraFields(log){
@@ -5330,39 +5327,38 @@ function getTrendMonthsData(regs){
   }));
 }
 function getTrendWeeksData(regs){
-  const weeks=getTrendWeeks();
-  if(!weeks.length)return[];
-  const idxMap={};
-  weeks.forEach((w,i)=>{idxMap[w.key]=i;});
-  const buckets=weeks.map(()=>({fact:0,pago:0}));
+  const map={};
+  const cutoff=new Date();
+  cutoff.setDate(cutoff.getDate()-ANALISIS_MAX_WEEKS_LOOKBACK*7);
+  cutoff.setHours(0,0,0,0);
   (regs||[]).forEach(r=>{
-    const d=parseRegistroDate(r.fecha);if(!d)return;
-    const i=idxMap[weekKeyForDate(d)];
-    if(i==null)return;
+    const d=parseRegistroDate(r.fecha);if(!d||d<cutoff)return;
+    const start=mondayOfDate(d);
+    const key=start.toISOString().slice(0,10);
+    if(!map[key])map[key]={start,key,fact:0,pago:0};
     const m=parseFloat(r.monto)||0;
-    if(isTipoPago(r))buckets[i].pago+=m;else buckets[i].fact+=m;
+    if(isTipoPago(r))map[key].pago+=m;else map[key].fact+=m;
   });
-  return weeks.map((w,i)=>{
-    const fact=buckets[i].fact,pago=buckets[i].pago;
-    const pte=Math.max(0,fact-pago);
-    const pctPag=fact>0?(pago/fact*100):0;
-    const pctPte=fact>0?(pte/fact*100):0;
-    return {...w,label:fmtWeekLabel(w.start,w.end),fact,pago,pte,pctPag,pctPte};
+  return Object.values(map).sort((a,b)=>a.key.localeCompare(b.key)).map(w=>{
+    const end=new Date(w.start);
+    end.setDate(end.getDate()+6);
+    const pte=Math.max(0,w.fact-w.pago);
+    const pctPag=w.fact>0?(w.pago/w.fact*100):0;
+    const pctPte=w.fact>0?(pte/w.fact*100):0;
+    return{...w,end,label:fmtWeekLabel(w.start,end),pte,pctPag,pctPte};
   });
 }
 function getSemanaActualTotals(regs){
-  const weeks=getTrendWeeks();
-  const now=Date.now();
-  const semAct=weeks.find(w=>now>=w.start.getTime()&&now<=w.end.getTime()+86400000)||weeks[weeks.length-1];
+  const semStart=mondayOfDate(new Date());
+  const semEnd=new Date(semStart);
+  semEnd.setDate(semEnd.getDate()+6);
   let fact=0,pago=0,nFact=0,nPago=0;
-  if(semAct){
-    regs.forEach(r=>{
-      if(!registroEnSemana(r,semAct.start,semAct.end))return;
-      const m=parseFloat(r.monto)||0;
-      if(isTipoPago(r)){pago+=m;nPago++;}else{fact+=m;nFact++;}
-    });
-  }
-  return{fact,pago,nFact,nPago,semAct};
+  (regs||[]).forEach(r=>{
+    if(!registroEnSemana(r,semStart,semEnd))return;
+    const m=parseFloat(r.monto)||0;
+    if(isTipoPago(r)){pago+=m;nPago++;}else{fact+=m;nFact++;}
+  });
+  return{fact,pago,nFact,nPago,semAct:{start:semStart,end:semEnd}};
 }
 function setAkText(id,text){
   const el=document.getElementById(id);
@@ -5429,7 +5425,8 @@ function renderAnalisis(){
       'En cada semana verás <b>Facturado</b>, <b>Pagado</b>, <b>PTE</b> y su <b>%</b>.';
   }
   const monthData=getTrendMonthsData(regs);
-  const weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
+  let weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
+  if(weekData.length>ANALISIS_MAX_WEEKS_CHART)weekData=weekData.slice(-ANALISIS_MAX_WEEKS_CHART);
   if(!monthData.length){
     trendEl.className='';
     trendEl.innerHTML='<div class="empty">Sin datos semanales</div>';
@@ -5444,7 +5441,7 @@ function renderAnalisis(){
     trendEl.innerHTML='<div class="empty">Sin semanas con movimientos</div>';
     return;
   }
-  if(analisisTrendWeekIdx<0||analisisTrendWeekIdx>=weekData.length)analisisTrendWeekIdx=weekData.length-1;
+  if(analisisTrendWeekIdx<0||analisisTrendWeekIdx>=weekData.length)analisisTrendWeekIdx=getCurrentTrendWeekIndex(weekData);
   const selW=weekData[analisisTrendWeekIdx],prevW=analisisTrendWeekIdx>0?weekData[analisisTrendWeekIdx-1]:null;
   const selMonth=monthData[monthData.length-1];
   const sumEl=document.getElementById('trend-summary');
@@ -5645,7 +5642,7 @@ function renderProvManager(){
 function renderAll(){
   renderProvSelect();renderTotales();renderProveedoresTotales();renderProvManager();renderCatalogoProvManager();
   if(isPageActive('precios'))renderPreciosManager();
-  if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisisSafe();
+  if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))scheduleRenderAnalisis();
 }
 </script>
 </body>
