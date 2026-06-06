@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.63">
+<html lang="es" data-app-version="3.64">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.63';
+const APP_VERSION=getAppVersion()||'3.64';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -589,22 +589,30 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .bitacora-share-actions{display:flex;flex-direction:column;gap:8px;}
 .bitacora-share-actions .btn-wa{background:#25d366;color:#fff;border:none;font-weight:700;}
 .bitacora-share-hint{font-size:11px;color:var(--text-muted);margin:0 0 10px;line-height:1.4;}
-.logs-filters{display:flex;flex-wrap:wrap;gap:8px 10px;padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--border);align-items:flex-end;}
-.logs-filters label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);display:flex;flex-direction:column;gap:3px;min-width:0;}
-.logs-filters input[type=date],.logs-filters select{padding:8px 8px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--mono);background:#fff;min-width:0;}
-.logs-filters .logs-f-tipo{width:100px;}
-.logs-filters .logs-f-cliente{flex:1;min-width:120px;max-width:200px;}
-.logs-filters .btn{padding:8px 12px;font-size:11px;}
-.logs-filters-quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px;width:100%;}
-.logs-filtro-chip{padding:6px 10px;border:1px solid var(--border);border-radius:20px;background:#fff;font-size:11px;font-weight:700;color:var(--navy);cursor:pointer;}
-.logs-filtro-chip:hover{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
-.logs-filter-count{font-size:11px;color:var(--text-muted);margin-left:auto;align-self:center;white-space:nowrap;}
+.logs-filters{display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:#f8fafc;border-bottom:1px solid var(--border);}
+.logs-filters-top{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0;}
+.logs-filters-quick{display:flex;gap:5px;flex:1;min-width:0;}
+.logs-filtro-chip{flex:1;min-width:0;padding:5px 8px;border:1px solid var(--border);border-radius:16px;background:#fff;font-size:10px;font-weight:700;color:var(--navy);cursor:pointer;text-align:center;white-space:nowrap;}
+.logs-filtro-chip:hover,.logs-filtro-chip:active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
+.logs-filter-count{font-size:10px;color:var(--text-muted);white-space:nowrap;flex-shrink:0;}
+.logs-filters-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;}
+.logs-f-field{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);display:flex;flex-direction:column;gap:2px;min-width:0;}
+.logs-filters input[type=date],.logs-filters select{width:100%;padding:6px 6px;border:1px solid var(--border);border-radius:7px;font-size:12px;font-family:var(--mono);background:#fff;min-width:0;}
+.logs-filters .logs-f-tipo,.logs-filters .logs-f-cliente{width:100%;}
+.logs-filters-actions{display:flex;gap:6px;}
+.logs-filters-actions .btn{flex:1;padding:6px 10px;font-size:10px;min-height:32px;}
 @media (max-width:640px){
   #page-logs .btn-bitacora-share,#page-logs .btn-captura-cliente-bitacora{width:32px;height:32px;font-size:16px;}
   #page-logs .logs-header-actions{gap:5px;}
-  .logs-filters{padding:8px;gap:6px;}
-  .logs-filters .logs-f-cliente{max-width:none;flex:1 1 100%;}
-  .logs-filter-count{flex:1 1 100%;margin-left:0;text-align:left;}
+  #page-logs .card-header{padding:6px 10px;}
+  #page-logs .card-header .card-title{font-size:12px;}
+  .logs-filters{padding:6px 8px;gap:5px;}
+  .logs-filters-grid{gap:4px 6px;}
+  .logs-f-field{font-size:8px;gap:1px;}
+  .logs-filters input[type=date],.logs-filters select{padding:5px 4px;font-size:11px;border-radius:6px;}
+  .logs-filtro-chip{padding:4px 6px;font-size:9px;border-radius:14px;}
+  .logs-filter-count{font-size:9px;max-width:38%;overflow:hidden;text-overflow:ellipsis;}
+  .logs-filters-actions .btn{padding:5px 8px;font-size:9px;min-height:28px;}
 }
 /* === FIN COMPACTO === */
 
@@ -1244,28 +1252,34 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
           </div>
         </div>
         <div class="logs-filters" id="logs-filters">
-          <div class="logs-filters-quick">
-            <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">Últimos 7 días</button>
-            <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+          <div class="logs-filters-top">
+            <div class="logs-filters-quick">
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">7 días</button>
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+            </div>
+            <span class="logs-filter-count" id="logs-filter-count"></span>
           </div>
-          <label>Desde<input type="date" id="logs-f-desde" onchange="onLogsFiltroChange()"></label>
-          <label>Hasta<input type="date" id="logs-f-hasta" onchange="onLogsFiltroChange()"></label>
-          <label>Tipo
-            <select id="logs-f-tipo" class="logs-f-tipo" onchange="onLogsFiltroChange()">
-              <option value="">Todos</option>
-              <option value="factura">Factura</option>
-              <option value="pago">Pago</option>
-              <option value="proveedor">Cliente</option>
-            </select>
-          </label>
-          <label>Cliente
-            <select id="logs-f-cliente" class="logs-f-cliente" onchange="onLogsFiltroChange()">
-              <option value="">Todos</option>
-            </select>
-          </label>
-          <button type="button" class="btn" onclick="limpiarLogsFiltro()">Limpiar</button>
-          <button type="button" class="btn btn-sm" id="btn-logs-extra-cols" onclick="toggleLogsExtraCols()">+ Fact / Conc</button>
-          <span class="logs-filter-count" id="logs-filter-count"></span>
+          <div class="logs-filters-grid">
+            <label class="logs-f-field">Desde<input type="date" id="logs-f-desde" onchange="onLogsFiltroChange()"></label>
+            <label class="logs-f-field">Hasta<input type="date" id="logs-f-hasta" onchange="onLogsFiltroChange()"></label>
+            <label class="logs-f-field">Tipo
+              <select id="logs-f-tipo" class="logs-f-tipo" onchange="onLogsFiltroChange()">
+                <option value="">Todos</option>
+                <option value="factura">Factura</option>
+                <option value="pago">Pago</option>
+                <option value="proveedor">Cliente</option>
+              </select>
+            </label>
+            <label class="logs-f-field">Cliente
+              <select id="logs-f-cliente" class="logs-f-cliente" onchange="onLogsFiltroChange()">
+                <option value="">Todos</option>
+              </select>
+            </label>
+          </div>
+          <div class="logs-filters-actions">
+            <button type="button" class="btn btn-sm" onclick="limpiarLogsFiltro()">Limpiar</button>
+            <button type="button" class="btn btn-sm" id="btn-logs-extra-cols" onclick="toggleLogsExtraCols()">+ Fact / Conc</button>
+          </div>
         </div>
         <div class="card-body" style="padding:0"><div id="logs-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
       </div>
