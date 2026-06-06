@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.54">
+<html lang="es" data-app-version="3.55">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.54';
+const APP_VERSION=getAppVersion()||'3.55';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2714,26 +2714,55 @@ function getProveedoresDineroSuma(){
   });
   return has?Math.round(sum*100)/100:NaN;
 }
+function fmtProvSaldoTotalShort(n){
+  const v=parseFloat(n);
+  if(isNaN(v))return'—';
+  return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:0,maximumFractionDigits:0}).format(v);
+}
 function buildProveedoresWhatsappText(){
   const suma=getProveedoresDineroSuma();
-  const monto=isNaN(suma)?'—':fmt(suma);
-  return 'Suma de dinero de los 3 producto del dinero solamente: '+monto;
+  const monto=isNaN(suma)?'—':fmtProvSaldoTotalShort(suma);
+  return 'Saldo total = '+monto;
 }
+const PROV_PROD_CANVAS_COLORS={
+  Etanol:{bg:'rgba(234,179,8,.38)',border:'#f59e0b',title:'#fef9c3',mini:'rgba(255,255,255,.22)'},
+  Nafta:{bg:'rgba(58,134,255,.38)',border:'#3a86ff',title:'#dbeafe',mini:'rgba(255,255,255,.2)'},
+  Regular:{bg:'rgba(34,197,94,.35)',border:'#22c55e',title:'#dcfce7',mini:'rgba(255,255,255,.2)'}
+};
 function provDifCanvasColor(val){
   if(isNaN(val))return'#6b7280';
   if(val>0.001)return'#047857';
   if(val<-0.001)return'#b91c1c';
   return'#6b7280';
 }
-function drawProvKpiMini(ctx,x,y,w,h,lbl,val,isMoney){
-  ctx.fillStyle='rgba(255,255,255,.1)';drawRoundRect(ctx,x,y,w,h,6);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;drawRoundRect(ctx,x,y,w,h,6);ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.72)';ctx.font='600 6px IBM Plex Sans, Arial';ctx.textAlign='left';
-  ctx.fillText(lbl,x+4,y+9);
+function setCanvasFont(ctx,weight,size,family){
+  ctx.font=(weight||'700')+' '+size+'px '+(family||'IBM Plex Mono, monospace');
+}
+function drawFitTextShrink(ctx,text,x,y,maxWidth,opts){
+  const minSize=(opts&&opts.minSize)||6.5;
+  let size=(opts&&opts.startSize)||10;
+  const weight=(opts&&opts.weight)||'700';
+  const family=(opts&&opts.family)||'IBM Plex Mono, monospace';
+  const align=(opts&&opts.align)||'left';
+  const t=String(text||'');
+  if(opts&&opts.color)ctx.fillStyle=opts.color;
+  ctx.textAlign=align;
+  while(size>=minSize){
+    setCanvasFont(ctx,weight,size,family);
+    if(ctx.measureText(t).width<=maxWidth){ctx.fillText(t,x,y);return;}
+    size-=0.5;
+  }
+  setCanvasFont(ctx,weight,minSize,family);
+  drawFitText(ctx,t,x,y,maxWidth);
+}
+function drawProvKpiMini(ctx,x,y,w,h,lbl,val,isMoney,miniBg){
+  ctx.fillStyle=miniBg||'rgba(255,255,255,.12)';drawRoundRect(ctx,x,y,w,h,6);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=1;drawRoundRect(ctx,x,y,w,h,6);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.85)';setCanvasFont(ctx,'600',6,'IBM Plex Sans, Arial');ctx.textAlign='center';
+  ctx.fillText(lbl,x+w/2,y+9);
   const txt=isMoney?(isNaN(val)?'—':fmt(val)):(isNaN(val)?'—':fmtProvDifLitrosSigned(val));
-  ctx.fillStyle=provDifCanvasColor(val);
-  ctx.font='700 9px IBM Plex Mono, monospace';
-  drawFitText(ctx,txt,x+4,y+20,w-8);
+  drawFitTextShrink(ctx,txt,x+w/2,y+21,w-6,{startSize:9,minSize:6.5,align:'center',color:provDifCanvasColor(val)});
+  ctx.textAlign='left';
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2920,8 +2949,8 @@ function buildProveedoresCanvas(){
   const{deudas}=calcTotalesNeto(resumen);
   const byProd=calcProvLitrosTotalesPorProducto(resumen);
   const rows=resumen.slice(0,10);
-  const w=360,pad=12,scale=3,kpiH=96,theadH=20,rowH=44,gap=4,footerH=22;
-  const h=pad*2+kpiH+gap+theadH+gap+rows.length*(rowH+gap)+gap+footerH;
+  const w=400,pad=12,scale=3,kpiH=108,theadH=20,rowH=44,gap=4;
+  const h=pad*2+kpiH+gap+theadH+gap+rows.length*(rowH+gap)+pad;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2934,26 +2963,27 @@ function buildProveedoresCanvas(){
   const grad=ctx.createLinearGradient(8,8,w-8,8);
   grad.addColorStop(0,'#1a1c2c');grad.addColorStop(.5,'#2d3a5c');grad.addColorStop(1,'#1e3a5f');
   ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,kpiH,18);ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,255,255,.85)';setCanvasFont(ctx,'600',7,'IBM Plex Sans, Arial');ctx.textAlign='left';
   ctx.fillText('PROVEEDORES',pad+4,22);
-  const prodGap=6,prodW=(w-pad*2-12-2*prodGap)/3,prodY=28,miniH=28,miniGap=4;
+  const prodGap=8,prodW=(w-pad*2-8-2*prodGap)/3,prodY=30,miniH=30,miniGap=5;
   PROV_PRODUCTOS_KPI.forEach((prod,i)=>{
     const px=pad+4+i*(prodW+prodGap);
-    ctx.fillStyle='rgba(255,255,255,.08)';drawRoundRect(ctx,px,prodY,prodW,miniH+22,8);ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;drawRoundRect(ctx,px,prodY,prodW,miniH+22,8);ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.88)';ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
-    ctx.fillText(prod.toUpperCase(),px+prodW/2,prodY+10);
+    const pal=PROV_PROD_CANVAS_COLORS[prod]||PROV_PROD_CANVAS_COLORS.Regular;
+    ctx.fillStyle=pal.bg;drawRoundRect(ctx,px,prodY,prodW,miniH+24,9);ctx.fill();
+    ctx.strokeStyle=pal.border;ctx.lineWidth=1.5;drawRoundRect(ctx,px,prodY,prodW,miniH+24,9);ctx.stroke();
+    ctx.fillStyle=pal.title;setCanvasFont(ctx,'700',8,'IBM Plex Sans, Arial');ctx.textAlign='center';
+    ctx.fillText(prod.toUpperCase(),px+prodW/2,prodY+11);
     const t=byProd[prod]||{};
-    const miniW=(prodW-8-miniGap)/2;
-    drawProvKpiMini(ctx,px+4,prodY+14,miniW,miniH,'Dif L',t.dif,false);
-    drawProvKpiMini(ctx,px+4+miniW+miniGap,prodY+14,miniW,miniH,'Dinero',t.dinero,true);
+    const miniW=(prodW-10-miniGap)/2;
+    drawProvKpiMini(ctx,px+5,prodY+16,miniW,miniH,'Dif L',t.dif,false,pal.mini);
+    drawProvKpiMini(ctx,px+5+miniW+miniGap,prodY+16,miniW,miniH,'Dinero',t.dinero,true,pal.mini);
   });
   let y=8+kpiH+gap;
   const tblW=w-pad*2;
   ctx.fillStyle='#3a86ff';drawRoundRect(ctx,pad,y,tblW,theadH,8);ctx.fill();
-  const colName=88,colSaldo=78,colProd=58,colDif=tblW-colName-colSaldo-colProd-16;
+  const colName=72,colSaldo=118,colProd=52,colDif=tblW-colName-colSaldo-colProd-16;
   const cols=[pad+8,pad+8+colName,pad+8+colName+colSaldo,pad+8+colName+colSaldo+colProd];
-  ctx.fillStyle='#ffffff';ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillStyle='#ffffff';setCanvasFont(ctx,'700',7,'IBM Plex Sans, Arial');ctx.textAlign='left';
   ['Proveedor','Saldo','Producto','Diferencia'].forEach((lbl,i)=>ctx.fillText(lbl,cols[i],y+13));
   y+=theadH+gap;
   rows.forEach(r=>{
@@ -2969,27 +2999,19 @@ function buildProveedoresCanvas(){
     ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,tblW,rowH,12);ctx.fill();
     ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,tblW,rowH,12);ctx.stroke();
     const midY=y+rowH/2;
-    ctx.fillStyle='#1a1c2c';ctx.font='700 11px IBM Plex Mono, monospace';ctx.textAlign='left';
-    drawClienteNombreCanvas(ctx,r.proveedor,cols[0],midY,colName-6);
-    ctx.fillStyle=isZero||isCredito?'#047857':'#b91c1c';ctx.font='700 10px IBM Plex Mono, monospace';ctx.textAlign='left';
-    drawFitText(ctx,cell.text,cols[1],midY+4,colSaldo-4);
-    ctx.fillStyle='#475569';ctx.font='600 9px IBM Plex Sans, Arial';
-    drawFitText(ctx,prodTxt,cols[2],midY+4,colProd-4);
+    ctx.fillStyle='#1a1c2c';setCanvasFont(ctx,'700',10,'IBM Plex Mono, monospace');ctx.textAlign='left';
+    drawClienteNombreCanvas(ctx,r.proveedor,cols[0],midY,colName-4);
+    const saldoColor=isZero||isCredito?'#047857':'#b91c1c';
+    drawFitTextShrink(ctx,cell.text,cols[1],midY+4,colSaldo-2,{startSize:10,minSize:7,color:saldoColor});
+    ctx.fillStyle='#475569';setCanvasFont(ctx,'600',9,'IBM Plex Sans, Arial');
+    drawFitTextShrink(ctx,prodTxt,cols[2],midY+4,colProd-2,{startSize:9,minSize:7,weight:'600',family:'IBM Plex Sans, Arial'});
     const difX=cols[3],difBoxW=colDif-4,difBoxH=14;
     ctx.fillStyle='#f8fafc';drawRoundRect(ctx,difX,y+8,difBoxW,difBoxH,5);ctx.fill();
     ctx.strokeStyle=provDifCanvasColor(litRes.dif);ctx.lineWidth=1;drawRoundRect(ctx,difX,y+8,difBoxW,difBoxH,5);ctx.stroke();
-    ctx.fillStyle=provDifCanvasColor(litRes.dif);ctx.font='700 8px IBM Plex Mono, monospace';ctx.textAlign='center';
-    ctx.fillText(difTxt,difX+difBoxW/2,y+18);
-    ctx.fillStyle=provDifCanvasColor(litRes.dinero);ctx.font='700 8px IBM Plex Mono, monospace';
-    ctx.fillText(dinTxt,difX+difBoxW/2,y+34);
+    drawFitTextShrink(ctx,difTxt,difX+difBoxW/2,y+18,difBoxW-4,{startSize:8,minSize:6.5,align:'center',color:provDifCanvasColor(litRes.dif)});
+    drawFitTextShrink(ctx,dinTxt,difX+difBoxW/2,y+34,difBoxW-4,{startSize:8,minSize:6.5,align:'center',color:provDifCanvasColor(litRes.dinero)});
     y+=rowH+gap;
   });
-  y+=gap;
-  const fy=y,footerW=tblW;
-  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,8);ctx.fill();
-  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,8);ctx.stroke();
-  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
-  drawFitText(ctx,buildProveedoresWhatsappText(),pad+8,fy+14,footerW-16);
   ctx.textAlign='left';
   return canvas;
 }
@@ -3035,7 +3057,7 @@ async function capturarProveedoresMovil(btnEl){
         const payload={files:[file],title:shareLine,text:shareLine};
         if(navigator.canShare(payload)){
           await navigator.share(payload);
-          toast('Elige WhatsApp · foto + suma dinero 3 productos',false,true);
+          toast('Elige WhatsApp · foto + saldo total',false,true);
           return;
         }
       }catch(e){if(e&&e.name==='AbortError')return;}
