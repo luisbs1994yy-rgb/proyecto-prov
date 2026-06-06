@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.42">
+<html lang="es" data-app-version="3.43">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.42';
+const APP_VERSION=getAppVersion()||'3.43';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -357,9 +357,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-fact-table thead th.col-lc-cob{background:#fef3c7;color:#92400e;}
 .prov-fact-table thead th.col-lc-dif{background:#fef3c7;color:#92400e;}
 .prov-fact-table thead th.col-lc-din{background:#fef3c7;color:#92400e;}
-.prov-fact-table tr.prov-litros-row td{background:#fffbeb;border-top:2px solid #fcd34d;}
-.prov-fact-table tr.prov-litros-row .prov-litros-lbl{font-size:6px;font-weight:700;text-transform:uppercase;color:#b45309;text-align:left;white-space:nowrap;}
-.prov-fact-table .col-lc-cob input{width:100%;min-width:0;padding:2px 3px;font-size:6px;font-family:var(--mono);border:1px solid #fcd34d;border-radius:4px;background:#fff;text-align:center;}
+.prov-fact-table tr.prov-litros-row td,.prov-fact-table tr.prov-litros-inline td{background:#fffbeb;}
+.prov-fact-table tr.prov-litros-row td{border-top:2px solid #fcd34d;}
+.prov-fact-table tr.prov-litros-inline .col-lc-cob .prov-lc-cob-input,.prov-fact-table .col-lc-cob .prov-lc-cob-input{width:100%;min-width:0;min-height:22px!important;height:22px!important;padding:1px 4px;font-size:11px!important;font-family:var(--mono);border:1px solid #fcd34d;border-radius:4px;background:#fff;text-align:center;}
 .prov-fact-table .col-lc-dif{font-family:var(--mono);font-size:6px;font-weight:700;text-align:center;}
 .prov-fact-table .col-lc-dif.pos{color:var(--green-text);} .prov-fact-table .col-lc-dif.neg{color:var(--red-text);}
 .prov-fact-table .col-lc-din{font-family:var(--mono);font-size:6px;font-weight:700;text-align:center;color:#b45309;}
@@ -3975,34 +3975,47 @@ async function onProvLitrosCobradosBlur(proveedor,el){
   try{await saveProvLitrosCobradosApi(proveedor,n);setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
   catch(e){toastError(e);scheduleQuietSync();}
 }
-function buildDesgloseLitrosBarHtml(proveedor){
-  if(!isDesgloseProveedor())return'';
+function buildProvLitrosControlCellsHtml(proveedor){
   const regs=getProvLitrosRegs(proveedor);
   const cobrados=getProvLitrosCobrados(proveedor);
   const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
   const res=calcProvLitrosCobradosResumen(proveedor,regs,cobrados);
   const difCls=fmtProvDifLitrosClass(res.dif);
   const key=provLcAttrEncode(proveedor);
-  const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
-  return '<div class="prov-litros-bar">'+
-    '<span class="prov-litros-bar-item"><span class="prov-litros-bar-lbl">Pagados</span><span class="prov-litros-bar-val">'+esc(formatLitrosDisplay(res.pagados))+'</span></span>'+
-    '<span class="prov-litros-bar-item"><span class="prov-litros-bar-lbl">$/L</span><span class="prov-litros-bar-val">'+esc(plTxt)+'</span></span>'+
-    '<span class="prov-litros-bar-cob"><span class="prov-litros-bar-lbl">Cobrados</span>'+provLcInputHtml(proveedor,cobVal,'Manual')+'</span>'+
-    '<span class="prov-litros-bar-item"><span class="prov-litros-bar-lbl">Dif L</span><span class="prov-litros-bar-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(key)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</span></span>'+
-    '<span class="prov-litros-bar-item"><span class="prov-litros-bar-lbl">Dinero</span><span class="prov-litros-bar-din" data-prov-lc-din="'+esc(key)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span></span>'+
-    '</div>';
+  return '<td class="col-lc-cob">'+provLcInputHtml(proveedor,cobVal,'Manual')+'</td>'+
+    '<td class="col-lc-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(key)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</td>'+
+    '<td class="col-lc-din" data-prov-lc-din="'+esc(key)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>';
+}
+function buildProvLitrosEmptyCellsHtml(){
+  return '<td class="col-lc-cob"></td><td class="col-lc-dif"></td><td class="col-lc-din"></td>';
 }
 function buildDesgloseFacturasTableShell(bodyRows){
   const prov=isDesgloseProveedor();
   const abonHead=prov?'':'<th class="col-abon">Abonado</th>';
+  const lcHead=prov?'<th class="col-lc-cob">Cobrados</th><th class="col-lc-dif">Dif L</th><th class="col-lc-din">Dinero</th>':'';
   return '<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
     '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th>'+abonHead+'<th class="col-pend">Pend.</th>'+
-    '<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
+    lcHead+'<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
 }
 function buildDesgloseFacturasHtml(proveedor,facts,pagos){
-  const litrosBar=buildDesgloseLitrosBarHtml(proveedor);
   const prov=isDesgloseProveedor();
-  if(!facts.length)return litrosBar+buildDesgloseFacturasTableShell('');
+  if(!facts.length){
+    if(prov){
+      const regs=getProvLitrosRegs(proveedor);
+      const res=calcProvLitrosCobradosResumen(proveedor,regs,getProvLitrosCobrados(proveedor));
+      const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
+      return buildDesgloseFacturasTableShell(
+        '<tr class="prov-litros-row">'+
+        '<td class="col-fecha"></td><td class="col-ref"></td>'+
+        '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
+        '<td class="col-pl">'+esc(plTxt)+'</td>'+
+        '<td class="col-total"></td><td class="col-pend"></td>'+
+        buildProvLitrosControlCellsHtml(proveedor)+
+        '<td class="prov-actions prov-actions-col"></td></tr>'
+      );
+    }
+    return buildDesgloseFacturasTableShell('');
+  }
   const sorted=sortDesgloseRegs(facts,'fecha','desc');
   const conPend=[];
   const saldadas=[];
@@ -4020,7 +4033,10 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
     const lbl=desgloseShowSaldadas?'Ocultar saldadas ('+saldadas.length+')':'Ver saldadas · pend. $0 ('+saldadas.length+')';
     toolbar='<div class="desglose-fact-toolbar"><button type="button" class="btn btn-sm'+(desgloseShowSaldadas?' btn-primary':'')+'" onclick="toggleDesgloseSaldadas()">'+lbl+'</button></div>';
   }
-  if(!lista.length)return litrosBar+toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>';
+  if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>'+buildDesgloseFacturasTableShell(
+    prov?('<tr class="prov-litros-row"><td colspan="2"></td><td class="col-lit">'+esc(formatLitrosDisplay(sumLitrosPagadosProveedor(getProvLitrosRegs(proveedor))))+'</td><td class="col-pl"></td><td class="col-total"></td><td class="col-pend"></td>'+buildProvLitrosControlCellsHtml(proveedor)+'<td class="prov-actions prov-actions-col"></td></tr>'):''
+  );
+  const mergeLc=prov&&lista.length===1;
   let rows='';
   lista.forEach(({f,total,ab,pend})=>{
     const rowAb=prov?0:ab;
@@ -4034,7 +4050,8 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
     const litTxt=fmtDesgloseLitrosCell(f);
     const plTxt=fmtDesglosePrecioLitroCell(f);
     const abonCell=prov?'':'<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>';
-    rows+='<tr class="desglose-row desglose-row-factura'+saldadaCls+'">'+
+    const lcCells=mergeLc?buildProvLitrosControlCellsHtml(proveedor):(prov?buildProvLitrosEmptyCellsHtml():'');
+    rows+='<tr class="desglose-row desglose-row-factura'+(mergeLc?' prov-litros-inline':'')+saldadaCls+'">'+
       '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtFechaMini(f.fecha))+'</span></td>'+
       '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-lit">'+esc(litTxt)+'</td>'+
@@ -4042,9 +4059,22 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       abonCell+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
+      lcCells+
       '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
-  return litrosBar+toolbar+buildDesgloseFacturasTableShell(rows);
+  if(prov&&!mergeLc&&lista.length>1){
+    const regs=getProvLitrosRegs(proveedor);
+    const res=calcProvLitrosCobradosResumen(proveedor,regs,getProvLitrosCobrados(proveedor));
+    const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
+    rows+='<tr class="prov-litros-row">'+
+      '<td class="col-fecha"></td><td class="col-ref"></td>'+
+      '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
+      '<td class="col-pl">'+esc(plTxt)+'</td>'+
+      '<td class="col-total"></td><td class="col-pend"></td>'+
+      buildProvLitrosControlCellsHtml(proveedor)+
+      '<td class="prov-actions prov-actions-col"></td></tr>';
+  }
+  return toolbar+buildDesgloseFacturasTableShell(rows);
 }
 function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
   const abiertas=facts.filter(f=>{
