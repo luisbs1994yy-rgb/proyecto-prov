@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.55">
+<html lang="es" data-app-version="3.56">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.55';
+const APP_VERSION=getAppVersion()||'3.56';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -289,11 +289,22 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-dif-summary{background:linear-gradient(135deg,#1a1c2c 0%,#2d3a5c 50%,#1e3a5f 100%);color:#fff;padding:10px 14px;display:flex;flex-wrap:wrap;align-items:stretch;justify-content:space-between;gap:8px 10px;}
 .prov-dif-kpi-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1 1 100%;min-width:0;}
 .prov-dif-prod{background:rgba(255,255,255,.06);border-radius:10px;padding:6px 8px;border:1px solid rgba(255,255,255,.1);}
+.prov-dif-prod-etanol{background:rgba(234,179,8,.24);border-color:rgba(245,158,11,.62);}
+.prov-dif-prod-etanol .prov-dif-prod-title{color:#fef08a;}
+.prov-dif-prod-etanol .prov-dif-kpi{border-top-color:#fbbf24;}
+.prov-dif-prod-etanol .prov-dif-kpi-dinero{border-top-color:#f59e0b;}
+.prov-dif-prod-nafta{background:rgba(58,134,255,.24);border-color:rgba(58,134,255,.58);}
+.prov-dif-prod-nafta .prov-dif-prod-title{color:#bfdbfe;}
+.prov-dif-prod-nafta .prov-dif-kpi{border-top-color:#60a5fa;}
+.prov-dif-prod-nafta .prov-dif-kpi-dinero{border-top-color:#3a86ff;}
+.prov-dif-prod-regular{background:rgba(34,197,94,.22);border-color:rgba(34,197,94,.55);}
+.prov-dif-prod-regular .prov-dif-prod-title{color:#bbf7d0;}
+.prov-dif-prod-regular .prov-dif-kpi{border-top-color:#4ade80;}
+.prov-dif-prod-regular .prov-dif-kpi-dinero{border-top-color:#22c55e;}
 .prov-dif-prod-title{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.85);margin-bottom:5px;text-align:center;}
 .prov-dif-prod-row{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .prov-dif-kpi{flex:1 1 120px;min-width:0;background:rgba(255,255,255,.08);border-radius:8px;padding:6px 8px;border:1px solid rgba(255,255,255,.12);border-top:2px solid #f59e0b;display:flex;flex-direction:column;gap:3px;}
 .prov-dif-prod .prov-dif-kpi{flex:none;}
-.prov-dif-kpi-dinero{border-top-color:#22c55e;}
 .prov-dif-kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.75);}
 .prov-dif-kpi-val{font-family:var(--mono);font-size:clamp(14px,3.5vw,18px);font-weight:600;line-height:1.1;word-break:break-word;}
 .prov-dif-kpi-val.pos{color:#4ade80;}
@@ -1087,21 +1098,21 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
         <div id="proveedores-shot-zone" class="totales-shot-zone">
           <div class="prov-dif-summary">
             <div class="prov-dif-kpi-grid">
-              <div class="prov-dif-prod">
+              <div class="prov-dif-prod prov-dif-prod-etanol">
                 <div class="prov-dif-prod-title">Etanol</div>
                 <div class="prov-dif-prod-row">
                   <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-etanol-dif">—</span></div>
                   <div class="prov-dif-kpi prov-dif-kpi-dinero"><span class="prov-dif-kpi-lbl">Dinero</span><span class="prov-dif-kpi-val" id="k-prov-etanol-din">—</span></div>
                 </div>
               </div>
-              <div class="prov-dif-prod">
+              <div class="prov-dif-prod prov-dif-prod-nafta">
                 <div class="prov-dif-prod-title">Nafta</div>
                 <div class="prov-dif-prod-row">
                   <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-nafta-dif">—</span></div>
                   <div class="prov-dif-kpi prov-dif-kpi-dinero"><span class="prov-dif-kpi-lbl">Dinero</span><span class="prov-dif-kpi-val" id="k-prov-nafta-din">—</span></div>
                 </div>
               </div>
-              <div class="prov-dif-prod">
+              <div class="prov-dif-prod prov-dif-prod-regular">
                 <div class="prov-dif-prod-title">Regular</div>
                 <div class="prov-dif-prod-row">
                   <div class="prov-dif-kpi"><span class="prov-dif-kpi-lbl">Dif L</span><span class="prov-dif-kpi-val" id="k-prov-regular-dif">—</span></div>
@@ -1377,6 +1388,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function jsQuote(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r/g,'').replace(/\n/g,'\\n');}
 function escTipoDisplay(tipo){const t=String(tipo||'').toLowerCase();if(t==='proveedor')return 'Cliente';return String(tipo||'');}
 function ensureStateArrays(){
   if(!Array.isArray(state.registros))state.registros=[];
@@ -1685,8 +1697,26 @@ function sortDesgloseCol(col){
   refreshDesglosePopup();
 }
 const MESES_CORTOS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function mondayOfDate(d){
+  const x=new Date(d);
+  x.setHours(12,0,0,0);
+  x.setDate(x.getDate()-((x.getDay()+6)%7));
+  return x;
+}
+function weekKeyForDate(d){return mondayOfDate(d).toISOString().slice(0,10);}
 function getTrendWeeks(){
-  const weeks=[],start=new Date('2026-05-04T12:00:00'),endLimit=new Date('2026-12-31T12:00:00');
+  const weeks=[];
+  let start=new Date('2026-05-04T12:00:00');
+  const endLimit=new Date();
+  endLimit.setMonth(endLimit.getMonth()+2);
+  endLimit.setHours(12,0,0,0);
+  const allRegs=[...(state.registros||[]),...(state.registrosProveedores||[])];
+  allRegs.forEach(r=>{
+    const d=parseRegistroDate(r.fecha);
+    if(!d)return;
+    const ws=mondayOfDate(d);
+    if(ws<start)start=ws;
+  });
   const cur=new Date(start);
   while(cur<=endLimit){
     const wStart=new Date(cur),wEnd=new Date(cur);
@@ -1768,17 +1798,21 @@ function setRegistrarViewportNoZoom(on){
   if(vp)vp.setAttribute('content',on?VIEWPORT_NO_ZOOM:VIEWPORT_DEFAULT);
 }
 function navTo(page,el){
-  closeDesglosePopup();closeMobileMenu();
+  closeDesglosePopup(true);closeMobileMenu();
+  const pageEl=document.getElementById('page-'+page);
+  if(!pageEl){console.warn('navTo: página desconocida',page);return;}
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');el.classList.add('active');
+  pageEl.classList.add('active');
+  if(el)el.classList.add('active');
   setRegistrarViewportNoZoom(page==='registrar');
   if(page==='totales')renderTotales();
-  if(page==='proveedores')renderProveedoresTotales();
-  if(page==='logs')renderLogs();
-  if(page==='config')renderProvManager();
-  if(page==='config-prov')renderCatalogoProvManager();
-  if(page==='precios')renderPreciosManager();if(page==='analisis')renderAnalisis();
+  else if(page==='proveedores')renderProveedoresTotales();
+  else if(page==='logs')renderLogs();
+  else if(page==='config')renderProvManager();
+  else if(page==='config-prov')renderCatalogoProvManager();
+  else if(page==='precios')renderPreciosManager();
+  else if(page==='analisis')renderAnalisisSafe();
   if(page==='registrar')updateRegistrarEntidadUI();
 }
 
@@ -4546,7 +4580,7 @@ function refreshDesglosePopup(){
   restoreProvLcEditState(lcEdit);
   if(isDesgloseProveedor())renderProveedoresTotales(true);
 }
-function closeDesglosePopup(){
+function closeDesglosePopup(skipListRender){
   const ov=document.getElementById('desglose-overlay');
   const entidad=ov&&ov.dataset.entidad||desgloseEntidad||'cliente';
   const proveedor=ov&&ov.dataset.proveedor;
@@ -4559,8 +4593,9 @@ function closeDesglosePopup(){
   document.body.style.overflow='';
   document.querySelectorAll('.desglose-btn.active').forEach(b=>b.classList.remove('active'));
   document.getElementById('desglose-popup')?.classList.remove('prov-lc-focus');
-  if(entidad==='proveedor')renderProveedoresTotales(true);
-  else renderTotales();
+  if(skipListRender)return;
+  if(entidad==='proveedor'&&isPageActive('proveedores'))renderProveedoresTotales(true);
+  else if(isPageActive('totales'))renderTotales();
 }
 
 function parseLogExtraFields(log){
@@ -5213,10 +5248,10 @@ function sortDecisionRows(rows,sort){
   else arr.sort((a,b)=>b.pend-a.pend);
   return arr;
 }
-function setDecisionSort(sort){analisisSortDecision=sort;renderAnalisis();}
+function setDecisionSort(sort){analisisSortDecision=sort;renderAnalisisSafe();}
 function toggleDecisionRow(prov){
   analisisDecisionOpenProv=analisisDecisionOpenProv===prov?'':prov;
-  renderAnalisis();
+  renderAnalisisSafe();
 }
 function renderDecisionPanel(resumen,regs){
   const el=document.getElementById('chart-decisiones');
@@ -5234,7 +5269,7 @@ function renderDecisionPanel(resumen,regs){
       (r.ultP?' · Último pago: <b>'+esc(fmtFechaCorta(r.ultP.fecha))+'</b> ('+fmt(r.ultP.monto)+')':' · Sin pagos registrados')+
       '<br>'+r.nFacts+' factura'+(r.nFacts!==1?'s':'')+' · '+r.nPagos+' pago'+(r.nPagos!==1?'s':'')+
       (r.diasFact!=null?' · Hace <b>'+r.diasFact+'</b> día'+(r.diasFact!==1?'s':'')+' sin factura nueva':'');
-    tbody+='<tr class="decision-row'+(open?' open':'')+'" onclick="toggleDecisionRow(\''+esc(r.proveedor)+'\')">'+
+    tbody+='<tr class="decision-row'+(open?' open':'')+'" onclick="toggleDecisionRow(\''+jsQuote(r.proveedor)+'\')">'+
       '<td><span class="decision-prov">'+esc(r.proveedor)+'</span></td>'+
       '<td class="decision-num">'+fmtShort(r.facturas)+'</td>'+
       '<td class="decision-pct '+pctCls+'">'+(r.facturas>0?r.pctCob.toFixed(0)+'%':'—')+'</td>'+
@@ -5260,7 +5295,7 @@ function getCurrentTrendWeekIndex(weekData){
 }
 function selectTrendWeek(idx){
   analisisTrendWeekIdx=idx;
-  renderAnalisis();
+  renderAnalisisSafe();
 }
 function buildTrendInsights(w,prev,resumen){
   if(!w)return 'Sin datos semanales todavía.';
@@ -5296,13 +5331,19 @@ function getTrendMonthsData(regs){
 }
 function getTrendWeeksData(regs){
   const weeks=getTrendWeeks();
-  return weeks.map(w=>{
-    let fact=0,pago=0;
-    regs.forEach(r=>{
-      if(!registroEnSemana(r,w.start,w.end))return;
-      const m=parseFloat(r.monto)||0;
-      if(isTipoPago(r))pago+=m;else fact+=m;
-    });
+  if(!weeks.length)return[];
+  const idxMap={};
+  weeks.forEach((w,i)=>{idxMap[w.key]=i;});
+  const buckets=weeks.map(()=>({fact:0,pago:0}));
+  (regs||[]).forEach(r=>{
+    const d=parseRegistroDate(r.fecha);if(!d)return;
+    const i=idxMap[weekKeyForDate(d)];
+    if(i==null)return;
+    const m=parseFloat(r.monto)||0;
+    if(isTipoPago(r))buckets[i].pago+=m;else buckets[i].fact+=m;
+  });
+  return weeks.map((w,i)=>{
+    const fact=buckets[i].fact,pago=buckets[i].pago;
     const pte=Math.max(0,fact-pago);
     const pctPag=fact>0?(pago/fact*100):0;
     const pctPte=fact>0?(pte/fact*100):0;
@@ -5323,8 +5364,21 @@ function getSemanaActualTotals(regs){
   }
   return{fact,pago,nFact,nPago,semAct};
 }
+function setAkText(id,text){
+  const el=document.getElementById(id);
+  if(el)el.textContent=text;
+}
+function renderAnalisisSafe(){
+  try{renderAnalisis();}
+  catch(e){
+    console.error('renderAnalisis',e);
+    const trendEl=document.getElementById('chart-trend');
+    if(trendEl)trendEl.innerHTML='<div class="empty">No se pudo cargar análisis · recarga la página</div>';
+    toastError(e);
+  }
+}
 function renderAnalisis(){
-  const regs=state.registros,facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
+  const regs=state.registros||[],facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
   const sumF=sumMonto(facts),sumP=sumMonto(pagos),saldo=sumF-sumP;
   const resumen=resumenProveedoresActivos(regs);
   const pctPag=sumF>0?(sumP/sumF*100):0;
@@ -5337,26 +5391,28 @@ function renderAnalisis(){
     barS.style.width=(sumF>0?pctPend:100)+'%';
     barS.classList.toggle('paid',saldo<=0);
   }
-  document.getElementById('ak-fact').textContent  = fmt3(sumF);
-  document.getElementById('ak-fact-n').textContent = nRegistros(facts.length);
-  document.getElementById('ak-pago').textContent   = fmt3(sumP);
-  document.getElementById('ak-pago-n').textContent = nRegistros(pagos.length);
-  document.getElementById('ak-saldo').textContent  = fmt3(Math.abs(saldo));
-  document.getElementById('ak-saldo-pct').textContent = saldo<=0?'✓ Al corriente':fmt3(saldo)+' por cobrar';
+  setAkText('ak-fact',fmt3(sumF));
+  setAkText('ak-fact-n',nRegistros(facts.length));
+  setAkText('ak-pago',fmt3(sumP));
+  setAkText('ak-pago-n',nRegistros(pagos.length));
+  setAkText('ak-saldo',fmt3(Math.abs(saldo)));
+  setAkText('ak-saldo-pct',saldo<=0?'✓ Al corriente':fmt3(saldo)+' por cobrar');
   const saldoCard=document.getElementById('ak-saldo-card');
   if(saldoCard)saldoCard.classList.toggle('paid',saldo<=0);
-  document.getElementById('ak-provs').textContent  = resumen.length;
-  document.getElementById('ak-movs').textContent   = regs.length+' movimientos';
-  document.getElementById('ak-pct').textContent    = sumF>0?pctPag.toFixed(1)+'%':'—';
+  setAkText('ak-provs',String(resumen.length));
+  setAkText('ak-movs',regs.length+' movimientos');
+  setAkText('ak-pct',sumF>0?pctPag.toFixed(1)+'%':'—');
   const sem=getSemanaActualTotals(regs);
-  document.getElementById('ak-sem-fact').textContent=fmt3(sem.fact);
-  document.getElementById('ak-sem-fact-n').textContent=sem.nFact?nRegistros(sem.nFact):'sin movimientos';
-  document.getElementById('ak-sem-pago').textContent=fmt3(sem.pago);
-  document.getElementById('ak-sem-pago-n').textContent=sem.nPago?nRegistros(sem.nPago):'sin movimientos';
+  setAkText('ak-sem-fact',fmt3(sem.fact));
+  setAkText('ak-sem-fact-n',sem.nFact?nRegistros(sem.nFact):'sin movimientos');
+  setAkText('ak-sem-pago',fmt3(sem.pago));
+  setAkText('ak-sem-pago-n',sem.nPago?nRegistros(sem.nPago):'sin movimientos');
 
   renderDecisionPanel(resumen,regs);
 
-  const trendCard=document.getElementById('chart-trend').parentElement;
+  const trendEl=document.getElementById('chart-trend');
+  if(!trendEl)return;
+  const trendCard=trendEl.parentElement;
   if(trendCard&&!trendCard.querySelector('.trend-legend')){
     const lg=document.createElement('div');lg.className='trend-legend';
     lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Facturado (F)</b></span></div>'+
@@ -5372,7 +5428,6 @@ function renderAnalisis(){
       '<b>Barras semanales:</b> cada fila representa una semana completa de <b>Lunes a Domingo</b>. '+
       'En cada semana verás <b>Facturado</b>, <b>Pagado</b>, <b>PTE</b> y su <b>%</b>.';
   }
-  const trendEl=document.getElementById('chart-trend');
   const monthData=getTrendMonthsData(regs);
   const weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
   if(!monthData.length){
@@ -5590,7 +5645,7 @@ function renderProvManager(){
 function renderAll(){
   renderProvSelect();renderTotales();renderProveedoresTotales();renderProvManager();renderCatalogoProvManager();
   if(isPageActive('precios'))renderPreciosManager();
-  if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisis();
+  if(isPageActive('logs'))renderLogs();if(isPageActive('analisis'))renderAnalisisSafe();
 }
 </script>
 </body>
