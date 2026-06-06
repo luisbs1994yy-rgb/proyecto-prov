@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.53">
+<html lang="es" data-app-version="3.54">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.53';
+const APP_VERSION=getAppVersion()||'3.54';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -2705,15 +2705,35 @@ function getTotalesSaldoTotal(){
 function getProveedoresSaldoTotal(){
   return calcTotalesNeto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[])).neto;
 }
-function buildProveedoresWhatsappText(){
+function getProveedoresDineroSuma(){
   const byProd=calcProvLitrosTotalesPorProducto(resumenCatalogoProveedoresActivos(state.registrosProveedores||[]));
-  const parts=PROV_PRODUCTOS_KPI.map(prod=>{
-    const t=byProd[prod]||{};
-    const d=isNaN(t.dif)?'—':fmtProvDifLitrosSigned(t.dif);
-    const $=isNaN(t.dinero)?'—':fmt(t.dinero);
-    return prod+': '+d+' / '+$;
-  }).join(' · ');
-  return parts+'    '+formatTotalesCopiaFecha(new Date());
+  let sum=0,has=false;
+  PROV_PRODUCTOS_KPI.forEach(prod=>{
+    const d=(byProd[prod]||{}).dinero;
+    if(!isNaN(d)){sum+=d;has=true;}
+  });
+  return has?Math.round(sum*100)/100:NaN;
+}
+function buildProveedoresWhatsappText(){
+  const suma=getProveedoresDineroSuma();
+  const monto=isNaN(suma)?'—':fmt(suma);
+  return 'Suma de dinero de los 3 producto del dinero solamente: '+monto;
+}
+function provDifCanvasColor(val){
+  if(isNaN(val))return'#6b7280';
+  if(val>0.001)return'#047857';
+  if(val<-0.001)return'#b91c1c';
+  return'#6b7280';
+}
+function drawProvKpiMini(ctx,x,y,w,h,lbl,val,isMoney){
+  ctx.fillStyle='rgba(255,255,255,.1)';drawRoundRect(ctx,x,y,w,h,6);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;drawRoundRect(ctx,x,y,w,h,6);ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.72)';ctx.font='600 6px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText(lbl,x+4,y+9);
+  const txt=isMoney?(isNaN(val)?'—':fmt(val)):(isNaN(val)?'—':fmtProvDifLitrosSigned(val));
+  ctx.fillStyle=provDifCanvasColor(val);
+  ctx.font='700 9px IBM Plex Mono, monospace';
+  drawFitText(ctx,txt,x+4,y+20,w-8);
 }
 function formatTotalesCopiaFecha(d){
   const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2897,10 +2917,11 @@ function buildTotalesCanvas(){
 }
 function buildProveedoresCanvas(){
   const resumen=resumenCatalogoProveedoresActivos(state.registrosProveedores||[]);
-  const{deudas,neto}=calcTotalesNeto(resumen);
+  const{deudas}=calcTotalesNeto(resumen);
+  const byProd=calcProvLitrosTotalesPorProducto(resumen);
   const rows=resumen.slice(0,10);
-  const w=360,pad=12,headerH=58,rowH=32,gap=5,footerH=28,scale=3;
-  const h=pad*2+headerH+gap+rows.length*(rowH+gap)+gap+footerH;
+  const w=360,pad=12,scale=3,kpiH=96,theadH=20,rowH=44,gap=4,footerH=22;
+  const h=pad*2+kpiH+gap+theadH+gap+rows.length*(rowH+gap)+gap+footerH;
   const canvas=document.createElement('canvas');
   canvas.width=w*scale;canvas.height=h*scale;
   canvas.style.width=w+'px';canvas.style.height=h+'px';
@@ -2911,39 +2932,64 @@ function buildProveedoresCanvas(){
   ctx.fillStyle='#ffffff';
   drawRoundRect(ctx,8,8,w-16,h-16,18);ctx.fill();
   const grad=ctx.createLinearGradient(8,8,w-8,8);
-  grad.addColorStop(0,'#78350f');grad.addColorStop(1,'#b45309');
-  ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,headerH,18);ctx.fill();
-  ctx.fillStyle='#fde68a';ctx.font='600 8px IBM Plex Sans, Arial';
-  ctx.fillText('PROVEEDORES',pad+5,26);
-  ctx.fillStyle='#d1d5db';ctx.font='700 10px IBM Plex Sans, Arial';
-  ctx.fillText('Saldo total',pad+5,40);
-  ctx.fillStyle='#ffffff';ctx.font='700 19px IBM Plex Mono, monospace';ctx.textAlign='right';
-  ctx.fillText(fmt(neto),w-pad-5,40);
-  ctx.textAlign='left';
-  let y=8+headerH+gap;
+  grad.addColorStop(0,'#1a1c2c');grad.addColorStop(.5,'#2d3a5c');grad.addColorStop(1,'#1e3a5f');
+  ctx.fillStyle=grad;drawRoundRect(ctx,8,8,w-16,kpiH,18);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.85)';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ctx.fillText('PROVEEDORES',pad+4,22);
+  const prodGap=6,prodW=(w-pad*2-12-2*prodGap)/3,prodY=28,miniH=28,miniGap=4;
+  PROV_PRODUCTOS_KPI.forEach((prod,i)=>{
+    const px=pad+4+i*(prodW+prodGap);
+    ctx.fillStyle='rgba(255,255,255,.08)';drawRoundRect(ctx,px,prodY,prodW,miniH+22,8);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;drawRoundRect(ctx,px,prodY,prodW,miniH+22,8);ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.88)';ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='center';
+    ctx.fillText(prod.toUpperCase(),px+prodW/2,prodY+10);
+    const t=byProd[prod]||{};
+    const miniW=(prodW-8-miniGap)/2;
+    drawProvKpiMini(ctx,px+4,prodY+14,miniW,miniH,'Dif L',t.dif,false);
+    drawProvKpiMini(ctx,px+4+miniW+miniGap,prodY+14,miniW,miniH,'Dinero',t.dinero,true);
+  });
+  let y=8+kpiH+gap;
+  const tblW=w-pad*2;
+  ctx.fillStyle='#3a86ff';drawRoundRect(ctx,pad,y,tblW,theadH,8);ctx.fill();
+  const colName=88,colSaldo=78,colProd=58,colDif=tblW-colName-colSaldo-colProd-16;
+  const cols=[pad+8,pad+8+colName,pad+8+colName+colSaldo,pad+8+colName+colSaldo+colProd];
+  ctx.fillStyle='#ffffff';ctx.font='700 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  ['Proveedor','Saldo','Producto','Diferencia'].forEach((lbl,i)=>ctx.fillText(lbl,cols[i],y+13));
+  y+=theadH+gap;
   rows.forEach(r=>{
     const cell=formatSaldoTotalesRow(r.saldo,deudas);
     const isCredito=r.saldo<-0.001;
     const isZero=Math.abs(r.saldo)<0.001;
-    ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.fill();
-    ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,w-pad*2,rowH,14);ctx.stroke();
-    const innerX=pad+10, innerW=w-pad*2-20;
-    const nameW=118, pctW=42, amountW=innerW-nameW-pctW;
+    const regs=getProvLitrosRegs(r.proveedor);
+    const cobrados=getProvLitrosCobrados(r.proveedor);
+    const litRes=calcProvLitrosCobradosResumen(r.proveedor,regs,cobrados);
+    const prodTxt=getProveedorProductoDisplay(r.proveedor);
+    const difTxt=isNaN(litRes.dif)?'—':fmtProvDifLitrosSigned(litRes.dif);
+    const dinTxt=isNaN(litRes.dinero)?'—':fmt(litRes.dinero);
+    ctx.fillStyle='#fbfdff';drawRoundRect(ctx,pad,y,tblW,rowH,12);ctx.fill();
+    ctx.strokeStyle='#dfe7ef';ctx.lineWidth=1;drawRoundRect(ctx,pad,y,tblW,rowH,12);ctx.stroke();
     const midY=y+rowH/2;
-    ctx.fillStyle='#1a1c2c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='left';
-    drawClienteNombreCanvas(ctx,r.proveedor,innerX,midY,nameW);
-    ctx.fillStyle=isZero||isCredito?'#047857':'#b91c1c';ctx.font='700 12px IBM Plex Mono, monospace';ctx.textAlign='center';
-    ctx.fillText(cell.text,innerX+nameW+(amountW/2),midY+4);
-    ctx.fillStyle=isCredito?'#047857':'#6b7280';ctx.font='500 10px IBM Plex Mono, monospace';ctx.textAlign='right';
-    ctx.fillText(cell.pct,innerX+innerW,midY+4);
+    ctx.fillStyle='#1a1c2c';ctx.font='700 11px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawClienteNombreCanvas(ctx,r.proveedor,cols[0],midY,colName-6);
+    ctx.fillStyle=isZero||isCredito?'#047857':'#b91c1c';ctx.font='700 10px IBM Plex Mono, monospace';ctx.textAlign='left';
+    drawFitText(ctx,cell.text,cols[1],midY+4,colSaldo-4);
+    ctx.fillStyle='#475569';ctx.font='600 9px IBM Plex Sans, Arial';
+    drawFitText(ctx,prodTxt,cols[2],midY+4,colProd-4);
+    const difX=cols[3],difBoxW=colDif-4,difBoxH=14;
+    ctx.fillStyle='#f8fafc';drawRoundRect(ctx,difX,y+8,difBoxW,difBoxH,5);ctx.fill();
+    ctx.strokeStyle=provDifCanvasColor(litRes.dif);ctx.lineWidth=1;drawRoundRect(ctx,difX,y+8,difBoxW,difBoxH,5);ctx.stroke();
+    ctx.fillStyle=provDifCanvasColor(litRes.dif);ctx.font='700 8px IBM Plex Mono, monospace';ctx.textAlign='center';
+    ctx.fillText(difTxt,difX+difBoxW/2,y+18);
+    ctx.fillStyle=provDifCanvasColor(litRes.dinero);ctx.font='700 8px IBM Plex Mono, monospace';
+    ctx.fillText(dinTxt,difX+difBoxW/2,y+34);
     y+=rowH+gap;
   });
   y+=gap;
-  const fy=y,footerW=w-pad*2;
-  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.fill();
-  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,10);ctx.stroke();
-  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';
-  ctx.fillText(formatTotalesCopiaFecha(new Date()),pad+8,fy+17);
+  const fy=y,footerW=tblW;
+  ctx.fillStyle='#f1f5f9';drawRoundRect(ctx,pad,fy,footerW,footerH,8);ctx.fill();
+  ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;drawRoundRect(ctx,pad,fy,footerW,footerH,8);ctx.stroke();
+  ctx.fillStyle='#64748b';ctx.font='600 7px IBM Plex Sans, Arial';ctx.textAlign='left';
+  drawFitText(ctx,buildProveedoresWhatsappText(),pad+8,fy+14,footerW-16);
   ctx.textAlign='left';
   return canvas;
 }
@@ -2989,7 +3035,7 @@ async function capturarProveedoresMovil(btnEl){
         const payload={files:[file],title:shareLine,text:shareLine};
         if(navigator.canShare(payload)){
           await navigator.share(payload);
-          toast('Elige WhatsApp para enviar foto de proveedores',false,true);
+          toast('Elige WhatsApp · foto + suma dinero 3 productos',false,true);
           return;
         }
       }catch(e){if(e&&e.name==='AbortError')return;}
