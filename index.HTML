@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.59">
+<html lang="es" data-app-version="3.60">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.59';
+const APP_VERSION=getAppVersion()||'3.60';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1334,17 +1334,6 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
         <div class="card-body">
           <div class="add-catalog-row"><input type="text" id="new-prov" placeholder="Nombre cliente"><button class="btn btn-primary" onclick="agregarProveedor()">+</button></div>
           <div id="prov-manager-list"><div class="loading"><span class="spinner"></span> Cargando…</div></div>
-          <div class="release-url-box" id="release-url-box">
-            <p class="app-version-stamp" id="app-version-stamp">Versión de este archivo: v…</p>
-            <div class="release-url-lbl">Actualizar app · versión actual</div>
-            <div class="release-url-actions">
-              <a class="btn btn-primary btn-open-release" id="btn-open-release" href="#">Abrir</a>
-              <button type="button" class="btn btn-sm" onclick="copyAppReleaseUrl(event)">Copiar enlace</button>
-            </div>
-            <a class="release-url-link" id="app-release-url" href="#">…</a>
-            <p class="release-url-hint" id="release-url-hint"></p>
-          </div>
-          <script>bindAppVersionLink();</script>
         </div>
       </div>
     </div>
@@ -1415,8 +1404,11 @@ let analisisSortDecision = 'pendiente';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
 let analisisRenderTimer = null;
-const ANALISIS_MAX_WEEKS_CHART = 12;
-const ANALISIS_MAX_WEEKS_LOOKBACK = 78;
+let analisisHeavyTimer = null;
+let analisisDataCache = null;
+let analisisDataCacheSig = '';
+const ANALISIS_MAX_WEEKS_CHART = 8;
+const ANALISIS_MAX_WEEKS_LOOKBACK = 40;
 let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 let logsShowExtraCols=false;
 
@@ -1496,7 +1488,12 @@ function ensureStateArrays(){
   if(!state.provLitrosCobrados||typeof state.provLitrosCobrados!=='object')state.provLitrosCobrados={};
   if(!Array.isArray(state.precios))state.precios=[];
 }
+function invalidateAnalisisCache(){
+  analisisDataCache=null;
+  analisisDataCacheSig='';
+}
 function saveAndRender(){
+  invalidateAnalisisCache();
   ensureStateArrays();
   const map={},mapP={};
   state.registros.forEach(r=>{if(r.id&&r.aplicaFacturaId)map[r.id]=r.aplicaFacturaId;});
@@ -1881,8 +1878,16 @@ function forceUnlockUi(){
   document.getElementById('bitacora-share-overlay')?.classList.remove('open');
 }
 function scheduleRenderAnalisis(){
+  if(analisisHeavyTimer){cancelAnimationFrame(analisisHeavyTimer);analisisHeavyTimer=null;}
   if(analisisRenderTimer)clearTimeout(analisisRenderTimer);
-  analisisRenderTimer=setTimeout(()=>{analisisRenderTimer=null;renderAnalisisSafe();},0);
+  try{renderAnalisisKpis(getAnalisisData());}catch(e){renderAnalisisSafe();return;}
+  analisisRenderTimer=setTimeout(()=>{
+    analisisRenderTimer=null;
+    analisisHeavyTimer=requestAnimationFrame(()=>{
+      analisisHeavyTimer=null;
+      renderAnalisisHeavySafe();
+    });
+  },0);
 }
 function navTo(page,el){
   forceUnlockUi();
@@ -5320,16 +5325,91 @@ function ultimoRegistroPorTipo(regs,tipo){
   if(!list.length)return null;
   return list.slice().sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha))[0];
 }
-function buildDecisionRows(resumen,regs){
+function analisisDataSignature(){
+  const regs=state.registros||[];
+  let sig=String(regs.length)+'|'+String((state.proveedores||[]).length);
+  const step=Math.max(1,Math.floor(regs.length/6));
+  for(let i=0;i<regs.length;i+=step){
+    const r=regs[i];
+    sig+=';'+String(r.id||'')+':'+String(r.monto||'')+':'+String(r.fecha||'').slice(0,10);
+  }
+  return sig;
+}
+function computeAnalisisData(regs){
+  const list=regs||[];
+  const semStart=mondayOfDate(new Date());
+  const semEnd=new Date(semStart);
+  semEnd.setDate(semEnd.getDate()+6);
+  const semEndMs=semEnd.getTime()+86400000-1;
+  const semStartMs=semStart.getTime();
+  const cutoff=new Date();
+  cutoff.setDate(cutoff.getDate()-ANALISIS_MAX_WEEKS_LOOKBACK*7);
+  cutoff.setHours(0,0,0,0);
+  let sumF=0,sumP=0,nFact=0,nPago=0,semFact=0,semPago=0,nSemFact=0,nSemPago=0;
+  const monthMap={},weekMap={},byProv={};
+  list.forEach(r=>{
+    const m=parseFloat(r.monto)||0;
+    const pago=isTipoPago(r);
+    if(pago){sumP+=m;nPago++;}else{sumF+=m;nFact++;}
+    const d=parseRegistroDate(r.fecha);
+    if(d){
+      const t=d.getTime();
+      if(t>=semStartMs&&t<=semEndMs){
+        if(pago){semPago+=m;nSemPago++;}else{semFact+=m;nSemFact++;}
+      }
+      const y=d.getFullYear(),mo=d.getMonth();
+      const mk=y+'-'+String(mo+1).padStart(2,'0');
+      if(!monthMap[mk])monthMap[mk]={key:mk,y,m:mo,fact:0,pago:0};
+      if(pago)monthMap[mk].pago+=m;else monthMap[mk].fact+=m;
+      if(d>=cutoff){
+        const start=mondayOfDate(d);
+        const wk=start.toISOString().slice(0,10);
+        if(!weekMap[wk])weekMap[wk]={start,key:wk,fact:0,pago:0};
+        if(pago)weekMap[wk].pago+=m;else weekMap[wk].fact+=m;
+      }
+    }
+    const prov=r.proveedor||'SIN CLIENTE';
+    if(!byProv[prov])byProv[prov]={nFacts:0,nPagos:0,ultF:null,ultP:null,ultFMs:0,ultPMs:0};
+    const bp=byProv[prov];
+    const ms=parseRegistroDateMs(r.fecha);
+    if(pago){
+      bp.nPagos++;
+      if(ms>=bp.ultPMs){bp.ultPMs=ms;bp.ultP=r;}
+    }else{
+      bp.nFacts++;
+      if(ms>=bp.ultFMs){bp.ultFMs=ms;bp.ultF=r;}
+    }
+  });
+  const monthData=Object.values(monthMap).sort((a,b)=>a.key.localeCompare(b.key)).map(x=>({
+    ...x,label:MESES_ES[x.m].slice(0,3).toUpperCase()+' '+x.y,net:x.fact-x.pago
+  }));
+  const weekData=Object.values(weekMap).sort((a,b)=>a.key.localeCompare(b.key)).map(w=>{
+    const end=new Date(w.start);
+    end.setDate(end.getDate()+6);
+    const pte=Math.max(0,w.fact-w.pago);
+    const pctPag=w.fact>0?(w.pago/w.fact*100):0;
+    const pctPte=w.fact>0?(pte/w.fact*100):0;
+    return{...w,end,label:fmtWeekLabel(w.start,end),pte,pctPag,pctPte};
+  }).filter(w=>w.fact>0||w.pago>0||w.pte>0);
+  const resumen=resumenProveedoresActivos(list);
+  return{sumF,sumP,nFact,nPago,semFact,semPago,nSemFact,nSemPago,saldo:sumF-sumP,monthData,weekData,resumen,byProv};
+}
+function getAnalisisData(){
+  const sig=analisisDataSignature();
+  if(analisisDataCache&&analisisDataCacheSig===sig)return analisisDataCache;
+  analisisDataCache=computeAnalisisData(state.registros||[]);
+  analisisDataCacheSig=sig;
+  return analisisDataCache;
+}
+function buildDecisionRows(resumen,byProv){
   const hoy=new Date().toISOString().slice(0,10);
   return resumen.map(r=>{
-    const provRegs=regs.filter(x=>x.proveedor===r.proveedor);
-    const facts=provRegs.filter(isTipoFactura),pagos=provRegs.filter(isTipoPago);
-    const ultF=ultimoRegistroPorTipo(provRegs,'factura'),ultP=ultimoRegistroPorTipo(provRegs,'pago');
+    const pr=byProv[r.proveedor]||{};
+    const ultF=pr.ultF||null,ultP=pr.ultP||null;
     const pend=Math.max(0,r.saldo);
     const pctCob=r.facturas>0.001?(r.pagos/r.facturas*100):100;
     const diasFact=ultF?diasEntreFechas(ultF.fecha,hoy):null;
-    return{...r,pend,pctCob,diasFact,ultF,ultP,nFacts:facts.length,nPagos:pagos.length};
+    return{...r,pend,pctCob,diasFact,ultF,ultP,nFacts:pr.nFacts||0,nPagos:pr.nPagos||0};
   });
 }
 function sortDecisionRows(rows,sort){
@@ -5340,18 +5420,19 @@ function sortDecisionRows(rows,sort){
   else arr.sort((a,b)=>b.pend-a.pend);
   return arr;
 }
-function setDecisionSort(sort){analisisSortDecision=sort;renderAnalisisSafe();}
+function setDecisionSort(sort){analisisSortDecision=sort;renderDecisionPanel(getAnalisisData());}
 function toggleDecisionRow(prov){
   analisisDecisionOpenProv=analisisDecisionOpenProv===prov?'':prov;
-  renderAnalisisSafe();
+  renderDecisionPanel(getAnalisisData());
 }
-function renderDecisionPanel(resumen,regs){
+function renderDecisionPanel(data){
   const el=document.getElementById('chart-decisiones');
   if(!el)return;
+  const resumen=data.resumen||[];
   if(!resumen.length){el.innerHTML='<div class="empty">Sin clientes con movimientos</div>';return;}
   const sorts=[{k:'pendiente',l:'Mayor deuda'},{k:'facturado',l:'Más facturado'},{k:'cobrado',l:'Menos % cobrado'},{k:'reciente',l:'Factura reciente'}];
   const toolbar='<div class="decision-toolbar"><span>Ordenar:</span>'+sorts.map(s=>'<button type="button" class="decision-sort'+(analisisSortDecision===s.k?' active':'')+'" onclick="setDecisionSort(\''+s.k+'\')">'+s.l+'</button>').join('')+'</div>';
-  const rows=sortDecisionRows(buildDecisionRows(resumen,regs),analisisSortDecision);
+  const rows=sortDecisionRows(buildDecisionRows(resumen,data.byProv||{}),analisisSortDecision);
   let tbody='';
   rows.forEach(r=>{
     const pctCls=r.pctCob>=90?'ok':r.pctCob>=50?'warn':'bad';
@@ -5387,7 +5468,7 @@ function getCurrentTrendWeekIndex(weekData){
 }
 function selectTrendWeek(idx){
   analisisTrendWeekIdx=idx;
-  renderAnalisisSafe();
+  renderAnalisisTrend(getAnalisisData());
 }
 function buildTrendInsights(w,prev,resumen){
   if(!w)return 'Sin datos semanales.';
@@ -5397,74 +5478,33 @@ function buildTrendInsights(w,prev,resumen){
   if(topPend)html+=' · Mayor deuda: <strong>'+esc(topPend.proveedor)+'</strong> '+fmtShort(topPend.saldo);
   return html;
 }
-function getTrendMonthsData(regs){
-  const map={};
-  regs.forEach(r=>{
-    const d=parseRegistroDate(r.fecha);
-    if(!d)return;
-    const y=d.getFullYear(),m=d.getMonth();
-    const key=y+'-'+String(m+1).padStart(2,'0');
-    if(!map[key])map[key]={key,y,m,fact:0,pago:0};
-    const val=parseFloat(r.monto)||0;
-    if(isTipoPago(r))map[key].pago+=val;else map[key].fact+=val;
-  });
-  return Object.values(map).sort((a,b)=>a.key.localeCompare(b.key)).map(x=>({
-    ...x,
-    label:MESES_ES[x.m].slice(0,3).toUpperCase()+' '+x.y,
-    net:x.fact-x.pago
-  }));
-}
-function getTrendWeeksData(regs){
-  const map={};
-  const cutoff=new Date();
-  cutoff.setDate(cutoff.getDate()-ANALISIS_MAX_WEEKS_LOOKBACK*7);
-  cutoff.setHours(0,0,0,0);
-  (regs||[]).forEach(r=>{
-    const d=parseRegistroDate(r.fecha);if(!d||d<cutoff)return;
-    const start=mondayOfDate(d);
-    const key=start.toISOString().slice(0,10);
-    if(!map[key])map[key]={start,key,fact:0,pago:0};
-    const m=parseFloat(r.monto)||0;
-    if(isTipoPago(r))map[key].pago+=m;else map[key].fact+=m;
-  });
-  return Object.values(map).sort((a,b)=>a.key.localeCompare(b.key)).map(w=>{
-    const end=new Date(w.start);
-    end.setDate(end.getDate()+6);
-    const pte=Math.max(0,w.fact-w.pago);
-    const pctPag=w.fact>0?(w.pago/w.fact*100):0;
-    const pctPte=w.fact>0?(pte/w.fact*100):0;
-    return{...w,end,label:fmtWeekLabel(w.start,end),pte,pctPag,pctPte};
-  });
-}
-function getSemanaActualTotals(regs){
-  const semStart=mondayOfDate(new Date());
-  const semEnd=new Date(semStart);
-  semEnd.setDate(semEnd.getDate()+6);
-  let fact=0,pago=0,nFact=0,nPago=0;
-  (regs||[]).forEach(r=>{
-    if(!registroEnSemana(r,semStart,semEnd))return;
-    const m=parseFloat(r.monto)||0;
-    if(isTipoPago(r)){pago+=m;nPago++;}else{fact+=m;nFact++;}
-  });
-  return{fact,pago,nFact,nPago,semAct:{start:semStart,end:semEnd}};
-}
 function setAkText(id,text){
   const el=document.getElementById(id);
   if(el)el.textContent=text;
 }
 function renderAnalisisSafe(){
-  try{renderAnalisis();}
-  catch(e){
+  try{
+    const data=getAnalisisData();
+    renderAnalisisKpis(data);
+    renderAnalisisHeavy(data);
+  }catch(e){
     console.error('renderAnalisis',e);
     const trendEl=document.getElementById('chart-trend');
     if(trendEl)trendEl.innerHTML='<div class="empty">No se pudo cargar análisis · recarga la página</div>';
     toastError(e);
   }
 }
-function renderAnalisis(){
-  const regs=state.registros||[],facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
-  const sumF=sumMonto(facts),sumP=sumMonto(pagos),saldo=sumF-sumP;
-  const resumen=resumenProveedoresActivos(regs);
+function renderAnalisisHeavySafe(){
+  try{renderAnalisisHeavy(getAnalisisData());}
+  catch(e){
+    console.error('renderAnalisisHeavy',e);
+    const trendEl=document.getElementById('chart-trend');
+    if(trendEl)trendEl.innerHTML='<div class="empty">Cargando tendencia…</div>';
+  }
+}
+function renderAnalisisKpis(data){
+  const d=data||getAnalisisData();
+  const{sumF,sumP,nFact,nPago,saldo,semFact,semPago,nSemFact,nSemPago,resumen}=d;
   const pctPag=sumF>0?(sumP/sumF*100):0;
   const pctPend=sumF>0?Math.max(0,100-pctPag):0;
   const flujoPct=document.getElementById('ak-flujo-pct');
@@ -5476,30 +5516,34 @@ function renderAnalisis(){
     barS.classList.toggle('paid',saldo<=0);
   }
   setAkText('ak-fact',fmt3(sumF));
-  setAkText('ak-fact-n',nRegistros(facts.length));
+  setAkText('ak-fact-n',nRegistros(nFact));
   setAkText('ak-pago',fmt3(sumP));
-  setAkText('ak-pago-n',nRegistros(pagos.length));
+  setAkText('ak-pago-n',nRegistros(nPago));
   setAkText('ak-saldo',fmt3(Math.abs(saldo)));
   setAkText('ak-saldo-pct',saldo<=0?'✓ Al corriente':fmt3(saldo)+' por cobrar');
   const saldoCard=document.getElementById('ak-saldo-card');
   if(saldoCard)saldoCard.classList.toggle('paid',saldo<=0);
   setAkText('ak-provs',String(resumen.length));
-  setAkText('ak-movs',regs.length+' movimientos');
+  setAkText('ak-movs',String(nFact+nPago)+' movimientos');
   setAkText('ak-pct',sumF>0?pctPag.toFixed(1)+'%':'—');
-  const sem=getSemanaActualTotals(regs);
-  setAkText('ak-sem-fact',fmt3(sem.fact));
-  setAkText('ak-sem-fact-n',sem.nFact?nRegistros(sem.nFact):'sin movimientos');
-  setAkText('ak-sem-pago',fmt3(sem.pago));
-  setAkText('ak-sem-pago-n',sem.nPago?nRegistros(sem.nPago):'sin movimientos');
-
-  renderDecisionPanel(resumen,regs);
-
+  setAkText('ak-sem-fact',fmt3(semFact));
+  setAkText('ak-sem-fact-n',nSemFact?nRegistros(nSemFact):'sin movimientos');
+  setAkText('ak-sem-pago',fmt3(semPago));
+  setAkText('ak-sem-pago-n',nSemPago?nRegistros(nSemPago):'sin movimientos');
+}
+function renderAnalisisHeavy(data){
+  const d=data||getAnalisisData();
+  renderDecisionPanel(d);
+  renderAnalisisTrend(d);
+}
+function renderAnalisisTrend(data){
+  const d=data||getAnalisisData();
   const trendEl=document.getElementById('chart-trend');
   if(!trendEl)return;
   const gl=document.getElementById('trend-glossary');
   if(gl)gl.innerHTML='';
-  const monthData=getTrendMonthsData(regs);
-  let weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
+  const monthData=d.monthData||[];
+  let weekData=(d.weekData||[]).slice();
   if(weekData.length>ANALISIS_MAX_WEEKS_CHART)weekData=weekData.slice(-ANALISIS_MAX_WEEKS_CHART);
   if(!monthData.length){
     trendEl.className='';
@@ -5507,7 +5551,7 @@ function renderAnalisis(){
     const sumElEmpty=document.getElementById('trend-summary');
     if(sumElEmpty)sumElEmpty.innerHTML='';
     const insElEmpty=document.getElementById('trend-insights');
-    if(insElEmpty)insElEmpty.innerHTML='Agrega facturas y pagos para construir la tendencia.';
+    if(insElEmpty)insElEmpty.innerHTML='';
     return;
   }
   if(!weekData.length){
@@ -5516,7 +5560,7 @@ function renderAnalisis(){
     return;
   }
   if(analisisTrendWeekIdx<0||analisisTrendWeekIdx>=weekData.length)analisisTrendWeekIdx=getCurrentTrendWeekIndex(weekData);
-  const selW=weekData[analisisTrendWeekIdx],prevW=analisisTrendWeekIdx>0?weekData[analisisTrendWeekIdx-1]:null;
+  const selW=weekData[analisisTrendWeekIdx];
   const selMonth=monthData[monthData.length-1];
   const sumEl=document.getElementById('trend-summary');
   if(sumEl&&selMonth){
@@ -5528,15 +5572,15 @@ function renderAnalisis(){
       '<div class="trend-sum-item"><div class="trend-sum-lbl">Mes</div><div class="trend-sum-val">'+esc(selMonth.label)+'</div></div>';
   }
   const insEl=document.getElementById('trend-insights');
-  if(insEl)insEl.innerHTML=buildTrendInsights(selW,prevW,resumen);
-  const maxVal=Math.max(...weekData.map(w=>Math.max(w.fact,w.pago,w.pte)),1);
+  if(insEl)insEl.innerHTML=buildTrendInsights(selW,null,d.resumen);
+  let maxVal=1;
+  weekData.forEach(w=>{const mx=Math.max(w.fact,w.pago,w.pte);if(mx>maxVal)maxVal=mx;});
   trendEl.className='';
   trendEl.innerHTML='<div class="trend-week-vertical-wrap"><div class="trend-week-vertical-grid">'+weekData.map((w,i)=>{
     const active=i===analisisTrendWeekIdx;
     const hF=Math.max(3,Math.round((w.fact/maxVal)*48));
     const hP=Math.max(3,Math.round((w.pago/maxVal)*48));
     const hS=Math.max(3,Math.round((w.pte/maxVal)*48));
-    const pctText='Pagado '+w.pctPag.toFixed(0)+'%';
     return '<div class="trend-week-col'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')">'+
       '<div class="trend-week-col-head">SEM '+esc(w.label)+'</div>'+
       '<div class="trend-week-bars-vertical">'+
@@ -5545,11 +5589,9 @@ function renderAnalisis(){
         '<div class="trend-vbar-wrap"><div class="trend-vbar pte" style="height:'+hS+'px"></div><div class="trend-vbar-lbl">PTE</div></div>'+
       '</div>'+
       '<div class="trend-week-meta">'+
-        '<div class="trend-week-meta-row"><span class="k">Fact.</span><span class="v">'+fmtShort(w.fact)+'</span></div>'+
-        '<div class="trend-week-meta-row"><span class="k">Pag.</span><span class="v">'+fmtShort(w.pago)+'</span></div>'+
-        '<div class="trend-week-meta-row"><span class="k">Pte.</span><span class="v">'+fmtShort(w.pte)+'</span></div>'+
+        '<div class="trend-week-meta-row"><span class="k">F</span><span class="v">'+fmtShort(w.fact)+'</span></div>'+
+        '<div class="trend-week-meta-row"><span class="k">P</span><span class="v">'+fmtShort(w.pago)+'</span></div>'+
       '</div>'+
-      '<div class="trend-week-pct-line">'+pctText+'</div>'+
       '</div>';
   }).join('')+'</div></div>';
 }
@@ -5711,7 +5753,6 @@ async function guardarTodosPrecios(btn){
   }
 }
 function renderProvManager(){
-  bindAppVersionLink();
   const el=document.getElementById('prov-manager-list');
   if(!el)return;
   if(!state.proveedores.length){el.innerHTML='<div class="empty">Sin clientes</div>';return;}
