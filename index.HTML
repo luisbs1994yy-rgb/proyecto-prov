@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.39">
+<html lang="es" data-app-version="3.40">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.39';
+const APP_VERSION=getAppVersion()||'3.40';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -264,8 +264,17 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .prov-list-dif-badge{font-family:var(--mono);font-size:9px;font-weight:700;line-height:1.2;padding:2px 6px;border-radius:6px;background:#fff;border:1px solid var(--border);border-top:2px solid #94a3b8;white-space:nowrap;}
 .prov-list-dif-badge.pos{color:var(--green-text);border-top-color:#22c55e;}
 .prov-list-dif-badge.neg{color:var(--red-text);border-top-color:#ef4444;}
-.prov-lc-cob-input{width:74px;max-width:100%;padding:2px 4px;font-size:9px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:4px;background:#fff;}
+.prov-lc-cob-input{width:74px;max-width:100%;padding:4px 6px;font-size:16px;font-family:var(--mono);text-align:center;border:1px solid #fcd34d;border-radius:6px;background:#fff;min-height:36px;touch-action:manipulation;-webkit-user-select:text;user-select:text;position:relative;z-index:2;}
 .prov-lc-cob-input:focus{outline:none;border-color:#f59e0b;box-shadow:0 0 0 2px rgba(245,158,11,.2);}
+.prov-litros-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:8px 10px;background:#fffbeb;border-bottom:2px solid #fcd34d;position:relative;z-index:3;}
+.prov-litros-bar-lbl{font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.04em;}
+.prov-litros-bar-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--navy);}
+.prov-litros-bar-cob{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;color:#92400e;text-transform:uppercase;}
+.prov-litros-bar-cob .prov-lc-cob-input{width:110px;min-width:90px;}
+.prov-litros-bar-dif,.prov-litros-bar-din{font-family:var(--mono);font-size:11px;font-weight:700;}
+.prov-litros-bar-dif.pos{color:var(--green-text);}.prov-litros-bar-dif.neg{color:var(--red-text);}
+.prov-litros-bar-din{color:#b45309;}
+.popup-desglose.prov-lc-focus,.popup-desglose.prov-lc-focus .popup-body{overflow:visible;}
 .prov-list-dinero{font-size:8px;font-family:var(--mono);color:#b45309;font-weight:600;white-space:nowrap;}
 #tabla-prov .prov-list-litros-cell .prov-lc-dif{font-size:8px;font-family:var(--mono);font-weight:700;}
 #tabla-prov .prov-list-litros-cell .prov-lc-dif.pos{color:var(--green-text);}
@@ -1293,18 +1302,30 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('input',e=>{
     const el=e.target;
     if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return;
-    const prov=el.getAttribute('data-proveedor');
+    const prov=getProvLcProveedor(el);
     if(!prov)return;
     el.value=sanitizeLitrosTyping(el.value);
     updateProvLitrosCobradosCalc(prov);
   });
+  document.addEventListener('focusin',e=>{
+    const el=e.target;
+    if(!el?.classList?.contains('prov-lc-cob-input'))return;
+    document.getElementById('desglose-popup')?.classList.add('prov-lc-focus');
+  });
   document.addEventListener('focusout',e=>{
     const el=e.target;
-    if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return;
-    const prov=el.getAttribute('data-proveedor');
+    if(!el?.classList?.contains('prov-lc-cob-input'))return;
+    const prov=getProvLcProveedor(el);
     if(!prov)return;
-    onProvLitrosCobradosBlur(prov,el);
-  });
+    const rel=e.relatedTarget;
+    if(rel?.classList?.contains('prov-lc-cob-input')&&getProvLcProveedor(rel)===prov)return;
+    setTimeout(()=>{
+      const active=document.activeElement;
+      if(active?.classList?.contains('prov-lc-cob-input')&&getProvLcProveedor(active)===prov)return;
+      document.getElementById('desglose-popup')?.classList.remove('prov-lc-focus');
+      onProvLitrosCobradosBlur(prov,el);
+    },150);
+  },true);
   setInterval(() => { syncQuiet(); }, 60000);
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
@@ -2433,6 +2454,7 @@ function renderTotales(){
   syncDesgloseActiveBtns();
 }
 function renderProveedoresTotales(){
+  if(isProvLcInputFocused())return;
   const lcEdit=captureProvLcEditState();
   const regs=state.registrosProveedores||[],resumen=resumenCatalogoProveedoresActivos(regs);
   const{deudas,neto}=calcTotalesNeto(resumen);
@@ -3737,6 +3759,21 @@ function buildAbonarBox(proveedor,facturaId,facts,pagos){
 function provLitrosSlug(proveedor){
   return String(proveedor||'').replace(/[^a-zA-Z0-9_]/g,'_');
 }
+function provLcAttrEncode(proveedor){
+  return encodeURIComponent(String(proveedor||'').trim());
+}
+function provLcAttrDecode(raw){
+  try{return decodeURIComponent(String(raw||''));}catch{return String(raw||'').trim();}
+}
+function getProvLcProveedor(el){
+  return provLcAttrDecode(el&&el.getAttribute('data-proveedor'));
+}
+function isProvLcInputFocused(){
+  return !!document.querySelector('.prov-lc-cob-input:focus');
+}
+function provLcInputHtml(proveedor,cobVal,placeholder){
+  return '<input type="text" class="prov-lc-cob-input" inputmode="decimal" placeholder="'+esc(placeholder||'Cobrados')+'" value="'+esc(cobVal)+'" data-proveedor="'+esc(provLcAttrEncode(proveedor))+'" autocomplete="off" autocorrect="off" spellcheck="false">';
+}
 function loadProvLitrosCobradosMap(){
   try{return JSON.parse(localStorage.getItem(PROV_LITROS_COBRADOS_KEY)||'{}');}catch{return{};}
 }
@@ -3769,20 +3806,20 @@ async function saveProvLitrosCobradosApi(proveedor,val){
 function captureProvLcEditState(){
   const el=document.activeElement;
   if(!el||!el.classList||!el.classList.contains('prov-lc-cob-input'))return null;
-  return{proveedor:el.getAttribute('data-proveedor'),value:el.value,selStart:el.selectionStart,selEnd:el.selectionEnd};
+  return{proveedor:getProvLcProveedor(el),value:el.value,selStart:el.selectionStart,selEnd:el.selectionEnd};
 }
 function restoreProvLcEditState(st){
   if(!st||!st.proveedor)return;
-  const el=Array.from(document.querySelectorAll('.prov-lc-cob-input')).find(x=>x.getAttribute('data-proveedor')===st.proveedor);
+  const key=provLcAttrEncode(st.proveedor);
+  const el=Array.from(document.querySelectorAll('.prov-lc-cob-input')).find(x=>x.getAttribute('data-proveedor')===key);
   if(!el)return;
   el.value=st.value;
   try{el.focus();if(typeof st.selStart==='number')el.setSelectionRange(st.selStart,st.selEnd);}catch(_){}
   updateProvLitrosCobradosCalc(st.proveedor);
 }
 function forEachProvLcEl(kind,proveedor,fn){
-  document.querySelectorAll('[data-prov-lc-'+kind+']').forEach(el=>{
-    if(el.getAttribute('data-prov-lc-'+kind)===proveedor)fn(el);
-  });
+  const key=provLcAttrEncode(proveedor);
+  document.querySelectorAll('[data-prov-lc-'+kind+'="'+key+'"]').forEach(fn);
 }
 function getProvFacts(proveedor){
   return (state.registrosProveedores||[]).filter(r=>r.proveedor===proveedor&&isTipoFactura(r));
@@ -3793,10 +3830,11 @@ function buildProvListLitrosCellHtml(proveedor){
   const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
   const difCls=fmtProvDifLitrosClass(res.dif);
   const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
+  const key=provLcAttrEncode(proveedor);
   return '<td class="prov-list-litros-cell">'+
-    '<div class="prov-list-dif-badge'+(difCls?' '+difCls:'')+'" data-prov-lc-kpi="'+esc(proveedor)+'" title="Dif litros">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div>'+
-    '<input type="text" class="prov-lc-cob-input" data-proveedor="'+esc(proveedor)+'" inputmode="decimal" placeholder="Cobrados" value="'+esc(cobVal)+'">'+
-    '<span class="prov-list-dinero" data-prov-lc-din="'+esc(proveedor)+'" title="Dinero restante">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
+    '<div class="prov-list-dif-badge'+(difCls?' '+difCls:'')+'" data-prov-lc-kpi="'+esc(key)+'" title="Dif litros">'+esc(fmtProvDifLitrosSigned(res.dif))+'</div>'+
+    provLcInputHtml(proveedor,cobVal,'Cobrados')+
+    '<span class="prov-list-dinero" data-prov-lc-din="'+esc(key)+'" title="Dinero restante">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
     '</td>';
 }
 function sumLitrosPagadosFacturas(facts){
@@ -3838,7 +3876,8 @@ function fmtProvDifLitrosClass(dif){
   return'';
 }
 function updateProvLitrosCobradosCalc(proveedor){
-  const inputs=Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(el=>el.getAttribute('data-proveedor')===proveedor);
+  const key=provLcAttrEncode(proveedor);
+  const inputs=Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(el=>el.getAttribute('data-proveedor')===key);
   if(!inputs.length)return;
   const elIn=inputs.find(el=>el===document.activeElement)||inputs[0];
   const facts=getProvFacts(proveedor);
@@ -3848,7 +3887,10 @@ function updateProvLitrosCobradosCalc(proveedor){
   const difCls=fmtProvDifLitrosClass(res.dif);
   const difTxt=isNaN(res.dif)?'—':fmtProvDifLitrosSigned(res.dif);
   const dinTxt=isNaN(res.dinero)?'—':fmt(res.dinero);
-  inputs.forEach(el=>{if(el!==elIn&&document.activeElement!==el)el.value=elIn.value.trim()&&!isNaN(cobRaw)?formatLitrosDisplay(cobRaw):(elIn.value.trim()?elIn.value:'');});
+  if(!isProvLcInputFocused()){
+    const syncVal=elIn.value.trim()&&!isNaN(cobRaw)?formatLitrosDisplay(cobRaw):(elIn.value.trim()?elIn.value:'');
+    inputs.forEach(el=>{if(el!==elIn)el.value=syncVal;});
+  }
   forEachProvLcEl('dif',proveedor,el=>{
     el.textContent=difTxt;
     el.classList.remove('pos','neg');
@@ -3873,47 +3915,37 @@ async function onProvLitrosCobradosBlur(proveedor,el){
   const n=parseLitros(raw);
   if(isNaN(n)){toast('Litros cobrados inválidos',true);return;}
   const fmtVal=formatLitrosDisplay(n);
-  Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(x=>x.getAttribute('data-proveedor')===proveedor).forEach(x=>{x.value=fmtVal;});
+  const key=provLcAttrEncode(proveedor);
+  Array.from(document.querySelectorAll('.prov-lc-cob-input')).filter(x=>x.getAttribute('data-proveedor')===key).forEach(x=>{x.value=fmtVal;});
   setProvLitrosCobradosLocal(proveedor,n);
   updateProvLitrosCobradosCalc(proveedor);
   try{await saveProvLitrosCobradosApi(proveedor,n);setSyncStatus('Sincronizado · '+fmtTime(new Date()));}
   catch(e){toastError(e);scheduleQuietSync();}
 }
-function buildDesgloseLitrosExtraHeadHtml(){
-  if(!isDesgloseProveedor())return'';
-  return '<th class="col-lc-cob">Cobrados</th><th class="col-lc-dif">Dif L</th><th class="col-lc-din">Dinero</th>';
-}
-function buildDesgloseLitrosExtraCellsHtml(){
-  if(!isDesgloseProveedor())return'';
-  return '<td class="col-lc-cob"></td><td class="col-lc-dif"></td><td class="col-lc-din"></td>';
-}
-function buildDesgloseLitrosCobradosRowHtml(proveedor,facts){
+function buildDesgloseLitrosBarHtml(proveedor,facts){
   if(!isDesgloseProveedor())return'';
   const cobrados=getProvLitrosCobrados(proveedor);
   const cobVal=!isNaN(cobrados)?formatLitrosDisplay(cobrados):'';
   const res=calcProvLitrosCobradosResumen(proveedor,facts,cobrados);
   const difCls=fmtProvDifLitrosClass(res.dif);
+  const key=provLcAttrEncode(proveedor);
   const plTxt=!isNaN(res.pl)&&res.pl>0?formatPrecioLitroDisplay(res.pl):'—';
-  return '<tr class="prov-litros-row">'+
-    '<td colspan="2" class="prov-litros-lbl">Control litros</td>'+
-    '<td class="col-lit">'+esc(formatLitrosDisplay(res.pagados))+'</td>'+
-    '<td class="col-pl">'+esc(plTxt)+'</td>'+
-    '<td class="col-total"></td><td class="col-abon"></td><td class="col-pend"></td>'+
-    '<td class="col-lc-cob"><input type="text" class="prov-lc-cob-input" inputmode="decimal" placeholder="Manual" value="'+esc(cobVal)+'" data-proveedor="'+esc(proveedor)+'"></td>'+
-    '<td class="col-lc-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(proveedor)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</td>'+
-    '<td class="col-lc-din" data-prov-lc-din="'+esc(proveedor)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</td>'+
-    '<td class="prov-actions prov-actions-col"></td></tr>';
+  return '<div class="prov-litros-bar">'+
+    '<span class="prov-litros-bar-lbl">Pagados</span><span class="prov-litros-bar-val">'+esc(formatLitrosDisplay(res.pagados))+'</span>'+
+    '<span class="prov-litros-bar-lbl">$/L</span><span class="prov-litros-bar-val">'+esc(plTxt)+'</span>'+
+    '<label class="prov-litros-bar-cob">Cobrados '+provLcInputHtml(proveedor,cobVal,'Manual')+'</label>'+
+    '<span class="prov-litros-bar-lbl">Dif L</span><span class="prov-litros-bar-dif'+(difCls?' '+difCls:'')+'" data-prov-lc-dif="'+esc(key)+'">'+(isNaN(res.dif)?'—':esc(fmtProvDifLitrosSigned(res.dif)))+'</span>'+
+    '<span class="prov-litros-bar-lbl">Dinero</span><span class="prov-litros-bar-din" data-prov-lc-din="'+esc(key)+'">'+(isNaN(res.dinero)?'—':esc(fmt(res.dinero)))+'</span>'+
+    '</div>';
 }
-function buildDesgloseFacturasTableShell(headExtra,bodyRows){
+function buildDesgloseFacturasTableShell(bodyRows){
   return '<table class="desglose-table prov-fact-table prov-facturas-table"><thead><tr>'+
     '<th class="col-fecha">Fecha</th><th class="col-ref">Ref.</th><th class="col-lit">Litros</th><th class="col-pl">$/L</th><th class="col-total">Total</th><th class="col-abon">Abonado</th><th class="col-pend">Pend.</th>'+
-    headExtra+'<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
+    '<th class="prov-actions-col"></th></tr></thead><tbody>'+bodyRows+'</tbody></table>';
 }
 function buildDesgloseFacturasHtml(proveedor,facts,pagos){
-  const litrosRow=buildDesgloseLitrosCobradosRowHtml(proveedor,facts);
-  const headExtra=buildDesgloseLitrosExtraHeadHtml();
-  const extraCells=buildDesgloseLitrosExtraCellsHtml();
-  if(!facts.length)return buildDesgloseFacturasTableShell(headExtra,litrosRow);
+  const litrosBar=buildDesgloseLitrosBarHtml(proveedor,facts);
+  if(!facts.length)return litrosBar+buildDesgloseFacturasTableShell('');
   const sorted=sortDesgloseRegs(facts,'fecha','desc');
   const conPend=[];
   const saldadas=[];
@@ -3931,7 +3963,7 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
     const lbl=desgloseShowSaldadas?'Ocultar saldadas ('+saldadas.length+')':'Ver saldadas · pend. $0 ('+saldadas.length+')';
     toolbar='<div class="desglose-fact-toolbar"><button type="button" class="btn btn-sm'+(desgloseShowSaldadas?' btn-primary':'')+'" onclick="toggleDesgloseSaldadas()">'+lbl+'</button></div>';
   }
-  if(!lista.length)return toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>'+buildDesgloseFacturasTableShell(headExtra,litrosRow);
+  if(!lista.length)return litrosBar+toolbar+'<div class="empty">Sin facturas con saldo pendiente</div>';
   let rows='';
   lista.forEach(({f,total,ab,pend})=>{
     const warnCls=ab>total+0.001?' warn':'';
@@ -3950,10 +3982,9 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
       '<td class="col-total"><input type="text" class="desglose-inline-input monto" inputmode="decimal" value="'+montoVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseMontoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-pend"><input type="text" class="desglose-inline-input monto" inputmode="decimal" title="Editar pendiente" value="'+pendVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesglosePendienteBlur(\''+esc(f.id)+'\',this)"></td>'+
-      extraCells+
       '<td class="prov-actions prov-actions-col"><button type="button" class="btn-del-compact" onclick="eliminarRegistro(\''+esc(f.id)+'\',this)">✕</button></td></tr>';
   });
-  return toolbar+buildDesgloseFacturasTableShell(headExtra,rows+litrosRow);
+  return litrosBar+toolbar+buildDesgloseFacturasTableShell(rows);
 }
 function buildAplicaFacturaSelectOptions(facts,pagos,selectedId){
   const abiertas=facts.filter(f=>{
@@ -4074,6 +4105,7 @@ function showDesglosePopup(proveedor,anchor,entidad){
   document.body.style.overflow='hidden';
 }
 function refreshDesglosePopup(){
+  if(isProvLcInputFocused())return;
   const lcEdit=captureProvLcEditState();
   const ov=document.getElementById('desglose-overlay');
   const proveedor=ov&&ov.dataset.proveedor;
