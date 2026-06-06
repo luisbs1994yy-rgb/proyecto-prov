@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.45">
+<html lang="es" data-app-version="3.46">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.45';
+const APP_VERSION=getAppVersion()||'3.46';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -2240,27 +2240,27 @@ function applyPrecioProductoDefault(overwrite=true){
     updateMontoFromLitros();
   }
 }
-function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
-function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);updateRegistrarAplicaResumen();}
+function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
+function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();}
 const LITROS_AVISO_MIN=10000;
 const LITROS_MAX_ENTEROS=6;
 const PROV_LC_RECIBIDOS_LABEL='Litros recibidos';
 function getLitrosMaxDigitosEnteros(){return LITROS_MAX_ENTEROS;}
-function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizePrecioLitroTyping(el.value);updateMontoFromLitros();}
-function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parsePrecioLitro(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatPrecioLitroDisplay(n);updateMontoFromLitros();}
-function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);updateMontoFromLitros();}
+function onPrecioLitroInput(){const el=document.getElementById('f-precio-litro');el.value=sanitizePrecioLitroTyping(el.value);syncLitrosPrecioMonto('precio');}
+function onPrecioLitroBlur(){const el=document.getElementById('f-precio-litro'),n=parsePrecioLitro(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatPrecioLitroDisplay(n);syncLitrosPrecioMonto('precio');}
+function onLitrosInput(){const el=document.getElementById('f-litros');el.value=sanitizeLitrosTyping(el.value);syncLitrosPrecioMonto('litros');}
 function onLitrosBlur(){
   const el=document.getElementById('f-litros'),n=parseLitros(el.value);
-  if(isNaN(n)||!el.value.trim()){updateMontoFromLitros();return;}
+  if(isNaN(n)||!el.value.trim()){syncLitrosPrecioMonto('litros');return;}
   if(n>0&&n<LITROS_AVISO_MIN){
     if(!confirm('Los litros suelen ser 10,000 o más (ej. 30,000.59).\n\n¿Confirmas usar '+formatLitrosDisplay(n)+'?')){
       el.value='';
-      updateMontoFromLitros();
+      syncLitrosPrecioMonto('litros');
       return;
     }
   }
   el.value=formatLitrosDisplay(n);
-  updateMontoFromLitros();
+  syncLitrosPrecioMonto('litros');
 }
 function sanitizePrecioLitroTyping(raw){
   let s=String(raw||'').replace(/[^\d.]/g,'');
@@ -2311,13 +2311,33 @@ function sanitizeLitrosTyping(raw){
 }
 function parseLitros(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
 function formatLitrosDisplay(n){const v=parseFloat(n);if(isNaN(v))return'';const f=(Math.round(v*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
-function updateMontoFromLitros(){
-  const pn=parsePrecioLitro(document.getElementById('f-precio-litro').value);
-  const ln=parseLitros(document.getElementById('f-litros').value);
-  if(isNaN(pn)||isNaN(ln)||pn<=0||ln<=0)return;
-  document.getElementById('f-monto').value=formatMontoDisplay(pn*ln);
+function isRegistrarLitrosMode(){
+  const tipo=String(document.getElementById('f-tipo').value||'');
+  return tipo==='factura'||(isRegistrarProveedor()&&tipo==='pago');
+}
+function syncLitrosPrecioMonto(changed){
+  if(!isRegistrarLitrosMode())return;
+  const plEl=document.getElementById('f-precio-litro');
+  const ltEl=document.getElementById('f-litros');
+  const mnEl=document.getElementById('f-monto');
+  const pn=parsePrecioLitro(plEl.value);
+  const ln=parseLitros(ltEl.value);
+  const mn=parseMonto(mnEl.value);
+  const hasPn=!isNaN(pn)&&pn>0;
+  const hasLn=!isNaN(ln)&&ln>0;
+  const hasMn=!isNaN(mn)&&mn>0;
+  const ltEmpty=!String(ltEl.value||'').trim();
+  if(changed==='litros'){
+    if(hasPn&&hasLn)mnEl.value=formatMontoDisplay(Math.round(pn*ln*100)/100);
+  }else if(changed==='monto'){
+    if(hasPn&&hasMn)ltEl.value=formatLitrosDisplay(Math.round((mn/pn)*100)/100);
+  }else if(changed==='precio'){
+    if(hasPn&&hasLn)mnEl.value=formatMontoDisplay(Math.round(pn*ln*100)/100);
+    else if(hasPn&&hasMn&&ltEmpty)ltEl.value=formatLitrosDisplay(Math.round((mn/pn)*100)/100);
+  }
   updateRegistrarAplicaResumen();
 }
+function updateMontoFromLitros(){syncLitrosPrecioMonto('litros');}
 function sanitizeMontoTyping(raw){let s=String(raw||'').replace(/[^\d.,]/g,'');const dotIdx=s.indexOf('.');if(dotIdx!==-1){s=s.slice(0,dotIdx+1)+s.slice(dotIdx+1).replace(/\./g,'');const parts=s.split('.');if(parts[1]!=null)parts[1]=parts[1].replace(/\D/g,'').slice(0,2);s=parts.length>1?parts[0]+'.'+parts[1]:parts[0];}let ip=(dotIdx===-1?s:s.split('.')[0]).replace(/,/g,'').replace(/\D/g,'').replace(/^0+(?=\d)/,'');const wc=ip===''?'':ip.replace(/\B(?=(\d{3})+(?!\d))/g,',');if(dotIdx===-1)return wc;const dec=s.includes('.')?s.slice(s.indexOf('.')+1).replace(/\D/g,'').slice(0,2):'';return wc+'.'+dec;}
 function parseMonto(str){const s=String(str||'').replace(/,/g,'').trim();if(!s||s==='.')return NaN;return parseFloat(s);}
 function formatMontoDisplay(n){const f=(Math.round(n*100)/100).toFixed(2);const[ip,dp]=f.split('.');return ip.replace(/\B(?=(\d{3})+(?!\d))/g,',')+'.'+dp;}
