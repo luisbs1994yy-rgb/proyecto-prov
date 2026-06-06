@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.38">
+<html lang="es" data-app-version="3.39">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.38';
+const APP_VERSION=getAppVersion()||'3.39';
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -913,7 +913,7 @@ async function copyAppReleaseUrl(e){
   try{await navigator.clipboard.writeText(url);toast('Enlace copiado · v'+APP_VERSION,false,true);}
   catch(_){toast(url,false,true);}
 }
-const GAS_URL     = "https://script.google.com/macros/s/AKfycby7sgQ8eA421f8GQcbZPdNq-Nr4QKoU_s5ntO8qoIQ5wh3y5h3Zb3XV2IOmyxlYTZ0K/exec";
+const GAS_URL     = "https://script.google.com/macros/s/AKfycbw8nNTlks6_sUCMgh7GJPaGuMzHYvIUXMMY40IzWGGhfXJBgA2q0pKe9BkSrWvyovFB/exec";
 const CACHE_KEY   = "pagos_v1_cache";
 const LOGS_KEY    = "pagos_v1_logs";
 const DELETED_LOGS_KEY="pagos_v1_logs_deleted";
