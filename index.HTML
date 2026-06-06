@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.57">
+<html lang="es" data-app-version="3.58">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,7 +14,7 @@ function getAppVersion(){
   const v=document.documentElement.getAttribute('data-app-version');
   return String(v||'').trim();
 }
-const APP_VERSION=getAppVersion()||'3.57';
+const APP_VERSION=getAppVersion()||'3.58';
 const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
 </script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -589,6 +589,81 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 }
 /* === FIN COMPACTO === */
 
+/* === COMPACTO: ANALISIS · CLIENTES · PROVEEDORES === */
+#page-analisis .page-title{font-size:16px;margin-bottom:.5rem;}
+#page-analisis .analisis-kpi-grid{gap:8px;margin-bottom:.65rem;grid-template-columns:repeat(2,minmax(0,1fr));}
+#page-analisis .kpi-flujo-card{padding:10px 12px;border-radius:10px;}
+#page-analisis .kpi-flujo-head{margin-bottom:6px;gap:8px;}
+#page-analisis .kpi-flujo-title{font-size:9px;}
+#page-analisis .kpi-flujo-pct{font-size:clamp(16px,4vw,22px);}
+#page-analisis .kpi-flujo-pct-sub{font-size:8px;margin-top:1px;}
+#page-analisis .kpi-flujo-bar-wrap{height:8px;margin-bottom:8px;border-radius:6px;}
+#page-analisis .kpi-flujo-grid{gap:6px;grid-template-columns:repeat(3,minmax(0,1fr));}
+#page-analisis .kpi-flujo-item{padding:6px 8px;border-radius:8px;}
+#page-analisis .kpi-flujo-item.fact,#page-analisis .kpi-flujo-item.pagos,#page-analisis .kpi-flujo-item.saldo{border-top-width:2px;}
+#page-analisis .kpi-flujo-lbl{font-size:7px;}
+#page-analisis .kpi-flujo-val{font-size:clamp(11px,2.8vw,14px);margin-top:3px;}
+#page-analisis .kpi-flujo-sub{font-size:8px;margin-top:2px;}
+#page-analisis .kpi-card{padding:8px 10px;border-radius:10px;border-left-width:3px;}
+#page-analisis .kpi-card::after{display:none;}
+#page-analisis .kpi-card:hover{transform:none;}
+#page-analisis .kpi-label{font-size:8px;margin-bottom:4px;letter-spacing:.06em;}
+#page-analisis .kpi-value{font-size:clamp(13px,3.5vw,17px);}
+#page-analisis .kpi-sub{font-size:8px;margin-top:2px;}
+#page-analisis .kpi-card.total .kpi-value{font-size:clamp(14px,4vw,18px);}
+#page-analisis .chart-section{margin-bottom:.55rem;}
+#page-analisis .card-header{padding:6px 10px;}
+#page-analisis .card-header .hint-text{display:none;}
+#page-analisis .trend-glossary{display:none;}
+#page-analisis .trend-legend{display:none;}
+#page-analisis .trend-summary{padding:6px 8px;gap:5px;grid-template-columns:repeat(4,minmax(0,1fr));}
+#page-analisis .trend-sum-item{padding:4px 2px;border-radius:6px;}
+#page-analisis .trend-sum-lbl{font-size:7px;}
+#page-analisis .trend-sum-val{font-size:10px;margin-top:2px;}
+#page-analisis .trend-insights{padding:6px 8px;font-size:10px;line-height:1.35;}
+#page-analisis .trend-week-vertical-wrap{padding:6px 8px;}
+#page-analisis .trend-week-vertical-grid{gap:6px;}
+#page-analisis .trend-week-col{width:72px;padding:5px 4px 6px;border-radius:8px;}
+#page-analisis .trend-week-col-head{font-size:7px;min-height:0;margin-bottom:2px;}
+#page-analisis .trend-week-bars-vertical{height:56px;margin:4px 0 3px;gap:4px;}
+#page-analisis .trend-vbar-wrap{width:16px;gap:2px;}
+#page-analisis .trend-vbar-lbl{font-size:6px;}
+#page-analisis .trend-week-meta{gap:1px;}
+#page-analisis .trend-week-meta-row{font-size:7px;}
+#page-analisis .trend-week-pct-line{display:none;}
+#page-analisis .decision-panel{padding:6px 8px 8px;}
+#page-analisis .decision-toolbar{margin-bottom:6px;gap:4px;}
+#page-analisis .decision-toolbar span{font-size:8px;margin-right:2px;}
+#page-analisis .decision-sort{padding:3px 7px;font-size:8px;border-radius:6px;}
+#page-analisis .decision-table{font-size:10px;}
+#page-analisis .decision-table th{font-size:7px;padding:4px 3px;}
+#page-analisis .decision-table td{padding:5px 3px;}
+#page-analisis .decision-prov{font-size:10px;}
+#page-analisis .decision-num{font-size:9px;}
+#page-analisis .decision-detail-inner{padding:6px 8px;font-size:10px;line-height:1.35;}
+#page-totales .page-title,#page-proveedores .page-title{font-size:15px;margin-bottom:.4rem;}
+#page-totales .totales-summary,#page-proveedores .prov-dif-summary{padding:6px 10px;gap:4px 6px;}
+#page-totales .totales-summary-value{font-size:clamp(14px,4vw,17px);}
+#page-totales .totales-summary-label,#page-proveedores .prov-dif-kpi-lbl{font-size:8px;}
+#page-proveedores .prov-dif-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;}
+#page-proveedores .prov-dif-prod{padding:4px 5px;border-radius:8px;}
+#page-proveedores .prov-dif-prod-title{font-size:7px;margin-bottom:3px;}
+#page-proveedores .prov-dif-prod-row{gap:4px;}
+#page-proveedores .prov-dif-kpi{padding:4px 5px;gap:2px;border-radius:6px;border-top-width:2px;}
+#page-proveedores .prov-dif-kpi-val{font-size:clamp(11px,2.8vw,14px);}
+#page-totales #tabla-total th,#page-proveedores #tabla-prov th{padding:6px 8px;font-size:8px;}
+#page-totales #tabla-total td,#page-proveedores #tabla-prov td{padding:6px 8px;}
+#page-totales .totales-nombre-cell,#page-proveedores .totales-nombre-cell{font-size:11px;line-height:1.15;}
+#page-totales .pct-cell,#page-proveedores .pct-cell{font-size:10px;}
+#page-proveedores .prov-producto-cell{font-size:9px;}
+#page-proveedores .prov-list-dif-box{min-height:22px;padding:2px 3px;font-size:8px;}
+#page-proveedores .prov-list-dinero{font-size:7px;}
+#page-totales .desglose-btn,#page-proveedores .desglose-btn{padding:3px 8px;font-size:9px;}
+#page-totales .btn-screenshot,#page-proveedores .btn-screenshot,#page-totales .btn-captura-cliente,#page-proveedores .btn-captura-proveedor{width:28px;height:28px;font-size:14px;border-radius:8px;}
+#page-totales .totales-panel,#page-proveedores .totales-panel{margin-bottom:.45rem;}
+#page-totales .totales-panel .card-header,#page-proveedores .totales-panel .card-header{padding:5px 8px;}
+/* === FIN COMPACTO PANEL === */
+
 .totales-panel .card-header{padding:10px 14px;}
 .desglose-btn.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;}
 .totales-panel .card-title{font-size:13px;}
@@ -675,11 +750,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-registrar input#f-litros { padding: 6px 8px; height: 36px; }
   #page-registrar .registrar-fact-item { font-size: 13px; padding: 12px; }
   #page-registrar .registrar-fact-item input[type=checkbox] { width: 18px; height: 18px; }
-  .kpi-grid, .analisis-kpi-grid { grid-template-columns: 1fr !important; gap: 8px; margin-bottom: .65rem; }
-  .kpi-flujo-grid { grid-template-columns: 1fr; gap: 8px; }
-  .kpi-flujo-card { padding: 12px 14px; }
-  .kpi-flujo-pct { font-size: 1.35rem; }
-  .kpi-card { padding: 12px 14px; text-align: center; }
+  .kpi-grid, #page-analisis .analisis-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 5px; margin-bottom: .45rem; }
+  #page-analisis .kpi-flujo-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  #page-analisis .kpi-flujo-card { padding: 7px 8px; }
+  #page-analisis .kpi-flujo-pct { font-size: 1.1rem; }
+  #page-analisis .kpi-card { padding: 6px 8px; text-align: center; }
   .kpi-card::after { display: none; }
   .kpi-card.total { padding: 14px 12px; }
   .kpi-card.total .kpi-value { font-size: clamp(1.15rem, 7vw, 1.65rem); line-height: 1.2; word-break: break-word; }
@@ -687,9 +762,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   .kpi-label { font-size: 9px; margin-bottom: 4px; }
   .kpi-sub { font-size: 10px; margin-top: 4px; }
   .table-wrap { overflow-x: visible; -webkit-overflow-scrolling: touch; }
-  #page-totales .page-title { display: none; }
-  #page-proveedores .page-title { font-size: 14px; margin-bottom: .35rem; }
-  #page-totales .totales-summary { padding: 8px 10px; gap: 2px 8px; }
+  #page-totales .page-title,
+  #page-proveedores .page-title,
+  #page-analisis .page-title { display: none; }
+  #page-totales .totales-summary { padding: 5px 8px; gap: 2px 6px; }
   #page-totales .totales-summary-main { flex: 1 1 auto; gap: 6px; }
   #page-totales .totales-summary-label { font-size: 9px; }
   #page-totales .totales-summary-value { font-size: clamp(.9rem, 4.5vw, 1.15rem); text-align: right; }
@@ -697,10 +773,14 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales .btn-captura-cliente { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .btn-captura-duo { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-totales .totales-actions { gap: 5px; }
-  #page-proveedores .prov-dif-summary { padding: 8px 10px; gap: 6px 8px; }
-  #page-proveedores .prov-dif-kpi-grid { grid-template-columns: 1fr; gap: 6px; }
-  #page-proveedores .prov-dif-kpi { padding: 6px 8px; }
-  #page-proveedores .prov-dif-kpi-val { font-size: clamp(.8rem, 3.8vw, 1rem); }
+  #page-proveedores .prov-dif-summary { padding: 5px 8px; gap: 4px 5px; }
+  #page-proveedores .prov-dif-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  #page-proveedores .prov-dif-prod { padding: 3px 4px; }
+  #page-proveedores .prov-dif-prod-title { font-size: 6px; margin-bottom: 2px; }
+  #page-proveedores .prov-dif-prod-row { gap: 3px; }
+  #page-proveedores .prov-dif-kpi { padding: 3px 4px; gap: 1px; }
+  #page-proveedores .prov-dif-kpi-lbl { font-size: 6px; }
+  #page-proveedores .prov-dif-kpi-val { font-size: 9px !important; }
   #page-proveedores .btn-captura-proveedor { display: inline-flex; width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .btn-screenshot { width: 32px; height: 32px; font-size: 16px; border-radius: 9px; }
   #page-proveedores .totales-actions { gap: 5px; }
@@ -730,9 +810,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
-    gap: 4px 6px;
-    padding: 5px 8px;
-    margin-bottom: 4px;
+    gap: 3px 4px;
+    padding: 3px 6px;
+    margin-bottom: 3px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: #fafbfd;
@@ -751,7 +831,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-proveedores #tabla-prov td.totales-nombre-cell {
     flex: 1 1 0;
     min-width: 0;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     margin: 0;
     overflow: visible;
@@ -761,7 +841,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-totales #tabla-total td.amount,
   #page-proveedores #tabla-prov td.amount {
     flex: 0 0 auto;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     margin: 0;
     white-space: nowrap;
@@ -782,11 +862,14 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   }
   #page-proveedores #tabla-prov td.prov-list-litros-cell {
     flex: 0 0 auto;
-    min-width: 80px;
-    max-width: 96px;
+    min-width: 68px;
+    max-width: 78px;
   }
-  #page-proveedores #tabla-prov .prov-list-dif-box { font-size: 9px; min-height: 26px; padding: 3px 4px; }
-  #page-proveedores #tabla-prov .prov-list-dinero { font-size: 8px; }
+  #page-proveedores #tabla-prov .prov-list-dif-box { font-size: 8px; min-height: 20px; padding: 2px 3px; }
+  #page-proveedores #tabla-prov .prov-list-dinero { font-size: 7px; }
+  #page-analisis .trend-week-col { width: 64px; }
+  #page-analisis .trend-week-bars-vertical { height: 48px; }
+  #page-analisis .decision-table td { padding: 4px 2px; }
   #page-totales #tabla-total td:last-child,
   #page-proveedores #tabla-prov td:last-child {
     flex: 0 0 auto;
@@ -1320,7 +1403,7 @@ let analisisSortDecision = 'pendiente';
 let analisisTrendWeekIdx = -1;
 let analisisDecisionOpenProv = '';
 let analisisRenderTimer = null;
-const ANALISIS_MAX_WEEKS_CHART = 28;
+const ANALISIS_MAX_WEEKS_CHART = 12;
 const ANALISIS_MAX_WEEKS_LOOKBACK = 78;
 let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 let logsShowExtraCols=false;
@@ -5295,18 +5378,11 @@ function selectTrendWeek(idx){
   renderAnalisisSafe();
 }
 function buildTrendInsights(w,prev,resumen){
-  if(!w)return 'Sin datos semanales todavía.';
+  if(!w)return 'Sin datos semanales.';
   const net=w.fact-w.pago;
-  let html='<strong>Semana '+esc(w.label)+' (Lun-Dom):</strong> facturado '+fmt(w.fact)+', pagado '+fmt(w.pago)+', pendiente '+fmt(Math.max(0,w.pte||0))+'. ';
-  html+='Resultado neto semanal: <strong style="color:'+(net>=0?'var(--amber-text)':'var(--green-text)')+'">'+fmt(net)+'</strong>';
-  if(prev&&(prev.fact>0||prev.pago>0)){
-    const dF=prev.fact>0?((w.fact-prev.fact)/prev.fact*100):0;
-    const dP=prev.pago>0?((w.pago-prev.pago)/prev.pago*100):0;
-    html+=' · vs semana anterior: facturado <strong>'+(dF>=0?'+':'')+dF.toFixed(0)+'%</strong>, pagado <strong>'+(dP>=0?'+':'')+dP.toFixed(0)+'%</strong>';
-  }
+  let html='<strong>Sem '+esc(w.label)+':</strong> F '+fmtShort(w.fact)+' · P '+fmtShort(w.pago)+' · PTE '+fmtShort(Math.max(0,w.pte||0))+' · Neto <strong style="color:'+(net>=0?'var(--amber-text)':'var(--green-text)')+'">'+fmtShort(net)+'</strong>';
   const topPend=resumen.filter(r=>r.saldo>0).sort((a,b)=>b.saldo-a.saldo)[0];
-  if(topPend)html+='<br>Mayor exposición hoy: <strong>'+esc(topPend.proveedor)+'</strong> con '+fmt(topPend.saldo)+' pendiente.';
-  if(net>0&&w.pago<w.fact*0.5&&w.fact>0)html+=' <span style="color:var(--amber-text)">⚠ Cobro bajo respecto al facturado de la semana.</span>';
+  if(topPend)html+=' · Mayor deuda: <strong>'+esc(topPend.proveedor)+'</strong> '+fmtShort(topPend.saldo);
   return html;
 }
 function getTrendMonthsData(regs){
@@ -5408,22 +5484,8 @@ function renderAnalisis(){
 
   const trendEl=document.getElementById('chart-trend');
   if(!trendEl)return;
-  const trendCard=trendEl.parentElement;
-  if(trendCard&&!trendCard.querySelector('.trend-legend')){
-    const lg=document.createElement('div');lg.className='trend-legend';
-    lg.innerHTML='<div class="trend-legend-item"><div class="trend-dot-f"></div><span><b>Facturado (F)</b></span></div>'+
-      '<div class="trend-legend-item"><div class="trend-dot-p"></div><span><b>Pagado (P)</b></span></div>'+
-      '<div class="trend-legend-item"><span><b>PTE</b> = Pendiente = Facturado − Pagado</span></div>'+
-      '<div class="trend-legend-item"><span><b>%</b> = avance pagado y pendiente de la semana</span></div>';
-    const ins=document.getElementById('trend-insights');
-    if(ins)ins.before(lg);
-  }
   const gl=document.getElementById('trend-glossary');
-  if(gl){
-    gl.innerHTML='<b>Tarjeta mensual:</b> el resumen de arriba sigue siendo mensual. '+
-      '<b>Barras semanales:</b> cada fila representa una semana completa de <b>Lunes a Domingo</b>. '+
-      'En cada semana verás <b>Facturado</b>, <b>Pagado</b>, <b>PTE</b> y su <b>%</b>.';
-  }
+  if(gl)gl.innerHTML='';
   const monthData=getTrendMonthsData(regs);
   let weekData=getTrendWeeksData(regs).filter(w=>w.fact>0||w.pago>0||w.pte>0);
   if(weekData.length>ANALISIS_MAX_WEEKS_CHART)weekData=weekData.slice(-ANALISIS_MAX_WEEKS_CHART);
@@ -5459,10 +5521,10 @@ function renderAnalisis(){
   trendEl.className='';
   trendEl.innerHTML='<div class="trend-week-vertical-wrap"><div class="trend-week-vertical-grid">'+weekData.map((w,i)=>{
     const active=i===analisisTrendWeekIdx;
-    const hF=Math.max(3,Math.round((w.fact/maxVal)*92));
-    const hP=Math.max(3,Math.round((w.pago/maxVal)*92));
-    const hS=Math.max(3,Math.round((w.pte/maxVal)*92));
-    const pctText='Pagado '+w.pctPag.toFixed(1)+'% · PTE '+w.pctPte.toFixed(1)+'%';
+    const hF=Math.max(3,Math.round((w.fact/maxVal)*48));
+    const hP=Math.max(3,Math.round((w.pago/maxVal)*48));
+    const hS=Math.max(3,Math.round((w.pte/maxVal)*48));
+    const pctText='Pagado '+w.pctPag.toFixed(0)+'%';
     return '<div class="trend-week-col'+(active?' active':'')+'" onclick="selectTrendWeek('+i+')">'+
       '<div class="trend-week-col-head">SEM '+esc(w.label)+'</div>'+
       '<div class="trend-week-bars-vertical">'+
