@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.70">
+<html lang="es" data-app-version="3.71">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -250,9 +250,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
 .log-fecha-edit{display:flex;flex-direction:row;gap:3px;min-width:0;align-items:center;}
-#logs-list .log-inline-date{font-size:9px;padding:3px 4px;width:auto;}
-#logs-list .log-inline-date::-webkit-datetime-edit-year-field{display:none;}
 #logs-list .log-inline-time{font-size:9px;padding:3px 4px;width:auto;}
+.log-date-wrap{position:relative;display:inline-flex;align-items:center;}
+.log-date-display{font-size:9px;padding:3px 4px;border:1px solid var(--border);border-radius:6px;background:#fff;white-space:nowrap;cursor:pointer;font-family:var(--font);line-height:1.3;}
+.log-date-hidden{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
 #logs-list tr.saving-fecha .log-fecha-edit{opacity:.65;}
 .logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
 .logs-grupo-hint span{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle;border-left:3px solid;}
@@ -1769,12 +1770,23 @@ function buildLogFechaHoraFromInputs(dateVal,timeVal){
     createdAt:dt.toISOString()
   };
 }
+function fmtDateShort(dateVal){
+  if(!dateVal) return '—';
+  const p=dateVal.split('-');
+  if(p.length!==3) return dateVal;
+  const m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return parseInt(p[2])+' '+m[parseInt(p[1])-1];
+}
 function fmtLogFechaEditInputs(l){
   const lid=esc(l.localId||l.id||'');
   const v=getLogFechaInputValues(l);
+  const ds=fmtDateShort(v.dateVal);
   return '<div class="log-fecha-edit">'+
     '<input type="time" class="log-inline-input log-inline-time" value="'+escAttr(v.timeVal)+'" title="Hora (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
-    '<input type="date" class="log-inline-input log-inline-date" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
+    '<div class="log-date-wrap">'+
+      '<span class="log-date-display">'+ds+'</span>'+
+      '<input type="date" class="log-date-hidden" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this);this.previousElementSibling.textContent=fmtDateShort(this.value)">'+
+    '</div>'+
     '</div>';
 }
 function fmtLogBitacoraFecha(l){
