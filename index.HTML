@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.68">
+<html lang="es" data-app-version="3.69">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -926,13 +926,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
   #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
   #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
-  .log-fecha-edit { flex-direction: column; align-items: stretch; }
-  #logs-list .log-col-fecha { width: 22%; }
+  .log-fecha-edit { flex-direction: row; align-items: center; gap: 2px; }
+  #logs-list .log-inline-date { max-width: 58px; }
+  #logs-list .log-inline-time { max-width: 44px; }
+  #logs-list .log-col-fecha { width: 26%; }
   #logs-list .log-col-tipo { width: 11%; }
-  #logs-list .log-col-cp { width: 13%; font-size: 7px; }
-  #logs-list .log-col-pl { width: 11%; font-size: 7px; }
-  #logs-list .log-col-lit { width: 12%; font-size: 7px; }
-  #logs-list .log-col-desc { width: 25%; }
+  #logs-list .log-col-cp { width: 12%; font-size: 7px; }
+  #logs-list .log-col-pl { width: 10%; font-size: 7px; }
+  #logs-list .log-col-lit { width: 11%; font-size: 7px; }
+  #logs-list .log-col-desc { width: 24%; }
   #logs-list .log-col-com { display: none; }
   #logs-list .log-col-act { width: 6%; }
   #logs-list .log-fecha-bitacora { font-size: 10px; }
