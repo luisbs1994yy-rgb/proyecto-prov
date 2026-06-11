@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.69">
+<html lang="es" data-app-version="3.70">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -251,6 +251,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
 .log-fecha-edit{display:flex;flex-direction:row;gap:3px;min-width:0;align-items:center;}
 #logs-list .log-inline-date{font-size:9px;padding:3px 4px;width:auto;}
+#logs-list .log-inline-date::-webkit-datetime-edit-year-field{display:none;}
 #logs-list .log-inline-time{font-size:9px;padding:3px 4px;width:auto;}
 #logs-list tr.saving-fecha .log-fecha-edit{opacity:.65;}
 .logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
@@ -1772,8 +1773,8 @@ function fmtLogFechaEditInputs(l){
   const lid=esc(l.localId||l.id||'');
   const v=getLogFechaInputValues(l);
   return '<div class="log-fecha-edit">'+
-    '<input type="date" class="log-inline-input log-inline-date" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
     '<input type="time" class="log-inline-input log-inline-time" value="'+escAttr(v.timeVal)+'" title="Hora (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
+    '<input type="date" class="log-inline-input log-inline-date" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
     '</div>';
 }
 function fmtLogBitacoraFecha(l){
