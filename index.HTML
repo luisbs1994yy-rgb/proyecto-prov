@@ -249,8 +249,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-inline-input{width:100%;min-width:0;padding:4px 5px;font-size:9px;border:1px solid var(--border);border-radius:6px;background:#fff;box-sizing:border-box;font-family:var(--font);}
 #logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
-.log-fecha-edit{display:flex;flex-direction:column;gap:3px;min-width:0;}
-#logs-list .log-inline-date,#logs-list .log-inline-time{font-size:9px;padding:3px 4px;}
+.log-fecha-edit{display:flex;flex-direction:row;gap:3px;min-width:0;align-items:center;}
+#logs-list .log-inline-date{font-size:9px;padding:3px 4px;width:auto;}
+#logs-list .log-inline-time{font-size:9px;padding:3px 4px;width:auto;}
 #logs-list tr.saving-fecha .log-fecha-edit{opacity:.65;}
 .logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
 .logs-grupo-hint span{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle;border-left:3px solid;}
