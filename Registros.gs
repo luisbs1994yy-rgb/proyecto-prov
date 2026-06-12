@@ -1,7 +1,7 @@
 /* ===================== REGISTROS CLIENTES ===================== */
 
-function getRegistros_() {
-  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS));
+function getRegistros_(filtro) {
+  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS), filtro);
 }
 
 function addRegistro_(data) {
@@ -18,8 +18,8 @@ function deleteRegistro_(id) {
 
 /* ===================== REGISTROS PROVEEDORES ===================== */
 
-function getRegistrosProveedores_() {
-  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS_PROV));
+function getRegistrosProveedores_(filtro) {
+  return getRegistrosFromSheet_(sheet_(SHEET_REGISTROS_PROV), filtro);
 }
 
 function addRegistroProveedor_(data) {
@@ -36,9 +36,12 @@ function deleteRegistroProveedor_(id) {
 
 /* ===================== SHARED LOGIC ===================== */
 
-function getRegistrosFromSheet_(sh) {
+function getRegistrosFromSheet_(sh, filtro) {
   const map = ensureHeaders_(sh, REG_HEADERS);
   const rows = readData_(sh, 2);
+
+  const desde = filtro && filtro.desde ? filtro.desde : null;
+  const hasta = filtro && filtro.hasta ? filtro.hasta : null;
 
   return rows
     .map((row) => {
@@ -59,7 +62,14 @@ function getRegistrosFromSheet_(sh) {
         createdAt: cell_(row, map, 'createdAt')
       };
     })
-    .filter((r) => r.id || r.fecha || r.proveedor);
+    .filter((r) => r.id || r.fecha || r.proveedor)
+    .filter((r) => {
+      if (!desde && !hasta) return true;
+      const f = str_(r.fecha).substring(0, 10);
+      if (desde && f < desde) return false;
+      if (hasta && f > hasta) return false;
+      return true;
+    });
 }
 
 function addRegistroToSheet_(sh, data, getRegsFn) {

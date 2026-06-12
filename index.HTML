@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.77">
+<html lang="es" data-app-version="3.78">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1307,6 +1307,10 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
+          <div id="filtro-rango-info" style="display:none;padding:8px 12px;align-items:center;gap:10px;font-size:12px;color:var(--text-muted,#888);">
+            <span id="filtro-rango-texto"></span>
+            <button type="button" id="btn-cargar-mas" class="btn-secondary" style="font-size:11px;padding:3px 10px;border-radius:6px;" onclick="cargarMas()">← Cargar 3 meses más</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1549,7 +1553,9 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <div class="toast" id="toast"></div>
 
 <script>
-let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[] };
+let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[], _filtroDesde:'', _filtroHasta:'' };
+function _filtroDesdeDefault(){const d=new Date();d.setDate(d.getDate()-90);return d.toISOString().substring(0,10);}
+function _filtroHastaDefault(){return new Date().toISOString().substring(0,10);}
 let logsMemory = [];
 let syncTimer = null, _autoSyncInterval = null, desgloseOpen = false;
 let desgloseEntidad = 'cliente';
@@ -1595,9 +1601,11 @@ document.addEventListener('DOMContentLoaded', () => {
       state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
       state.provLitrosCobrados=d.provLitrosCobrados||loadProvLitrosCobradosMap();
       state.precios=normalizePreciosList(d.precios||loadPreciosLocal());
+      if(d._filtroDesde)state._filtroDesde=d._filtroDesde;
+      if(d._filtroHasta)state._filtroHasta=d._filtroHasta;
       mergeAplicaIntoRegs();mergeAplicaIntoRegsProv();
       ensureStateArrays();
-      renderAllSafe();setSyncStatus('Actualizando…',true);
+      renderAllSafe();renderFiltroRangoUI();setSyncStatus('Actualizando…',true);
     } catch(err){
       console.warn('cache load',err);
       ensureStateArrays();
@@ -1688,7 +1696,8 @@ function saveAndRender(){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios,
+      _filtroDesde:state._filtroDesde,_filtroHasta:state._filtroHasta
     }));
   }catch(e){console.warn('cache save',e);}
   renderAll();
@@ -2274,10 +2283,12 @@ async function manualSync(){
   setRefreshSyncing(true);
   setSyncStatus('Sincronizando…',true);
   try{
-    const d=await api('getAll');
+    const d=await api('getAll',{desde:state._filtroDesde||_filtroDesdeDefault(),hasta:state._filtroHasta||_filtroHastaDefault()});
     if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde;state._filtroHasta=d._filtro.hasta;}
     updateStateFromSheetData(d);
     saveAndRender();
+    renderFiltroRangoUI();
     if(!Array.isArray(d.logs))await loadLogsFromSheets();
     sessionStorage.setItem(REFRESH_FLAG_KEY,'1');
     setSyncStatus('Recargando v'+APP_VERSION+'…');
@@ -2683,13 +2694,15 @@ function logsProveedor(prov){
     return b&&b.proveedor===prov;
   });
 }
-async function syncQuiet(){try{const d=await api('getAll');if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
+async function syncQuiet(){try{const d=await api('getAll',{desde:state._filtroDesde||_filtroDesdeDefault(),hasta:state._filtroHasta||_filtroHastaDefault()});if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
-async function api(action){
+async function api(action,params){
   const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
   const tid=ctrl?setTimeout(()=>ctrl.abort(),45000):null;
   try{
-    const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store',redirect:'follow',signal:ctrl?ctrl.signal:undefined});
+    let qs='action='+encodeURIComponent(action)+'&'+cacheBustParam();
+    if(params&&typeof params==='object'){Object.keys(params).forEach(k=>{if(params[k])qs+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]);});}
+    const r=await fetch(GAS_URL+'?'+qs,{cache:'no-store',redirect:'follow',signal:ctrl?ctrl.signal:undefined});
     return await parseJSON(r);
   }finally{if(tid)clearTimeout(tid);}
 }
@@ -2703,13 +2716,17 @@ async function loadPreciosFromSheets(){
     if(list.length){state.precios=list;savePreciosLocal(list);saveAndRender();}
   }catch(e){console.warn('precios productos local',e);}
 }
-async function loadAll(){
+async function loadAll(desde,hasta){
   setSyncStatus('Sincronizando…',true);
+  const d0=desde||_filtroDesdeDefault();
+  const d1=hasta||_filtroHastaDefault();
   try{
-    const d=await api('getAll');
+    const d=await api('getAll',{desde:d0,hasta:d1});
     if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde||d0;state._filtroHasta=d._filtro.hasta||d1;}
     updateStateFromSheetData(d);
     saveAndRender();
+    renderFiltroRangoUI();
     if(!Array.isArray(d.logs))loadLogsFromSheets();
     if(!Array.isArray(d.precios)&&!Array.isArray(d.preciosProductos)&&!Array.isArray(d.listaPrecios))loadPreciosFromSheets();
     setSyncStatus('Sincronizado · '+fmtTime(new Date()));
@@ -2721,6 +2738,37 @@ async function loadAll(){
     else setSyncStatus('Caché · sin red');
   }
 }
+async function cargarMas(){
+  const btnEl=document.getElementById('btn-cargar-mas');
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='Cargando…';}
+  const nuevaDesde=new Date(state._filtroDesde||_filtroDesdeDefault());
+  nuevaDesde.setDate(nuevaDesde.getDate()-90);
+  const desdeStr=nuevaDesde.toISOString().substring(0,10);
+  setSyncStatus('Cargando más registros…',true);
+  try{
+    const d=await api('getAll',{desde:desdeStr,hasta:state._filtroHasta||_filtroHastaDefault()});
+    if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde||desdeStr;}
+    updateStateFromSheetData(d);
+    saveAndRender();
+    renderFiltroRangoUI();
+    setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+    toast('Registros cargados desde '+fmtFecha(desdeStr));
+  }catch(e){
+    toastError(e);setSyncStatus('Error al cargar');
+    if(btnEl){btnEl.disabled=false;btnEl.textContent='← Cargar 3 meses más';}
+  }
+}
+function renderFiltroRangoUI(){
+  const el=document.getElementById('filtro-rango-info');
+  if(!el)return;
+  const desde=state._filtroDesde;
+  if(!desde){el.style.display='none';return;}
+  el.style.display='flex';
+  const mes=desde.substring(0,7).replace('-','/');
+  el.querySelector('#filtro-rango-texto').textContent='Mostrando desde '+mes;
+}
+function fmtFecha(iso){try{const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}catch{return iso;}}
 function setSyncStatus(msg,loading=false){const el=document.getElementById('sync-status');el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg;}
 
 function setSelectBtn(btn,inputId){
@@ -6303,7 +6351,8 @@ async function guardarPrecioMini(prov,producto,btn,tipo){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios,
+      _filtroDesde:state._filtroDesde,_filtroHasta:state._filtroHasta
     }));
     el.dataset.original=String(el.value||'').trim();
     el.dataset.dirty='false';

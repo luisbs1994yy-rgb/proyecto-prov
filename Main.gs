@@ -23,23 +23,29 @@ function handleRequest_(e, method) {
 }
 
 function parseRequest_(e, method) {
-  if (method === 'GET') return { action: e && e.parameter ? e.parameter.action : '' };
+  if (method === 'GET') {
+    const p = e && e.parameter ? e.parameter : {};
+    return { action: p.action || '', desde: p.desde || '', hasta: p.hasta || '' };
+  }
   const raw = e && e.postData && e.postData.contents ? e.postData.contents : '{}';
   return JSON.parse(raw);
 }
 
 function route_(action, payload) {
   switch (action) {
-    case 'getAll':
+    case 'getAll': {
+      const filtro = buildFiltro_(payload);
       return {
-        registros: getRegistros_(),
+        registros: getRegistros_(filtro),
         proveedores: getProveedores_(),
         catalogoProveedores: getCatalogoProveedores_(),
         provLitrosCobrados: getProvLitrosCobrados_(),
-        registrosProveedores: getRegistrosProveedores_(),
+        registrosProveedores: getRegistrosProveedores_(filtro),
         logs: getLogs_(),
-        precios: getPreciosProductos_().precios
+        precios: getPreciosProductos_().precios,
+        _filtro: filtro
       };
+    }
     case 'getLogs':
       return { logs: getLogs_() };
     case 'getPreciosProductos':
@@ -90,4 +96,18 @@ function route_(action, payload) {
     default:
       return { ok: false, error: 'Acción no soportada: ' + action };
   }
+}
+
+function buildFiltro_(payload) {
+  let desde = str_(payload.desde || '');
+  let hasta = str_(payload.hasta || '');
+  if (!desde && !hasta) {
+    const tz = Session.getScriptTimeZone();
+    const hoy = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+    const d = new Date();
+    d.setDate(d.getDate() - 90);
+    desde = Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+    hasta = hoy;
+  }
+  return { desde: desde, hasta: hasta };
 }
