@@ -146,8 +146,8 @@ th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
 td{padding:11px 14px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
 tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent;}
-.badge-pago{background:var(--green-bg)!important;color:var(--green-text)!important;border-color:var(--green-border)!important;}
-.badge-factura{background:var(--blue-bg)!important;color:#1e40af!important;border-color:var(--blue-border)!important;}
+.badge-pago{background:var(--green-text)!important;color:#fff!important;border-color:var(--green-text)!important;border-radius:10px;}
+.badge-factura{background:#1e40af!important;color:#fff!important;border-color:#1e40af!important;border-radius:3px;}
 .amount{font-family:var(--mono);font-weight:500;}
 .pct-cell{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
 .totales-nombre-cell{font-family:var(--mono);font-size:12px;font-weight:600;line-height:1.25;word-break:break-word;}
@@ -226,7 +226,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list table.logs-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;min-width:0;}
 .log-desc-stack{display:flex;flex-direction:column;gap:1px;min-width:0;}
 .log-desc-prov{font-weight:600;font-size:9px;color:var(--navy);line-height:1.2;word-break:break-word;}
-.log-desc-monto{font-family:var(--mono);font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
+.log-desc-monto{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);line-height:1.2;}
+.log-desc-pl{font-family:var(--mono);font-size:8px;color:var(--text-muted);line-height:1.2;}
 .log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
@@ -610,11 +611,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .logs-filters .logs-f-tipo,.logs-filters .logs-f-cliente{width:100%;}
 .logs-filters-actions{display:flex;gap:6px;}
 .logs-filters-actions .btn{flex:1;padding:6px 10px;font-size:10px;min-height:32px;}
+.logs-date-toggle{display:none;padding:5px 8px;border:1px solid var(--border);border-radius:16px;background:#fff;font-size:10px;font-weight:700;color:var(--navy);cursor:pointer;white-space:nowrap;}
+.logs-date-toggle:hover,.logs-date-toggle:active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
 @media (max-width:640px){
   #page-logs .btn-bitacora-share,#page-logs .btn-captura-cliente-bitacora{width:32px;height:32px;font-size:16px;}
   #page-logs .logs-header-actions{gap:5px;}
   #page-logs .card-header{padding:6px 10px;}
   #page-logs .card-header .card-title{font-size:12px;}
+  .logs-date-toggle{display:inline-block;}
+  .logs-filters-grid{display:none;}
+  .logs-filters-grid.expanded{display:grid;}
   .logs-filters{padding:6px 8px;gap:5px;}
   .logs-filters-grid{gap:4px 6px;}
   .logs-f-field{font-size:8px;gap:1px;}
@@ -926,17 +932,17 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-logs .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-logs .card-body { padding: 0; }
   #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
-  #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
-  #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
+  #logs-list .logs-table th { font-size: 7px; padding: 3px 2px; }
+  #logs-list .logs-table td { padding: 4px 2px; font-size: 8px; min-height: 30px; line-height: 1.28; }
   .log-fecha-edit { flex-direction: row; align-items: center; gap: 2px; }
   #logs-list .log-inline-date { max-width: 58px; }
   #logs-list .log-inline-time { max-width: 44px; }
-  #logs-list .log-col-fecha { width: 26%; }
-  #logs-list .log-col-tipo { width: 11%; }
-  #logs-list .log-col-cp { width: 12%; font-size: 7px; }
-  #logs-list .log-col-pl { width: 10%; font-size: 7px; }
-  #logs-list .log-col-lit { width: 11%; font-size: 7px; }
-  #logs-list .log-col-desc { width: 24%; }
+  #logs-list .log-col-fecha { width: 27%; }
+  #logs-list .log-col-tipo { width: 12%; }
+  #logs-list .log-col-cp { width: 13%; font-size: 7px; }
+  #logs-list .log-col-pl { display: none; }
+  #logs-list .log-col-lit { width: 12%; font-size: 7px; }
+  #logs-list .log-col-desc { width: 30%; }
   #logs-list .log-col-com { display: none; }
   #logs-list .log-col-act { width: 6%; }
   #logs-list .log-fecha-bitacora { font-size: 10px; }
@@ -946,7 +952,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list .logs-table.logs-show-extra .log-col-conc { display: table-cell; }
   #logs-list .badge { font-size: 6px !important; padding: 1px 3px !important; max-width: 100%; }
   #logs-list .log-desc-prov { font-size: 8px; }
-  #logs-list .log-desc-monto { font-size: 7px; }
+  #logs-list .log-desc-monto { font-size: 9px; }
+  #logs-list .log-desc-pl { font-size: 7px; }
   #logs-list .btn-icon { padding: 2px 4px; font-size: 10px; }
   .desglose-overlay .popup-desglose { width: calc(100vw - 16px); max-width: calc(100vw - 16px); }
   .popup-desglose .popup-header { padding: 6px 8px; }
@@ -1268,6 +1275,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <div class="logs-filters-quick">
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">7 días</button>
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+              <button type="button" class="logs-date-toggle" id="logs-date-toggle" onclick="toggleLogsDateGrid()">▼ Fecha</button>
             </div>
             <span class="logs-filter-count" id="logs-filter-count"></span>
           </div>
@@ -1808,6 +1816,13 @@ function toggleLogsExtraCols(){
   const btn=document.getElementById('btn-logs-extra-cols');
   if(btn)btn.textContent=logsShowExtraCols?'− Fact / Conc':'+ Fact / Conc';
   renderLogs();
+}
+function toggleLogsDateGrid(){
+  const g=document.querySelector('.logs-filters-grid');
+  const b=document.getElementById('logs-date-toggle');
+  if(!g)return;
+  const open=g.classList.toggle('expanded');
+  if(b)b.textContent=open?'▲ Fecha':'▼ Fecha';
 }
 function getLogDayKey(l){
   const d=parseLogDate(l);
@@ -4693,7 +4708,7 @@ function buildDesgloseBitacoraHtml(proveedor){
     const cls=logBadgeClass(l.tipo);
     rows+='<tr class="'+dayCls+'">'+
       '<td class="log-col-fecha">'+fmtLogFechaCortaDesglose(l)+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+(cls==='badge-pago'?'✓ ':'')+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-desc"><div class="log-desc-inline">'+formatLogDescInline(l)+'</div></td>'+
       '<td class="log-col-act prov-actions"><button type="button" class="btn-del-compact" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">✕</button></td></tr>';
   });
@@ -5142,6 +5157,8 @@ function formatLogDescCell(l){
   if(b&&b.proveedor){
     let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
     if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
+    const pl=fmtLogPrecioLitroCell(l);
+    if(!pl.empty)html+='<span class="log-desc-pl">P/L: '+pl.html+'</span>';
     html+='</div>';
     if(concepto)html+='<div class="log-desc-conc">'+esc(concepto)+'</div>';
     return html;
@@ -5385,7 +5402,7 @@ function renderLogs(){
     const entCls=entLbl==='Proveedor'?' cp-proveedor':entLbl==='Cliente'?' cp-cliente':'';
     tableRows+='<tr class="'+rowCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+(cls==='badge-pago'?'✓ ':'')+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-cp'+entCls+'">'+esc(entLbl)+'</td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
