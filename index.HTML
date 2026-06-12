@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.78">
+<html lang="es" data-app-version="3.79">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3023,7 +3023,13 @@ async function guardarRegistro(){
     if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
     if(!isNaN(ln)&&ln>0)regData.litros=ln;
     const action=isRegistrarProveedor()?'addRegistroProveedor':'addRegistro';
-    const res=await apiPost({action,data:regData});
+    let res=await apiPost({action,data:regData});
+    if(res.duplicado){
+      endBtnSaving(btn,'Guardar registro');
+      if(!confirm('⚠️ '+res.error+'\n\n¿Registrar de todas formas?'))return;
+      beginBtnSaving(btn);
+      res=await apiPost({action,data:{...regData,_forzar:true}});
+    }
     if(res.error)throw new Error(res.error);
     const regItem={id:res.id,...regData};
     if(isRegistrarProveedor())state.registrosProveedores.push(regItem);

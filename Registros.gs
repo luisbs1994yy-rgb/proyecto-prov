@@ -96,6 +96,11 @@ function addRegistroToSheet_(sh, data, getRegsFn) {
   const errAplica = validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo, getRegsFn);
   if (errAplica) return { ok: false, error: errAplica };
 
+  if (factura && !isTipoPago_(tipo) && !data._forzar) {
+    const dup = checkFacturaDuplicada_(factura, proveedor, getRegsFn);
+    if (dup) return { ok: false, error: dup, duplicado: true };
+  }
+
   appendByMap_(sh, map, {
     id: id,
     fecha: fecha,
@@ -198,6 +203,20 @@ function validateAplicaFacturaId_(aplicaFacturaId, proveedor, tipo, getRegsFn) {
     return 'La factura debe ser del mismo proveedor';
   }
   return '';
+}
+
+function checkFacturaDuplicada_(factura, proveedor, getRegsFn) {
+  const numFact = str_(factura).trim().toUpperCase();
+  if (!numFact) return '';
+  const provUpper = str_(proveedor).toUpperCase();
+  const regs = getRegsFn();
+  const dup = regs.find(function (r) {
+    return str_(r.factura).trim().toUpperCase() === numFact &&
+           str_(r.proveedor).toUpperCase() === provUpper &&
+           !isTipoPago_(r.tipo);
+  });
+  if (!dup) return '';
+  return 'La factura ' + factura + ' ya está registrada para ' + proveedor + ' (fecha: ' + str_(dup.fecha).substring(0, 10) + ')';
 }
 
 function repairRegistrosAplicaColumn() {
