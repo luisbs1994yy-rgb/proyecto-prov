@@ -1432,7 +1432,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
 <script>
 let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[] };
 let logsMemory = [];
-let syncTimer = null, desgloseOpen = false;
+let syncTimer = null, _autoSyncInterval = null, desgloseOpen = false;
 let desgloseEntidad = 'cliente';
 let desgloseSort = { col: 'fecha', dir: 'desc' };
 let desgloseProvTab = 'facturas';
@@ -1518,7 +1518,8 @@ document.addEventListener('DOMContentLoaded', () => {
       onProvLitrosCobradosBlur(prov,el);
     },150);
   },true);
-  setInterval(() => { syncQuiet(); }, 60000);
+  _autoSyncInterval = setInterval(() => { syncQuiet(); }, 60000);
+  window.addEventListener('beforeunload', () => clearInterval(_autoSyncInterval));
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
     toast('✓ App v' + APP_VERSION + ' · datos y pantalla actualizados', false, true);
