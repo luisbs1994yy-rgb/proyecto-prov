@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.76">
+<html lang="es" data-app-version="3.77">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -218,6 +218,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-header .popup-sub{font-size:9px;color:rgba(255,255,255,.7)!important;line-height:1.25;margin-top:2px;display:block;}
 .popup-header-close{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:12px;color:#fff;flex-shrink:0;}
 .popup-header-close:hover{background:rgba(255,255,255,.22);}
+.popup-header-enviar{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(37,211,102,.25);border:1px solid rgba(37,211,102,.5);font-size:12px;color:#fff;flex-shrink:0;}
+.popup-header-enviar:hover{background:rgba(37,211,102,.4);}
 .popup-body{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
 .prov-tab-body .desglose-table{width:100%;max-width:100%;}
 .popup-desglose table.desglose-table{width:100%;border-collapse:collapse;table-layout:fixed;}
@@ -1300,8 +1302,8 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-cliente" id="btn-captura-cliente" onclick="capturarPantallaMovil()" title="WhatsApp: foto saldo clientes">📷</button>
-              <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="capturarTotalesYBitacoraWhatsapp()" title="WhatsApp: saldo total + bitácora hoy (2 fotos)">📸</button>
+              <button type="button" class="btn-captura-cliente" id="btn-captura-cliente" onclick="openCapturaFiltroModal('cliente')" title="WhatsApp: foto bitácora (elige período)">📷</button>
+              <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="openCapturaFiltroModal('duo')" title="WhatsApp: saldo + bitácora (elige período)">📸</button>
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
@@ -1497,6 +1499,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="bitacora-rango-presets">
       <button type="button" class="bitacora-preset active" data-preset="hoy" onclick="setBitacoraPreset('hoy')">Hoy</button>
       <button type="button" class="bitacora-preset" data-preset="ayer" onclick="setBitacoraPreset('ayer')">Ayer</button>
+      <button type="button" class="bitacora-preset" data-preset="ayerhoy" onclick="setBitacoraPreset('ayerhoy')">Ayer+Hoy</button>
       <button type="button" class="bitacora-preset" data-preset="semana" onclick="setBitacoraPreset('semana')">Esta semana</button>
       <button type="button" class="bitacora-preset" data-preset="mes" onclick="setBitacoraPreset('mes')">Este mes</button>
       <button type="button" class="bitacora-preset" data-preset="ultimos7" onclick="setBitacoraPreset('ultimos7')">Últimos 7 días</button>
@@ -1524,6 +1527,25 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
   </div>
 </div>
+<div class="bitacora-rango-overlay" id="captura-filtro-overlay" onclick="if(event.target===this)closeCapturaFiltroModal()">
+  <div class="bitacora-rango-popup" onclick="event.stopPropagation()">
+    <div class="bitacora-rango-head">
+      <h3 id="captura-filtro-title">Enviar foto</h3>
+      <button type="button" class="bitacora-rango-close" onclick="closeCapturaFiltroModal()">✕</button>
+    </div>
+    <div class="bitacora-rango-presets" id="captura-filtro-presets">
+      <button type="button" class="bitacora-preset" data-cpreset="ayer" onclick="setCapturaFiltroPreset('ayer')">Ayer</button>
+      <button type="button" class="bitacora-preset active" data-cpreset="hoy" onclick="setCapturaFiltroPreset('hoy')">Hoy</button>
+      <button type="button" class="bitacora-preset" data-cpreset="ayerhoy" onclick="setCapturaFiltroPreset('ayerhoy')">Ayer+Hoy</button>
+      <button type="button" class="bitacora-preset" data-cpreset="semana" onclick="setCapturaFiltroPreset('semana')">Esta semana</button>
+      <button type="button" class="bitacora-preset" data-cpreset="mes" onclick="setCapturaFiltroPreset('mes')">Este mes</button>
+    </div>
+    <div class="bitacora-rango-actions">
+      <button type="button" class="btn" onclick="closeCapturaFiltroModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-captura-filtro-ok" onclick="ejecutarCapturaFiltro()">📷 Capturar y enviar</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1535,6 +1557,9 @@ let desgloseSort = { col: 'fecha', dir: 'desc' };
 let desgloseProvTab = 'facturas';
 let desgloseAbonarFacturaId = '';
 let desgloseShowSaldadas = false;
+let capturaFiltroMode = 'duo';
+let capturaFiltroPreset = 'hoy';
+let capturaFiltroProveedor = '';
 let analisisSortDecision = 'pendiente';
 let analisisSortDecisionProv = 'saldo';
 let analisisTrendWeekIdx = -1;
@@ -2192,6 +2217,7 @@ function forceUnlockUi(){
   document.getElementById('sidebar-overlay')?.classList.remove('open');
   document.getElementById('bitacora-rango-overlay')?.classList.remove('open');
   document.getElementById('bitacora-share-overlay')?.classList.remove('open');
+  document.getElementById('captura-filtro-overlay')?.classList.remove('open');
 }
 function scheduleRenderAnalisis(){
   if(analisisHeavyTimer){cancelAnimationFrame(analisisHeavyTimer);analisisHeavyTimer=null;}
@@ -3691,6 +3717,7 @@ function getBitacoraPresetRange(preset){
   if(preset==='semana')return{desde:startOfWeekMonday(hoy),hasta:endOfDay(hoy)};
   if(preset==='mes')return{desde:new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0),hasta:endOfDay(hoy)};
   if(preset==='ultimos7')return{desde:addDaysDate(hoy,-6),hasta:endOfDay(hoy)};
+  if(preset==='ayerhoy'){const ay=addDaysDate(hoy,-1);return{desde:ay,hasta:endOfDay(hoy)};}
   return{desde:hoy,hasta:endOfDay(hoy)};
 }
 function getBitacoraCanvasExtra(l){
@@ -4195,6 +4222,121 @@ async function capturarBitacoraFiltrada(btnEl){
     toast('Foto bitácora guardada · Galería o WhatsApp',false,true);
   }catch(e){toastError(e);}
   finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷';}}
+}
+function openCapturaFiltroModal(mode,proveedor){
+  capturaFiltroMode=mode;
+  capturaFiltroProveedor=proveedor||'';
+  const tit=document.getElementById('captura-filtro-title');
+  if(tit){
+    if(mode==='desglose')tit.textContent='Enviar movimientos · '+(proveedor||'');
+    else if(mode==='cliente')tit.textContent='Foto bitácora';
+    else tit.textContent='Saldo + bitácora';
+  }
+  setCapturaFiltroPreset(capturaFiltroPreset||'hoy');
+  document.getElementById('captura-filtro-overlay')?.classList.add('open');
+}
+function closeCapturaFiltroModal(){
+  document.getElementById('captura-filtro-overlay')?.classList.remove('open');
+}
+function setCapturaFiltroPreset(preset){
+  capturaFiltroPreset=preset;
+  document.querySelectorAll('#captura-filtro-presets .bitacora-preset').forEach(b=>b.classList.toggle('active',b.dataset.cpreset===preset));
+}
+async function ejecutarCapturaFiltro(){
+  const r=getBitacoraPresetRange(capturaFiltroPreset);
+  closeCapturaFiltroModal();
+  if(capturaFiltroMode==='duo')await capturarTotalesYBitacoraWhatsappRango(r.desde,r.hasta);
+  else if(capturaFiltroMode==='cliente')await capturarBitacoraRangoClientesWhatsapp(r.desde,r.hasta);
+  else if(capturaFiltroMode==='desglose')await capturarMovimientosCliente(capturaFiltroProveedor,r.desde,r.hasta);
+}
+async function buildBitacoraFotoRango(desde,hasta,provFiltro){
+  let logsRaw;
+  if(provFiltro){
+    logsRaw=filterLogsByRange(logsProveedor(provFiltro),desde,hasta);
+  }else{
+    logsRaw=getLogsBitacoraEnRango(desde,hasta);
+  }
+  if(!logsRaw.length)return null;
+  const logsForInfer=logsRaw.map(l=>({...l}));
+  inferPagoGruposForDisplay(logsForInfer);
+  const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
+  const canvas=buildBitacoraCanvas(logsFoto,desde,hasta);
+  const blob=await canvasToBlob(canvas,20000);
+  if(!blob)return null;
+  return{blob,name:'bitacora-'+toDateInputValue(desde)+'_'+toDateInputValue(hasta)+'.png',logs:logsFoto};
+}
+async function capturarBitacoraRangoClientesWhatsapp(desde,hasta){
+  const btn=document.getElementById('btn-captura-cliente');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const res=await buildBitacoraFotoRango(desde,hasta);
+    if(!res){toast('Sin movimientos en ese período',true);return;}
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const file=new File([res.blob],res.name,{type:'image/png'});
+    const titulo='Bitácora · '+rangoLabel+' · '+res.logs.length+' mov.';
+    if(navigator.share){
+      try{
+        const payload={files:[file],title:titulo,text:titulo};
+        if(!navigator.canShare||navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp · bitácora '+rangoLabel,false,true);return;}
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(res.blob,res.name);
+    toast('Foto guardada · '+rangoLabel,false,true);
+  }catch(e){toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷';}}
+}
+async function capturarTotalesYBitacoraWhatsappRango(desde,hasta){
+  const btn=document.getElementById('btn-captura-duo');
+  const panel=document.getElementById('totales-captura');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  if(panel)panel.classList.add('capture-mode');
+  try{
+    const canvasTot=buildTotalesCanvas();
+    const blobTot=await canvasToBlob(canvasTot);
+    if(!blobTot)throw new Error('No se pudo crear imagen de saldos');
+    const rangoTag=toDateInputValue(desde)+'_'+toDateInputValue(hasta);
+    const fileTot=new File([blobTot],'estado-cuenta-'+rangoTag+'.png',{type:'image/png'});
+    const res=await buildBitacoraFotoRango(desde,hasta);
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const shareLine=buildTotalesWhatsappText();
+    if(!res){
+      if(await shareFilesWhatsapp([fileTot],shareLine,shareLine)){toast('Elige WhatsApp · saldo clientes (sin mov. en ese período)',false,true);return;}
+      downloadBlob(blobTot,fileTot.name);
+      toast('Foto saldo guardada · sin movimientos en ese período',false,true);
+      return;
+    }
+    const fileBit=new File([res.blob],res.name,{type:'image/png'});
+    if(await shareFilesWhatsapp([fileTot,fileBit],shareLine+' · '+rangoLabel,shareLine)){
+      toast('Elige WhatsApp · saldo + bitácora '+rangoLabel,false,true);
+      return;
+    }
+    downloadBlob(blobTot,fileTot.name);
+    downloadBlob(res.blob,res.name);
+    toast('Tu celular no comparte 2 fotos; guardé ambas en Descargas',false,true);
+  }catch(e){toastError(e);}
+  finally{
+    if(panel)panel.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📸';}
+  }
+}
+async function capturarMovimientosCliente(proveedor,desde,hasta){
+  try{
+    const res=await buildBitacoraFotoRango(desde,hasta,proveedor);
+    if(!res){toast('Sin movimientos de '+proveedor+' en ese período',true);return;}
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const file=new File([res.blob],res.name,{type:'image/png'});
+    const titulo=proveedor+' · '+rangoLabel+' · '+res.logs.length+' mov.';
+    if(navigator.share){
+      try{
+        const payload={files:[file],title:titulo,text:titulo};
+        if(!navigator.canShare||navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp · movimientos '+proveedor,false,true);return;}
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(res.blob,res.name);
+    toast('Foto guardada · '+proveedor+' · '+rangoLabel,false,true);
+  }catch(e){toastError(e);}
 }
 async function generarBitacoraWhatsapp(){
   const btn=document.getElementById('btn-bitacora-generar');
@@ -4951,7 +5093,7 @@ function buildDesglosePanelHtml(proveedor,regs){
   }
   return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
     '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
-    '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
+    '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><button type="button" class="popup-header-enviar" onclick="openCapturaFiltroModal(\'desglose\',\''+esc(proveedor)+'\')" title="Enviar movimientos">📤</button><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div></div>'+
     '<div class="prov-kpi-row">'+
       '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+saldoVal+'</div></div>'+
       '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
