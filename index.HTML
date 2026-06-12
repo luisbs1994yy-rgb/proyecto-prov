@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.81">
+<html lang="es" data-app-version="3.82">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2738,8 +2738,14 @@ function syncRegistrarFacturaCheckboxes(){
   }
   const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
   const cubierto=!!parts.length&&remanente<=0.001;
+  const pagosSync=ids.length&&!cubierto&&remanente>0.001?registrosProveedor(prov).filter(isTipoPago):null;
   cbs.forEach(cb=>{
-    const dis=!cb.checked&&cubierto;
+    if(cb.checked){cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');return;}
+    let dis=cubierto;
+    if(!dis&&pagosSync){
+      const f=getPoolRegs().find(r=>r.id===String(cb.value||'').trim());
+      if(f){const pend=pendienteFactura(f,pagosSync);dis=pend>remanente+0.001;}
+    }
     cb.disabled=dis;
     cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',dis);
   });
@@ -2757,6 +2763,19 @@ function onRegistrarFacturaSelChange(changedCb){
         toast('El monto ya queda cubierto con las facturas marcadas',true);
         syncRegistrarFacturaCheckboxes();
         return;
+      }
+      if(remanente>0.001){
+        const nuevaFact=getPoolRegs().find(r=>r.id===String(changedCb.value||'').trim());
+        if(nuevaFact){
+          const pagos=registrosProveedor(prov).filter(isTipoPago);
+          const pend=pendienteFactura(nuevaFact,pagos);
+          if(pend>remanente+0.001){
+            changedCb.checked=false;
+            toast('Solo quedan '+fmt(remanente)+' disponibles · esta factura tiene '+fmt(pend)+' pendiente',true);
+            syncRegistrarFacturaCheckboxes();
+            return;
+          }
+        }
       }
     }
   }
