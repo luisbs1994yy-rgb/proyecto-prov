@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.72">
+<html lang="es" data-app-version="3.73">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -124,10 +124,42 @@ textarea{resize:vertical;min-height:60px;}
 .btn-icon:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
 .form-row-duo{display:contents;}
-#page-registrar #f-litros-row{display:none;}
-#page-registrar.modo-factura #f-litros-row,#page-registrar.modo-pago-proveedor #f-litros-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;grid-column:1/-1;}
-#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row{display:grid;grid-template-columns:1fr;gap:14px;grid-column:1/-1;}
+/* === Secciones del formulario Registro === */
+.reg-section{padding:14px 20px;border-bottom:1px solid var(--border);}
+.reg-section:last-of-type{border-bottom:none;}
+.reg-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);margin-bottom:10px;}
+.reg-card-body{padding:0;}
+.reg-save-bar{padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;background:#f8fafc;border-top:1px solid var(--border);border-radius:0 0 var(--r) var(--r);}
+.reg-save-bar .btn,.reg-save-bar .btn-primary{min-width:100px;}
+.btn-registro-rapido{display:flex;align-items:center;gap:5px;padding:7px 14px;background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(58,134,255,.3);}
+.btn-registro-rapido:hover{opacity:.9;}
+.reg-entidad-tipo-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.reg-entidad-tipo-row .btn-group{flex:1;}
+/* f-litros-row visibilidad: controlada por .reg-section-litros */
+.reg-section-litros{display:none;}
+#page-registrar.modo-factura .reg-section-litros,
+#page-registrar.modo-pago-proveedor .reg-section-litros{display:block;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) .reg-section-litros{display:block;}
+/* f-litros-row siempre grid cuando la sección es visible */
+#page-registrar #f-litros-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row{grid-template-columns:1fr;}
 #page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row>.form-group:not(#f-monto-inline-group){display:none;}
+/* === Modal Registro Rápido === */
+.rr-overlay{position:fixed;inset:0;background:rgba(26,28,44,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.rr-modal{background:#fff;border-radius:14px;width:100%;max-width:420px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;gap:0;overflow:hidden;}
+.rr-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fafbfd,#fff);}
+.rr-title{font-size:14px;font-weight:700;color:var(--navy);}
+.rr-hint{font-size:11px;color:var(--text-muted);padding:10px 18px 0;line-height:1.4;}
+.rr-textarea{margin:10px 18px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--mono);min-height:110px;resize:vertical;line-height:1.5;color:var(--navy);background:#fafbfd;}
+.rr-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
+.rr-foto-row{display:flex;align-items:center;gap:10px;padding:0 18px;}
+.rr-foto-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.rr-foto-status{font-size:11px;color:var(--text-muted);}
+.rr-preview{margin:8px 18px;padding:10px 12px;background:var(--blue-soft);border:1px solid var(--blue-border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--navy);}
+.rr-preview strong{display:inline-block;min-width:70px;color:var(--text-muted);}
+.rr-preview .rr-no-match{color:var(--amber-text);}
+.rr-actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--border);background:#f8fafc;}
+.rr-actions .btn-primary{min-width:100px;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="factura"]{display:none;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="pago"]{flex:1 1 100%;}
 #page-registrar.registrar-modo-proveedor .f-aplica-multi,#page-registrar.registrar-modo-proveedor #f-factura-hint{display:none!important;}
@@ -763,13 +795,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     gap: 6px;
     grid-column: 1 / -1;
   }
-  #page-registrar.modo-factura #f-litros-row,
-  #page-registrar.modo-pago-proveedor #f-litros-row {
-    display: grid;
+  #page-registrar #f-litros-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
-    grid-column: 1 / -1;
   }
+  .reg-section { padding: 10px 12px; }
+  .reg-save-bar { padding: 10px 12px; }
+  .btn-registro-rapido { padding: 6px 11px; font-size: 11px; }
+  .rr-modal { max-width: 100%; border-radius: 12px; }
+  .rr-textarea { min-height: 90px; font-size: 12px; }
   #page-registrar input#f-fecha,
   #page-registrar input#f-hora {
     padding: 6px 8px;
@@ -1133,31 +1167,50 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="page" id="page-registrar">
       <div class="page-title">Nuevo registro</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group" style="grid-column:1/-1">
-              <label>¿Registrar para? *</label>
+        <div class="card-header">
+          <span class="card-title">Registro</span>
+          <button class="btn-registro-rapido" id="btn-registro-rapido" onclick="openRegistroRapido()">⚡ Registro Rápido</button>
+        </div>
+        <div class="reg-card-body">
+
+          <!-- ¿Para quién? -->
+          <div class="reg-section">
+            <div class="reg-section-label">¿Para quién?</div>
+            <div class="reg-entidad-tipo-row">
               <div class="btn-group" id="f-entidad-group">
                 <button type="button" class="btn-select active" data-val="cliente" onclick="setSelectBtn(this,'f-entidad')">Cliente</button>
                 <button type="button" class="btn-select" data-val="proveedor" onclick="setSelectBtn(this,'f-entidad')">Proveedor</button>
               </div>
               <input type="hidden" id="f-entidad" value="cliente">
-            </div>
-            <div class="form-group">
-              <label>Tipo *</label>
               <div class="btn-group" id="f-tipo-group">
                 <button class="btn-select" data-val="factura" onclick="setSelectBtn(this,'f-tipo')">Factura</button>
-                <button class="btn-select" data-val="pago"    onclick="setSelectBtn(this,'f-tipo')">Pago</button>
+                <button class="btn-select" data-val="pago" onclick="setSelectBtn(this,'f-tipo')">Pago</button>
               </div>
               <input type="hidden" id="f-tipo" value="">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top:4px">
               <label id="f-proveedor-lbl">Cliente *</label>
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
-            <div class="form-row-duo" id="f-litros-row">
+          </div>
+
+          <!-- Cuándo -->
+          <div class="reg-section">
+            <div class="reg-section-label">Cuándo</div>
+            <div class="form-grid">
+              <div class="form-row-duo">
+                <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+                <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+              </div>
+              <p class="registrar-fecha-preview" id="f-fecha-preview" style="grid-column:1/-1">Se registrará con la fecha y hora de arriba (hora México).</p>
+            </div>
+          </div>
+
+          <!-- Qué y cuánto -->
+          <div class="reg-section reg-section-litros">
+            <div class="reg-section-label">Qué y cuánto</div>
+            <div id="f-litros-row">
               <div class="form-group">
                 <label>Producto</label>
                 <div class="btn-group producto-btn-group" id="f-producto-group">
@@ -1171,32 +1224,61 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
               <div class="form-group" id="f-monto-inline-group"><label for="f-monto">Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
-            <div class="form-row-duo">
-              <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
-              <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
-            </div>
-            <p class="registrar-fecha-preview" id="f-fecha-preview">Se registrará con la fecha y hora de arriba (hora México).</p>
-            <div class="form-row-duo form-fact-concept-row">
-              <div class="form-group form-factura-num">
-                <label id="f-factura-label">Núm. factura</label>
-                <input type="text" id="f-factura" class="f-factura-input" placeholder="" autocomplete="off">
+          </div>
+
+          <!-- Referencia -->
+          <div class="reg-section">
+            <div class="reg-section-label">Referencia</div>
+            <div class="form-grid">
+              <div class="form-row-duo form-fact-concept-row">
+                <div class="form-group form-factura-num">
+                  <label id="f-factura-label">Núm. factura</label>
+                  <input type="text" id="f-factura" class="f-factura-input" placeholder="" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label>Concepto</label>
+                  <input type="text" id="f-concepto" placeholder="" autocomplete="off">
+                </div>
               </div>
-              <div class="form-group">
-                <label>Concepto</label>
-                <input type="text" id="f-concepto" placeholder="" autocomplete="off">
+              <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
+                <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
+                  <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
+                  <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
+                </div>
+                <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
               </div>
-            </div>
-            <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
-              <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
-                <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
-                <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
-              </div>
-              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
             </div>
           </div>
-          <div class="form-actions">
+
+          <!-- Guardar -->
+          <div class="reg-save-bar">
             <button class="btn" onclick="clearForm()">Limpiar</button>
             <button class="btn btn-primary" id="btn-save" onclick="guardarRegistro()">Guardar registro</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Modal Registro Rápido -->
+      <div id="modal-registro-rapido" class="rr-overlay" style="display:none" onclick="rrOverlayClick(event)">
+        <div class="rr-modal">
+          <div class="rr-header">
+            <span class="rr-title">⚡ Registro Rápido</span>
+            <button class="btn-icon" onclick="closeRegistroRapido()">✕</button>
+          </div>
+          <p class="rr-hint">Pega el texto del comprobante o sube una foto. Se detectará el cliente, fecha, producto y litros automáticamente.</p>
+          <textarea id="rr-texto" class="rr-textarea" placeholder="Pega el texto aquí…&#10;Ejemplo:&#10;CARBUMAX&#10;11/06/26&#10;ETANOL&#10;LITROS 27,748"></textarea>
+          <div class="rr-foto-row">
+            <label class="btn btn-sm rr-foto-btn">
+              📷 Subir foto
+              <input type="file" id="rr-foto-input" accept="image/*" capture="environment" style="display:none" onchange="onRegistroRapidoFoto(this)">
+            </label>
+            <span class="rr-foto-status" id="rr-foto-status"></span>
+          </div>
+          <div class="rr-preview" id="rr-preview" style="display:none"></div>
+          <div class="rr-actions">
+            <button class="btn btn-sm" onclick="closeRegistroRapido()">Cancelar</button>
+            <button class="btn btn-primary" onclick="aplicarRegistroRapido()">Aplicar →</button>
           </div>
         </div>
       </div>
@@ -1826,6 +1908,150 @@ function toggleLogsDateGrid(){
   const open=g.classList.toggle('expanded');
   if(b)b.textContent=open?'▲ Fecha':'▼ Fecha';
 }
+
+/* ===================== REGISTRO RÁPIDO ===================== */
+function openRegistroRapido(){
+  document.getElementById('modal-registro-rapido').style.display='flex';
+  document.getElementById('rr-texto').value='';
+  document.getElementById('rr-foto-status').textContent='';
+  document.getElementById('rr-preview').style.display='none';
+  document.getElementById('rr-preview').innerHTML='';
+  const inp=document.getElementById('rr-foto-input');
+  if(inp)inp.value='';
+  setTimeout(()=>document.getElementById('rr-texto').focus(),80);
+}
+function closeRegistroRapido(){
+  document.getElementById('modal-registro-rapido').style.display='none';
+}
+function rrOverlayClick(e){
+  if(e.target===document.getElementById('modal-registro-rapido'))closeRegistroRapido();
+}
+function parseRegistroRapido(text){
+  const PRODUCTOS=['ETANOL','NAFTA','REGULAR'];
+  const proveedores=(state.proveedores||[]).map(p=>String(p.nombre||'').toUpperCase().trim());
+  const lines=text.split(/\r?\n/).map(l=>l.trim().toUpperCase()).filter(Boolean);
+  let cliente='',fecha='',producto='',litros='',factura='',monto='';
+  for(const line of lines){
+    if(!fecha){
+      const m=line.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+      if(m){
+        const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0');
+        const yy=m[3].length===2?'20'+m[3]:m[3];
+        fecha=yy+'-'+mm+'-'+dd;
+        continue;
+      }
+    }
+    if(!producto&&PRODUCTOS.includes(line)){
+      producto=line.charAt(0)+line.slice(1).toLowerCase();
+      continue;
+    }
+    if(!litros){
+      const lm=line.match(/^LITROS\s+([\d,\.]+)/);
+      if(lm){litros=lm[1].replace(/,(?=\d{3})/g,'').replace(',','.');continue;}
+    }
+    if(!monto&&!litros){
+      const pm=line.match(/^\$?([\d,\.]+)$/);
+      if(pm){const v=parseFloat(pm[1].replace(/,/g,''));if(v>100){monto=String(v);continue;}}
+    }
+    if(!factura&&/^\d{1,6}$/.test(line)&&line!==fecha.replace(/-/g,'').slice(-2)){
+      factura=line;continue;
+    }
+    if(!cliente){
+      const exact=proveedores.find(n=>n===line);
+      if(exact){cliente=exact;continue;}
+      const partial=proveedores.find(n=>n.includes(line)||line.includes(n));
+      if(partial){cliente=partial;continue;}
+    }
+  }
+  return{cliente,fecha,producto,litros,monto,factura};
+}
+function showRrPreview(p){
+  const el=document.getElementById('rr-preview');
+  if(!p){el.style.display='none';return;}
+  const row=(lbl,val,warn)=>'<div><strong>'+lbl+'</strong>'+(val?val:'<span class="rr-no-match">No detectado</span>')+(warn?' <span class="rr-no-match">('+warn+')</span>':'')+'</div>';
+  const clienteWarn=p.cliente&&!(state.proveedores||[]).find(x=>x.nombre.toUpperCase()===p.cliente)?'no en lista':'';
+  el.innerHTML=row('Cliente:',p.cliente,clienteWarn)+row('Fecha:',p.fecha)+row('Producto:',p.producto)+row('Litros:',p.litros)+row('Monto:',p.monto)+row('Factura:',p.factura);
+  el.style.display='block';
+}
+function aplicarRegistroRapido(){
+  const text=document.getElementById('rr-texto').value.trim();
+  if(!text){toastError('Pega el texto primero');return;}
+  const p=parseRegistroRapido(text);
+  showRrPreview(p);
+  clearForm();
+  // Entidad = cliente
+  const entBtn=document.querySelector('#f-entidad-group .btn-select[data-val="cliente"]');
+  if(entBtn)setSelectBtn(entBtn,'f-entidad');
+  // Tipo = factura (si hay litros o producto)
+  if(p.litros||p.producto){
+    const tipoBtn=document.querySelector('#f-tipo-group .btn-select[data-val="factura"]');
+    if(tipoBtn)setSelectBtn(tipoBtn,'f-tipo');
+  }
+  // Cliente
+  if(p.cliente){
+    const provBtn=document.querySelector('#f-proveedor-group .btn-select[data-val="'+rrEscAttr(p.cliente)+'"]');
+    if(provBtn)setSelectBtn(provBtn,'f-proveedor');
+    else{
+      // intento case-insensitive
+      const all=document.querySelectorAll('#f-proveedor-group .btn-select');
+      for(const b of all){if((b.dataset.val||'').toUpperCase()===p.cliente){setSelectBtn(b,'f-proveedor');break;}}
+    }
+  }
+  // Fecha
+  if(p.fecha){
+    document.getElementById('f-fecha').value=p.fecha;
+    updateRegistrarFechaPreview();
+  }
+  // Producto
+  if(p.producto){
+    const cap=p.producto.charAt(0).toUpperCase()+p.producto.slice(1).toLowerCase();
+    const prodBtn=document.querySelector('#f-producto-group .btn-select[data-val="'+cap+'"]');
+    if(prodBtn)setSelectBtn(prodBtn,'f-producto');
+  }
+  // Litros
+  if(p.litros){
+    const litEl=document.getElementById('f-litros');
+    litEl.value=p.litros;
+    litEl.dispatchEvent(new Event('input'));
+  }
+  // Monto (si no hay litros)
+  if(p.monto&&!p.litros){
+    document.getElementById('f-monto').value=p.monto;
+    document.getElementById('f-monto').dispatchEvent(new Event('input'));
+  }
+  // Factura
+  if(p.factura)document.getElementById('f-factura').value=p.factura;
+  closeRegistroRapido();
+  toast('Registro rápido aplicado — revisa y guarda',false,true);
+}
+function rrEscAttr(s){return String(s||'').replace(/"/g,'&quot;');}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=e=>resolve(e.target.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+async function onRegistroRapidoFoto(input){
+  const file=input.files[0];
+  if(!file)return;
+  const status=document.getElementById('rr-foto-status');
+  status.textContent='Leyendo…';
+  try{
+    const base64=await fileToBase64(file);
+    const res=await apiPost({action:'ocrImage',base64,mimeType:file.type});
+    if(res&&res.ok&&res.text){
+      document.getElementById('rr-texto').value=res.text.trim();
+      status.textContent='✓ Texto extraído';
+    } else {
+      status.textContent='No se pudo leer la imagen'+(res&&res.error?' ('+res.error+')':'');
+    }
+  }catch(err){
+    status.textContent='Error: '+String(err&&err.message?err.message:err);
+  }
+}
+
 function getLogDayKey(l){
   const d=parseLogDate(l);
   if(!d)return'';
