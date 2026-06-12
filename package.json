@@ -1,0 +1,12 @@
+{
+  "name": "proyecto-prov",
+  "version": "1.0.0",
+  "scripts": {
+    "push:gas": "clasp push",
+    "push:git": "git add -A && git commit -m \"deploy\" && git push origin main",
+    "deploy": "clasp push && git add -A && git commit -m \"${npm_config_msg:-deploy $(date '+%Y-%m-%d %H:%M')}\" && git push origin main"
+  },
+  "devDependencies": {
+    "@google/clasp": "^2.4.2"
+  }
+}

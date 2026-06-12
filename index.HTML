@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.66">
+<html lang="es" data-app-version="3.81">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,6 +33,18 @@ const PROV_PRODUCTOS_KPI=['Etanol','Nafta','Regular'];
   --shadow-md:0 12px 32px rgba(26,28,44,.12),0 4px 12px rgba(26,28,44,.06);
   --accent:var(--blue);
 }
+html.dark-mode{
+  --bg:#0f1117; --surface:#1a1d2e; --border:#2a2d3e; --text:#e2e8f0; --text-muted:#8892a4; --text-faint:#4a5568;
+  --navy:#0f1117; --navy-mid:#1a1d2e;
+  --green-bg:#0d2318; --green-text:#34d399; --green-border:#065f46;
+  --blue-bg:#0f1e3d; --blue-text:#60a5fa; --blue-border:#1e40af;
+  --amber-bg:#1c1405; --amber-text:#fbbf24; --amber-border:#92400e;
+  --red-bg:#1c0a0a;  --red-text:#f87171;  --red-border:#7f1d1d;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow:0 4px 14px rgba(0,0,0,.4);
+  --shadow-md:0 12px 32px rgba(0,0,0,.5);
+}
+html.dark-mode body{background-image:none;}
 *{box-sizing:border-box;margin:0;padding:0;}
 html{overflow-x:hidden;}
 body{
@@ -124,10 +136,42 @@ textarea{resize:vertical;min-height:60px;}
 .btn-icon:hover{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border);}
 .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
 .form-row-duo{display:contents;}
-#page-registrar #f-litros-row{display:none;}
-#page-registrar.modo-factura #f-litros-row,#page-registrar.modo-pago-proveedor #f-litros-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;grid-column:1/-1;}
-#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row{display:grid;grid-template-columns:1fr;gap:14px;grid-column:1/-1;}
+/* === Secciones del formulario Registro === */
+.reg-section{padding:14px 20px;border-bottom:1px solid var(--border);}
+.reg-section:last-of-type{border-bottom:none;}
+.reg-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-faint);margin-bottom:10px;}
+.reg-card-body{padding:0;}
+.reg-save-bar{padding:12px 20px;display:flex;gap:10px;justify-content:flex-end;background:#f8fafc;border-top:1px solid var(--border);border-radius:0 0 var(--r) var(--r);}
+.reg-save-bar .btn,.reg-save-bar .btn-primary{min-width:100px;}
+.btn-registro-rapido{display:flex;align-items:center;gap:5px;padding:7px 14px;background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(58,134,255,.3);}
+.btn-registro-rapido:hover{opacity:.9;}
+.reg-entidad-tipo-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.reg-entidad-tipo-row .btn-group{flex:1;}
+/* f-litros-row visibilidad: controlada por .reg-section-litros */
+.reg-section-litros{display:none;}
+#page-registrar.modo-factura .reg-section-litros,
+#page-registrar.modo-pago-proveedor .reg-section-litros{display:block;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) .reg-section-litros{display:block;}
+/* f-litros-row siempre grid cuando la sección es visible */
+#page-registrar #f-litros-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+#page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row{grid-template-columns:1fr;}
 #page-registrar.registrar-modo-pago:not(.registrar-modo-proveedor) #f-litros-row>.form-group:not(#f-monto-inline-group){display:none;}
+/* === Modal Registro Rápido === */
+.rr-overlay{position:fixed;inset:0;background:rgba(26,28,44,.55);z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;}
+.rr-modal{background:#fff;border-radius:14px;width:100%;max-width:420px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;gap:0;overflow:hidden;}
+.rr-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fafbfd,#fff);}
+.rr-title{font-size:14px;font-weight:700;color:var(--navy);}
+.rr-hint{font-size:11px;color:var(--text-muted);padding:10px 18px 0;line-height:1.4;}
+.rr-textarea{margin:10px 18px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:var(--mono);min-height:110px;resize:vertical;line-height:1.5;color:var(--navy);background:#fafbfd;}
+.rr-textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
+.rr-foto-row{display:flex;align-items:center;gap:10px;padding:0 18px;}
+.rr-foto-btn{cursor:pointer;display:inline-flex;align-items:center;gap:5px;}
+.rr-foto-status{font-size:11px;color:var(--text-muted);}
+.rr-preview{margin:8px 18px;padding:10px 12px;background:var(--blue-soft);border:1px solid var(--blue-border);border-radius:8px;font-size:11px;line-height:1.6;color:var(--navy);}
+.rr-preview strong{display:inline-block;min-width:70px;color:var(--text-muted);}
+.rr-preview .rr-no-match{color:var(--amber-text);}
+.rr-actions{display:flex;gap:8px;justify-content:flex-end;padding:12px 18px;border-top:1px solid var(--border);background:#f8fafc;}
+.rr-actions .btn-primary{min-width:100px;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="factura"]{display:none;}
 #page-registrar.registrar-modo-proveedor #f-tipo-group .btn-select[data-val="pago"]{flex:1 1 100%;}
 #page-registrar.registrar-modo-proveedor .f-aplica-multi,#page-registrar.registrar-modo-proveedor #f-factura-hint{display:none!important;}
@@ -140,14 +184,18 @@ textarea{resize:vertical;min-height:60px;}
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
 .btn-select.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
+/* Entidad: Cliente=azul(default), Proveedor=ámbar */
+#f-entidad-group .btn-select[data-val="proveedor"].active{background:linear-gradient(135deg,#d97706,#b45309);box-shadow:0 4px 12px rgba(180,83,9,.3);}
+/* Tipo: Factura=azul(default), Pago=verde */
+#f-tipo-group .btn-select[data-val="pago"].active{background:linear-gradient(135deg,#0d9488,#0d7a3e);box-shadow:0 4px 12px rgba(13,122,62,.3);}
 .table-wrap{overflow-x:auto;border-radius:0 0 var(--r) var(--r);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#fff;padding:11px 14px;text-align:left;white-space:nowrap;background:linear-gradient(135deg,#3a86ff 0%,#2563eb 100%);border:none;}
 td{padding:11px 14px;border-bottom:1px solid #eef2f7;vertical-align:middle;}
 tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;border:1px solid transparent;}
-.badge-pago{background:var(--green-bg)!important;color:var(--green-text)!important;border-color:var(--green-border)!important;}
-.badge-factura{background:var(--blue-bg)!important;color:#1e40af!important;border-color:var(--blue-border)!important;}
+.badge-pago{background:var(--green-text)!important;color:#fff!important;border-color:var(--green-text)!important;border-radius:10px;}
+.badge-factura{background:#1e40af!important;color:#fff!important;border-color:#1e40af!important;border-radius:3px;}
 .amount{font-family:var(--mono);font-weight:500;}
 .pct-cell{font-family:var(--mono);font-size:12px;color:var(--text-muted);}
 .totales-nombre-cell{font-family:var(--mono);font-size:12px;font-weight:600;line-height:1.25;word-break:break-word;}
@@ -158,6 +206,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:#f8fafc;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .22s;pointer-events:none;z-index:999;max-width:min(400px,calc(100vw - 2rem));word-break:break-word;box-shadow:var(--shadow-md);border:1px solid rgba(255,255,255,.1);}
 .toast.show{opacity:1;transform:translateY(0);}
+.toast.show.has-action{pointer-events:auto;display:flex;align-items:center;gap:12px;}
+.toast-undo-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.toast-undo-btn:hover{background:rgba(255,255,255,.3);}
 .toast.error{background:linear-gradient(135deg,#b91c1c,#991b1b);} .toast.success{background:linear-gradient(135deg,#0d7a3e,#059669);}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:1.5rem;width:100%;max-width:100%;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-sm);border-left:4px solid var(--kpi-color,var(--blue));transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;min-width:0;max-width:100%;}
@@ -175,6 +226,39 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .desglose-btn:hover{border-color:var(--blue);color:#fff;background:linear-gradient(135deg,#3a86ff,#00b4d8);box-shadow:0 4px 10px rgba(58,134,255,.3);}
 .desglose-overlay{display:none;position:fixed;inset:0;z-index:1998;background:rgba(26,28,44,.5);padding:48px 10px 10px;box-sizing:border-box;align-items:center;justify-content:center;}
 .desglose-overlay.open{display:flex;}
+.confirm-overlay{display:none;position:fixed;inset:0;z-index:2200;background:rgba(10,12,25,.7);backdrop-filter:blur(3px);align-items:center;justify-content:center;padding:16px;}
+.confirm-overlay.open{display:flex;}
+.confirm-modal{background:#1e2235;border:1px solid rgba(255,255,255,.12);border-radius:14px;width:100%;max-width:400px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,.5);}
+.confirm-modal h3{color:#f1f5f9;font-size:16px;margin-bottom:8px;}
+.confirm-modal p{color:#94a3b8;font-size:13px;margin-bottom:4px;}
+.confirm-modal .confirm-stats{display:flex;gap:10px;margin:14px 0;flex-wrap:wrap;}
+.confirm-stat{background:rgba(255,255,255,.07);border-radius:8px;padding:8px 12px;text-align:center;flex:1;}
+.confirm-stat-val{font-size:16px;font-weight:700;color:#f1f5f9;}
+.confirm-stat-lbl{font-size:10px;color:#64748b;text-transform:uppercase;}
+.confirm-modal .confirm-warn{background:#7f1d1d33;border:1px solid #b91c1c55;color:#fca5a5;font-size:12px;padding:8px 12px;border-radius:8px;margin:10px 0;}
+.confirm-modal .confirm-actions{display:flex;gap:8px;margin-top:18px;justify-content:flex-end;}
+.confirm-modal .btn-cancel{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#94a3b8;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;}
+.confirm-modal .btn-danger{background:#b91c1c;border:none;color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;}
+.confirm-modal .btn-danger:hover{background:#991b1b;}
+.busqueda-overlay{display:none;position:fixed;inset:0;z-index:2100;background:rgba(10,12,25,.6);backdrop-filter:blur(4px);align-items:flex-start;justify-content:center;padding-top:80px;}
+.busqueda-overlay.open{display:flex;}
+.busqueda-modal{background:#1e2235;border:1px solid rgba(255,255,255,.12);border-radius:14px;width:100%;max-width:540px;box-shadow:0 24px 60px rgba(0,0,0,.5);overflow:hidden;}
+.busqueda-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.busqueda-icon{font-size:16px;flex-shrink:0;}
+.busqueda-header input{flex:1;background:transparent;border:none;outline:none;color:#f1f5f9;font-size:15px;font-family:var(--mono);}
+.busqueda-header input::placeholder{color:#64748b;}
+.busqueda-esc{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#94a3b8;font-size:10px;padding:2px 6px;border-radius:4px;cursor:pointer;flex-shrink:0;}
+.busqueda-results{max-height:360px;overflow-y:auto;}
+.busqueda-item{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.05);transition:background .12s;}
+.busqueda-item:hover,.busqueda-item.focused{background:rgba(58,134,255,.2);}
+.busqueda-item-tipo{font-size:9px;font-weight:700;padding:2px 6px;border-radius:5px;flex-shrink:0;}
+.busqueda-item-tipo.factura{background:#1d4ed8;color:#fff;}
+.busqueda-item-tipo.pago{background:#047857;color:#fff;}
+.busqueda-item-body{flex:1;min-width:0;}
+.busqueda-item-title{color:#f1f5f9;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.busqueda-item-sub{color:#94a3b8;font-size:11px;}
+.busqueda-item-monto{color:#f1f5f9;font-size:13px;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.busqueda-empty{padding:24px;text-align:center;color:#64748b;font-size:13px;}
 .desglose-overlay .popup-desglose{position:relative;z-index:1999;flex:0 1 auto;width:100%;max-width:100%;min-width:0;max-height:100%;margin:0;}
 .popup-desglose{position:fixed;z-index:2000;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 16px 40px rgba(26,28,44,.28);min-width:0;max-width:calc(100vw - 20px);max-height:min(380px,62vh);display:flex;flex-direction:column;overflow:hidden;}
 .popup-header{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.12);display:flex;justify-content:space-between;align-items:flex-start;gap:6px;background:linear-gradient(135deg,#1a1c2c,#2d3250);color:#fff;border-radius:12px 12px 0 0;flex-shrink:0;}
@@ -182,6 +266,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-header .popup-sub{font-size:9px;color:rgba(255,255,255,.7)!important;line-height:1.25;margin-top:2px;display:block;}
 .popup-header-close{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);font-size:12px;color:#fff;flex-shrink:0;}
 .popup-header-close:hover{background:rgba(255,255,255,.22);}
+.popup-header-enviar{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(37,211,102,.25);border:1px solid rgba(37,211,102,.5);font-size:12px;color:#fff;flex-shrink:0;}
+.popup-header-enviar:hover{background:rgba(37,211,102,.4);}
 .popup-body{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;min-height:0;}
 .prov-tab-body .desglose-table{width:100%;max-width:100%;}
 .popup-desglose table.desglose-table{width:100%;border-collapse:collapse;table-layout:fixed;}
@@ -196,6 +282,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .popup-desglose .desglose-row:last-child td{border-bottom:none;}
 .desglose-row-factura td{background:#e8f4ff!important;}
 .desglose-row-pago td{background:#e8faf0!important;}
+.desglose-row-proxima td{background:#fefce8!important;}
+.desglose-row-vencida td{background:#fff1f2!important;}
+.badge-dias-vencida{display:inline-block;font-size:9px;font-weight:700;background:#fde68a;color:#92400e;border-radius:4px;padding:1px 4px;margin-left:4px;vertical-align:middle;}
 .desglose-row-factura .desglose-cell-amt{color:#1d4ed8!important;}
 .desglose-row-pago .desglose-cell-amt{color:#047857!important;}
 .desglose-sum-f{color:#60a5fa!important;font-weight:600;}
@@ -226,7 +315,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list table.logs-table{width:100%;max-width:100%;table-layout:fixed;border-collapse:collapse;min-width:0;}
 .log-desc-stack{display:flex;flex-direction:column;gap:1px;min-width:0;}
 .log-desc-prov{font-weight:600;font-size:9px;color:var(--navy);line-height:1.2;word-break:break-word;}
-.log-desc-monto{font-family:var(--mono);font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
+.log-desc-monto{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);line-height:1.2;}
+.log-desc-pl{font-family:var(--mono);font-size:8px;color:var(--text-muted);line-height:1.2;}
+.log-desc-prod{font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
 .log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
@@ -249,8 +340,11 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 #logs-list .log-inline-input{width:100%;min-width:0;padding:4px 5px;font-size:9px;border:1px solid var(--border);border-radius:6px;background:#fff;box-sizing:border-box;font-family:var(--font);}
 #logs-list .log-inline-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
 #logs-list .log-inline-input.saving{opacity:.65;border-color:var(--amber-border);}
-.log-fecha-edit{display:flex;flex-direction:column;gap:3px;min-width:0;}
-#logs-list .log-inline-date,#logs-list .log-inline-time{font-size:9px;padding:3px 4px;}
+.log-fecha-edit{display:flex;flex-direction:row;gap:3px;min-width:0;align-items:center;}
+#logs-list .log-inline-time{font-size:9px;padding:3px 4px;width:auto;}
+.log-date-wrap{position:relative;display:inline-flex;align-items:center;}
+.log-date-display{font-size:9px;padding:3px 4px;border:1px solid var(--border);border-radius:6px;background:#fff;white-space:nowrap;cursor:pointer;font-family:var(--font);line-height:1.3;}
+.log-date-hidden{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
 #logs-list tr.saving-fecha .log-fecha-edit{opacity:.65;}
 .logs-grupo-hint{font-size:10px;color:var(--text-muted);margin:0 0 8px;line-height:1.35;}
 .logs-grupo-hint span{display:inline-block;width:10px;height:10px;border-radius:2px;margin:0 4px 0 8px;vertical-align:middle;border-left:3px solid;}
@@ -607,11 +701,16 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .logs-filters .logs-f-tipo,.logs-filters .logs-f-cliente{width:100%;}
 .logs-filters-actions{display:flex;gap:6px;}
 .logs-filters-actions .btn{flex:1;padding:6px 10px;font-size:10px;min-height:32px;}
+.logs-date-toggle{display:none;padding:5px 8px;border:1px solid var(--border);border-radius:16px;background:#fff;font-size:10px;font-weight:700;color:var(--navy);cursor:pointer;white-space:nowrap;}
+.logs-date-toggle:hover,.logs-date-toggle:active{background:var(--blue-soft);border-color:var(--blue);color:var(--blue);}
 @media (max-width:640px){
   #page-logs .btn-bitacora-share,#page-logs .btn-captura-cliente-bitacora{width:32px;height:32px;font-size:16px;}
   #page-logs .logs-header-actions{gap:5px;}
   #page-logs .card-header{padding:6px 10px;}
   #page-logs .card-header .card-title{font-size:12px;}
+  .logs-date-toggle{display:inline-block;}
+  .logs-filters-grid{display:none;}
+  .logs-filters-grid.expanded{display:grid;}
   .logs-filters{padding:6px 8px;gap:5px;}
   .logs-filters-grid{gap:4px 6px;}
   .logs-f-field{font-size:8px;gap:1px;}
@@ -754,13 +853,15 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
     gap: 6px;
     grid-column: 1 / -1;
   }
-  #page-registrar.modo-factura #f-litros-row,
-  #page-registrar.modo-pago-proveedor #f-litros-row {
-    display: grid;
+  #page-registrar #f-litros-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
-    grid-column: 1 / -1;
   }
+  .reg-section { padding: 10px 12px; }
+  .reg-save-bar { padding: 10px 12px; }
+  .btn-registro-rapido { padding: 6px 11px; font-size: 11px; }
+  .rr-modal { max-width: 100%; border-radius: 12px; }
+  .rr-textarea { min-height: 90px; font-size: 12px; }
   #page-registrar input#f-fecha,
   #page-registrar input#f-hora {
     padding: 6px 8px;
@@ -923,15 +1024,18 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #page-logs .page-title { font-size: 14px; margin-bottom: .35rem; }
   #page-logs .card-body { padding: 0; }
   #logs-list table.logs-table { min-width: 0; width: 100%; font-size: 9px; }
-  #logs-list .logs-table th { font-size: 7px; padding: 4px 2px; }
-  #logs-list .logs-table td { padding: 5px 2px; font-size: 8px; min-height: 32px; line-height: 1.28; }
-  #logs-list .log-col-fecha { width: 28%; }
-  #logs-list .log-col-tipo { width: 9%; }
-  #logs-list .log-col-cp { width: 11%; font-size: 7px; }
-  #logs-list .log-col-pl { width: 11%; font-size: 7px; }
+  #logs-list .logs-table th { font-size: 7px; padding: 3px 2px; }
+  #logs-list .logs-table td { padding: 4px 2px; font-size: 8px; min-height: 30px; line-height: 1.28; }
+  .log-fecha-edit { flex-direction: row; align-items: center; gap: 2px; }
+  #logs-list .log-inline-date { max-width: 58px; }
+  #logs-list .log-inline-time { max-width: 44px; }
+  #logs-list .log-col-fecha { width: 27%; }
+  #logs-list .log-col-tipo { width: 12%; }
+  #logs-list .log-col-cp { width: 13%; font-size: 7px; }
+  #logs-list .log-col-pl { display: none; }
   #logs-list .log-col-lit { width: 12%; font-size: 7px; }
-  #logs-list .log-col-desc { width: 24%; }
-  #logs-list .log-col-com { width: 18%; }
+  #logs-list .log-col-desc { width: 30%; }
+  #logs-list .log-col-com { display: none; }
   #logs-list .log-col-act { width: 6%; }
   #logs-list .log-fecha-bitacora { font-size: 10px; }
   #logs-list .logs-table .log-col-fact,
@@ -940,7 +1044,8 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
   #logs-list .logs-table.logs-show-extra .log-col-conc { display: table-cell; }
   #logs-list .badge { font-size: 6px !important; padding: 1px 3px !important; max-width: 100%; }
   #logs-list .log-desc-prov { font-size: 8px; }
-  #logs-list .log-desc-monto { font-size: 7px; }
+  #logs-list .log-desc-monto { font-size: 9px; }
+  #logs-list .log-desc-pl { font-size: 7px; }
   #logs-list .btn-icon { padding: 2px 4px; font-size: 10px; }
   .desglose-overlay .popup-desglose { width: calc(100vw - 16px); max-width: calc(100vw - 16px); }
   .popup-desglose .popup-header { padding: 6px 8px; }
@@ -993,8 +1098,10 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .precios-section-title.prov{color:#0d7a3e;}
 .precio-input{width:100%;font-family:var(--mono);font-size:11px;text-align:center;padding:6px 6px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);}
 .precio-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(58,134,255,.12);}
-.precio-edit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 22px;gap:3px;align-items:center;}
+.precio-edit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 22px 22px;gap:3px;align-items:center;}
 .precio-mini-save{width:22px;height:22px;min-width:22px;padding:0;border-radius:6px;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.precio-hist-btn{width:22px;height:22px;min-width:22px;padding:0;border-radius:6px;font-size:10px;line-height:1;display:flex;align-items:center;justify-content:center;background:rgba(100,116,139,.15);border:1px solid rgba(100,116,139,.3);cursor:pointer;}
+.precio-hist-btn:hover{background:rgba(100,116,139,.3);}
 @media (max-width: 640px){
   .producto-btn-group{gap:4px;}
   .producto-btn-group .btn-select{font-size:9px;padding:7px 4px;}
@@ -1092,6 +1199,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
   <div class="header-right">
     <a class="header-version" id="app-version" href="#">v…</a>
     <button class="btn-refresh" id="btn-refresh" onclick="manualSync()" title="Sincronizar datos y recargar la app (nueva versión)">↻</button>
+    <button class="btn-refresh" id="btn-theme" onclick="toggleTheme()" title="Cambiar tema claro/oscuro" style="font-size:14px;">🌙</button>
     <span class="header-sync" id="sync-status">—</span>
     <div class="btn-mobile" onclick="toggleMobileMenu()" title="Menú">☰</div>
   </div>
@@ -1120,31 +1228,51 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="page" id="page-registrar">
       <div class="page-title">Nuevo registro</div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Captura de factura o pago</span></div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group" style="grid-column:1/-1">
-              <label>¿Registrar para? *</label>
+        <div class="card-header">
+          <span class="card-title">Registro</span>
+          <label class="btn-registro-rapido" style="cursor:pointer;" title="Importar CSV (fecha,proveedor,tipo,monto,factura,concepto)">📥 CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importarCSV(this)"></label>
+          <button class="btn-registro-rapido" id="btn-registro-rapido" onclick="openRegistroRapido()">⚡ Registro Rápido</button>
+        </div>
+        <div class="reg-card-body">
+
+          <!-- ¿Para quién? -->
+          <div class="reg-section">
+            <div class="reg-section-label">¿Para quién?</div>
+            <div class="reg-entidad-tipo-row">
               <div class="btn-group" id="f-entidad-group">
                 <button type="button" class="btn-select active" data-val="cliente" onclick="setSelectBtn(this,'f-entidad')">Cliente</button>
                 <button type="button" class="btn-select" data-val="proveedor" onclick="setSelectBtn(this,'f-entidad')">Proveedor</button>
               </div>
               <input type="hidden" id="f-entidad" value="cliente">
-            </div>
-            <div class="form-group">
-              <label>Tipo *</label>
               <div class="btn-group" id="f-tipo-group">
                 <button class="btn-select" data-val="factura" onclick="setSelectBtn(this,'f-tipo')">Factura</button>
-                <button class="btn-select" data-val="pago"    onclick="setSelectBtn(this,'f-tipo')">Pago</button>
+                <button class="btn-select" data-val="pago" onclick="setSelectBtn(this,'f-tipo')">Pago</button>
               </div>
               <input type="hidden" id="f-tipo" value="">
             </div>
-            <div class="form-group">
+            <div class="form-group" style="margin-top:4px">
               <label id="f-proveedor-lbl">Cliente *</label>
               <div class="btn-group" id="f-proveedor-group"><div style="color:var(--text-faint);font-size:12px;padding:8px 0;">Cargando…</div></div>
               <input type="hidden" id="f-proveedor" value="">
             </div>
-            <div class="form-row-duo" id="f-litros-row">
+          </div>
+
+          <!-- Cuándo -->
+          <div class="reg-section">
+            <div class="reg-section-label">Cuándo</div>
+            <div class="form-grid">
+              <div class="form-row-duo">
+                <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+                <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
+              </div>
+              <p class="registrar-fecha-preview" id="f-fecha-preview" style="grid-column:1/-1">Se registrará con la fecha y hora de arriba (hora México).</p>
+            </div>
+          </div>
+
+          <!-- Qué y cuánto -->
+          <div class="reg-section reg-section-litros">
+            <div class="reg-section-label">Qué y cuánto</div>
+            <div id="f-litros-row">
               <div class="form-group">
                 <label>Producto</label>
                 <div class="btn-group producto-btn-group" id="f-producto-group">
@@ -1158,32 +1286,61 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
               <div class="form-group"><label id="f-litros-label" for="f-litros">Litros</label><input type="text" id="f-litros" inputmode="decimal" placeholder="" autocomplete="off"></div>
               <div class="form-group" id="f-monto-inline-group"><label for="f-monto">Monto ($) *<span class="label-long"> — coma miles · punto decimales</span></label><input type="text" id="f-monto" inputmode="decimal" placeholder="" autocomplete="off"></div>
             </div>
-            <div class="form-row-duo">
-              <div class="form-group"><label>Fecha *</label><input type="date" id="f-fecha" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
-              <div class="form-group"><label>Hora (México) *</label><input type="time" id="f-hora" onchange="updateRegistrarFechaPreview()" oninput="updateRegistrarFechaPreview()"></div>
-            </div>
-            <p class="registrar-fecha-preview" id="f-fecha-preview">Se registrará con la fecha y hora de arriba (hora México).</p>
-            <div class="form-row-duo form-fact-concept-row">
-              <div class="form-group form-factura-num">
-                <label id="f-factura-label">Núm. factura</label>
-                <input type="text" id="f-factura" class="f-factura-input" placeholder="" autocomplete="off">
+          </div>
+
+          <!-- Referencia -->
+          <div class="reg-section">
+            <div class="reg-section-label">Referencia</div>
+            <div class="form-grid">
+              <div class="form-row-duo form-fact-concept-row">
+                <div class="form-group form-factura-num">
+                  <label id="f-factura-label">Núm. factura</label>
+                  <input type="text" id="f-factura" class="f-factura-input" placeholder="" autocomplete="off">
+                </div>
+                <div class="form-group">
+                  <label>Concepto</label>
+                  <input type="text" id="f-concepto" placeholder="" autocomplete="off">
+                </div>
               </div>
-              <div class="form-group">
-                <label>Concepto</label>
-                <input type="text" id="f-concepto" placeholder="" autocomplete="off">
+              <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
+                <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
+                  <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
+                  <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
+                </div>
+                <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
               </div>
-            </div>
-            <div class="form-group" id="f-factura-group" style="grid-column:1/-1">
-              <div id="f-aplica-facturas-wrap" class="f-aplica-multi">
-                <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
-                <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
-              </div>
-              <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
             </div>
           </div>
-          <div class="form-actions">
+
+          <!-- Guardar -->
+          <div class="reg-save-bar">
             <button class="btn" onclick="clearForm()">Limpiar</button>
             <button class="btn btn-primary" id="btn-save" onclick="guardarRegistro()">Guardar registro</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Modal Registro Rápido -->
+      <div id="modal-registro-rapido" class="rr-overlay" style="display:none" onclick="rrOverlayClick(event)">
+        <div class="rr-modal">
+          <div class="rr-header">
+            <span class="rr-title">⚡ Registro Rápido</span>
+            <button class="btn-icon" onclick="closeRegistroRapido()">✕</button>
+          </div>
+          <p class="rr-hint">Pega el texto del comprobante o sube una foto. Se detectará el cliente, fecha, producto y litros automáticamente.</p>
+          <textarea id="rr-texto" class="rr-textarea" placeholder="Pega el texto aquí…&#10;Ejemplo:&#10;CARBUMAX&#10;11/06/26&#10;ETANOL&#10;LITROS 27,748"></textarea>
+          <div class="rr-foto-row">
+            <label class="btn btn-sm rr-foto-btn">
+              📷 Subir foto
+              <input type="file" id="rr-foto-input" accept="image/*" capture="environment" style="display:none" onchange="onRegistroRapidoFoto(this)">
+            </label>
+            <span class="rr-foto-status" id="rr-foto-status"></span>
+          </div>
+          <div class="rr-preview" id="rr-preview" style="display:none"></div>
+          <div class="rr-actions">
+            <button class="btn btn-sm" onclick="closeRegistroRapido()">Cancelar</button>
+            <button class="btn btn-primary" onclick="aplicarRegistroRapido()">Aplicar →</button>
           </div>
         </div>
       </div>
@@ -1200,11 +1357,15 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             </div>
             <div class="totales-actions screen-capture-hide">
               <button type="button" class="btn-screenshot" id="btn-captura-totales" onclick="capturarTotales()" title="Copiar foto">📋</button>
-              <button type="button" class="btn-captura-cliente" id="btn-captura-cliente" onclick="capturarPantallaMovil()" title="WhatsApp: foto saldo clientes">📷</button>
-              <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="capturarTotalesYBitacoraWhatsapp()" title="WhatsApp: saldo total + bitácora hoy (2 fotos)">📸</button>
+              <button type="button" class="btn-captura-cliente" id="btn-captura-cliente" onclick="openCapturaFiltroModal('cliente')" title="WhatsApp: foto bitácora (elige período)">📷</button>
+              <button type="button" class="btn-captura-duo" id="btn-captura-duo" onclick="openCapturaFiltroModal('duo')" title="WhatsApp: saldo + bitácora (elige período)">📸</button>
             </div>
           </div>
           <div class="card-body" style="padding:0"><div id="tabla-total"><div class="loading"><span class="spinner"></span> Cargando…</div></div></div>
+          <div id="filtro-rango-info" style="display:none;padding:8px 12px;align-items:center;gap:10px;font-size:12px;color:var(--text-muted,#888);">
+            <span id="filtro-rango-texto"></span>
+            <button type="button" id="btn-cargar-mas" class="btn-secondary" style="font-size:11px;padding:3px 10px;border-radius:6px;" onclick="cargarMas()">← Cargar 3 meses más</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1262,6 +1423,9 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <div class="logs-filters-quick">
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">7 días</button>
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroAyer()">Ayer</button>
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroAyerMas()">Ayer+</button>
+              <button type="button" class="logs-date-toggle" id="logs-date-toggle" onclick="toggleLogsDateGrid()">▼ Fecha</button>
             </div>
             <span class="logs-filter-count" id="logs-filter-count"></span>
           </div>
@@ -1394,6 +1558,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     <div class="bitacora-rango-presets">
       <button type="button" class="bitacora-preset active" data-preset="hoy" onclick="setBitacoraPreset('hoy')">Hoy</button>
       <button type="button" class="bitacora-preset" data-preset="ayer" onclick="setBitacoraPreset('ayer')">Ayer</button>
+      <button type="button" class="bitacora-preset" data-preset="ayerhoy" onclick="setBitacoraPreset('ayerhoy')">Ayer+Hoy</button>
       <button type="button" class="bitacora-preset" data-preset="semana" onclick="setBitacoraPreset('semana')">Esta semana</button>
       <button type="button" class="bitacora-preset" data-preset="mes" onclick="setBitacoraPreset('mes')">Este mes</button>
       <button type="button" class="bitacora-preset" data-preset="ultimos7" onclick="setBitacoraPreset('ultimos7')">Últimos 7 días</button>
@@ -1421,17 +1586,56 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
     </div>
   </div>
 </div>
+<div class="bitacora-rango-overlay" id="captura-filtro-overlay" onclick="if(event.target===this)closeCapturaFiltroModal()">
+  <div class="bitacora-rango-popup" onclick="event.stopPropagation()">
+    <div class="bitacora-rango-head">
+      <h3 id="captura-filtro-title">Enviar foto</h3>
+      <button type="button" class="bitacora-rango-close" onclick="closeCapturaFiltroModal()">✕</button>
+    </div>
+    <div class="bitacora-rango-presets" id="captura-filtro-presets">
+      <button type="button" class="bitacora-preset" data-cpreset="ayer" onclick="setCapturaFiltroPreset('ayer')">Ayer</button>
+      <button type="button" class="bitacora-preset active" data-cpreset="hoy" onclick="setCapturaFiltroPreset('hoy')">Hoy</button>
+      <button type="button" class="bitacora-preset" data-cpreset="ayerhoy" onclick="setCapturaFiltroPreset('ayerhoy')">Ayer+Hoy</button>
+      <button type="button" class="bitacora-preset" data-cpreset="semana" onclick="setCapturaFiltroPreset('semana')">Esta semana</button>
+      <button type="button" class="bitacora-preset" data-cpreset="mes" onclick="setCapturaFiltroPreset('mes')">Este mes</button>
+    </div>
+    <div class="bitacora-rango-actions">
+      <button type="button" class="btn" onclick="closeCapturaFiltroModal()">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-captura-filtro-ok" onclick="ejecutarCapturaFiltro()">📷 Capturar y enviar</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
+<div id="confirm-overlay" class="confirm-overlay">
+  <div class="confirm-modal" id="confirm-modal-inner"></div>
+</div>
+
+<div id="busqueda-overlay" class="busqueda-overlay" onclick="if(event.target===this)closeBusquedaGlobal()">
+  <div class="busqueda-modal">
+    <div class="busqueda-header">
+      <span class="busqueda-icon">🔍</span>
+      <input id="busqueda-input" type="text" placeholder="Buscar factura, cliente, concepto…" autocomplete="off" oninput="onBusquedaInput(this.value)" onkeydown="onBusquedaKey(event)">
+      <kbd class="busqueda-esc" onclick="closeBusquedaGlobal()">Esc</kbd>
+    </div>
+    <div id="busqueda-results" class="busqueda-results"></div>
+  </div>
+</div>
+
 <script>
-let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[] };
+let state = { registros:[], proveedores:[], catalogoProveedores:[], registrosProveedores:[], provLitrosCobrados:{}, precios:[], _filtroDesde:'', _filtroHasta:'' };
+function _filtroDesdeDefault(){const d=new Date();d.setDate(d.getDate()-90);return d.toISOString().substring(0,10);}
+function _filtroHastaDefault(){return new Date().toISOString().substring(0,10);}
 let logsMemory = [];
-let syncTimer = null, desgloseOpen = false;
+let syncTimer = null, _autoSyncInterval = null, desgloseOpen = false;
 let desgloseEntidad = 'cliente';
 let desgloseSort = { col: 'fecha', dir: 'desc' };
 let desgloseProvTab = 'facturas';
 let desgloseAbonarFacturaId = '';
 let desgloseShowSaldadas = false;
+let capturaFiltroMode = 'duo';
+let capturaFiltroPreset = 'hoy';
+let capturaFiltroProveedor = '';
 let analisisSortDecision = 'pendiente';
 let analisisSortDecisionProv = 'saldo';
 let analisisTrendWeekIdx = -1;
@@ -1447,6 +1651,8 @@ let logsFiltro={desde:'',hasta:'',tipo:'',cliente:''};
 let logsShowExtraCols=false;
 
 document.addEventListener('DOMContentLoaded', () => {
+  const _themeBtn=document.getElementById('btn-theme');
+  if(_themeBtn)_themeBtn.textContent=document.documentElement.classList.contains('dark-mode')?'☀':'🌙';
   bindAppVersionLink();
   syncLitrosPrecioLabels();
   initRegistrarFechaHora();
@@ -1467,9 +1673,11 @@ document.addEventListener('DOMContentLoaded', () => {
       state.registrosProveedores=(d.registrosProveedores||[]).map(normalizeRegistro);
       state.provLitrosCobrados=d.provLitrosCobrados||loadProvLitrosCobradosMap();
       state.precios=normalizePreciosList(d.precios||loadPreciosLocal());
+      if(d._filtroDesde)state._filtroDesde=d._filtroDesde;
+      if(d._filtroHasta)state._filtroHasta=d._filtroHasta;
       mergeAplicaIntoRegs();mergeAplicaIntoRegsProv();
       ensureStateArrays();
-      renderAllSafe();setSyncStatus('Actualizando…',true);
+      renderAllSafe();renderFiltroRangoUI();setSyncStatus('Actualizando…',true);
     } catch(err){
       console.warn('cache load',err);
       ensureStateArrays();
@@ -1512,13 +1720,192 @@ document.addEventListener('DOMContentLoaded', () => {
       onProvLitrosCobradosBlur(prov,el);
     },150);
   },true);
-  setInterval(() => { syncQuiet(); }, 60000);
+  _autoSyncInterval = setInterval(() => { syncQuiet(); }, 60000);
+  window.addEventListener('beforeunload', () => clearInterval(_autoSyncInterval));
   if (sessionStorage.getItem(REFRESH_FLAG_KEY)) {
     sessionStorage.removeItem(REFRESH_FLAG_KEY);
     toast('✓ App v' + APP_VERSION + ' · datos y pantalla actualizados', false, true);
   }
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openBusquedaGlobal();}
+    if(e.key==='Escape'){closeBusquedaGlobal();}
+  });
 });
 
+/* ===== HISTORIAL DE PRECIOS ===== */
+async function verHistorialPrecio(cliente,producto){
+  try{
+    const res=await apiPost({action:'getHistorialPrecios',cliente,producto});
+    if(res.error)throw new Error(res.error);
+    const hist=res.historial||[];
+    const ov=document.getElementById('confirm-overlay');
+    const inner=document.getElementById('confirm-modal-inner');
+    const actual=getPrecioProducto(cliente,producto);
+    inner.innerHTML=`<h3>Historial: ${esc(cliente)} · ${esc(producto)}</h3>
+      <p style="margin-bottom:12px">Precio actual: <strong style="color:#f1f5f9">${actual?formatPrecioLitroDisplay(actual.precio):'—'}</strong></p>
+      ${hist.length?`<div style="max-height:260px;overflow-y:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr><th style="text-align:left;padding:4px 8px;color:#94a3b8;font-weight:600">Precio anterior</th><th style="text-align:left;padding:4px 8px;color:#94a3b8;font-weight:600">Cambiado el</th></tr></thead>
+          <tbody>${hist.map(h=>`<tr><td style="padding:4px 8px;color:#e2e8f0;font-family:var(--mono)">${isNaN(h.precio)?'—':formatPrecioLitroDisplay(h.precio)}</td><td style="padding:4px 8px;color:#94a3b8;font-size:11px">${h.changedAt?new Date(h.changedAt).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>`:'<div style="color:#64748b;font-size:13px;padding:16px 0">Sin cambios registrados aún.</div>'}
+      <div class="confirm-actions"><button class="btn-cancel" id="confirm-btn-cancel">Cerrar</button></div>`;
+    ov.classList.add('open');
+    document.getElementById('confirm-btn-cancel').onclick=()=>ov.classList.remove('open');
+  }catch(e){toastError(e);}
+}
+/* ================================ */
+
+/* ===== TEMA CLARO/OSCURO ===== */
+function toggleTheme(){
+  const dark=document.documentElement.classList.toggle('dark-mode');
+  localStorage.setItem('theme',dark?'dark':'light');
+  document.getElementById('btn-theme').textContent=dark?'☀':'🌙';
+}
+(function(){
+  const t=localStorage.getItem('theme');
+  if(t==='dark'){document.documentElement.classList.add('dark-mode');}
+})();
+/* ============================ */
+
+/* ===== MODAL CONFIRMAR ELIMINAR CLIENTE ===== */
+function showConfirmEliminarCliente(nombre,nMovs,nFacts,nPagos,saldo){
+  return new Promise(resolve=>{
+    const ov=document.getElementById('confirm-overlay');
+    const inner=document.getElementById('confirm-modal-inner');
+    inner.innerHTML=`
+      <h3>⚠️ Eliminar cliente</h3>
+      <p>Estás a punto de eliminar <strong style="color:#f1f5f9">${esc(nombre)}</strong> y todos sus datos.</p>
+      ${nMovs?`<div class="confirm-stats">
+        <div class="confirm-stat"><div class="confirm-stat-val">${nMovs}</div><div class="confirm-stat-lbl">Movimientos</div></div>
+        <div class="confirm-stat"><div class="confirm-stat-val">${nFacts}</div><div class="confirm-stat-lbl">Facturas</div></div>
+        <div class="confirm-stat"><div class="confirm-stat-val">${nPagos}</div><div class="confirm-stat-lbl">Pagos</div></div>
+        <div class="confirm-stat"><div class="confirm-stat-val">${fmt(saldo)}</div><div class="confirm-stat-lbl">Saldo</div></div>
+      </div>`:''}
+      <div class="confirm-warn">Esta acción eliminará permanentemente todos los registros, precios y logs de este cliente. No se puede deshacer.</div>
+      <div class="confirm-actions">
+        <button class="btn-cancel" id="confirm-btn-cancel">Cancelar</button>
+        <button class="btn-danger" id="confirm-btn-ok">Sí, eliminar</button>
+      </div>`;
+    ov.classList.add('open');
+    const cleanup=(res)=>{ov.classList.remove('open');resolve(res);};
+    document.getElementById('confirm-btn-cancel').onclick=()=>cleanup(false);
+    document.getElementById('confirm-btn-ok').onclick=()=>cleanup(true);
+  });
+}
+/* ============================================ */
+
+/* ===== IMPORTACIÓN CSV ===== */
+async function importarCSV(input){
+  const file=input.files[0];
+  input.value='';
+  if(!file)return;
+  const text=await file.text();
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){toast('CSV vacío',true);return;}
+  const headers=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
+  const idx={
+    fecha:headers.indexOf('fecha'),
+    proveedor:headers.findIndex(h=>h==='proveedor'||h==='cliente'),
+    tipo:headers.indexOf('tipo'),
+    monto:headers.indexOf('monto'),
+    factura:headers.findIndex(h=>h==='factura'||h==='num_factura'||h==='numero'),
+    concepto:headers.indexOf('concepto'),
+    producto:headers.indexOf('producto')
+  };
+  if(idx.fecha<0||idx.proveedor<0||idx.tipo<0||idx.monto<0){
+    toast('El CSV debe tener columnas: fecha, proveedor/cliente, tipo, monto',true);return;
+  }
+  const rows=lines.slice(1).map(l=>{
+    const cols=l.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+    return{
+      fecha:cols[idx.fecha]||'',
+      proveedor:cols[idx.proveedor]||'',
+      tipo:cols[idx.tipo]||'',
+      monto:parseFloat((cols[idx.monto]||'').replace(/[$, ]/g,''))||0,
+      factura:idx.factura>=0?cols[idx.factura]||'':'',
+      concepto:idx.concepto>=0?cols[idx.concepto]||'':'',
+      producto:idx.producto>=0?cols[idx.producto]||'':''
+    };
+  }).filter(r=>r.proveedor&&r.tipo&&r.fecha&&r.monto);
+  if(!rows.length){toast('Sin filas válidas en el CSV',true);return;}
+  const esProveedor=document.getElementById('f-entidad')?.value==='proveedor';
+  const action=esProveedor?'addRegistroProveedor':'addRegistro';
+  let ok=0,fail=0;
+  setSyncStatus('Importando '+rows.length+' registros…',true);
+  for(const row of rows){
+    try{
+      const res=await apiPost({action,data:{...row,_forzar:true}});
+      if(res.error){fail++;continue;}
+      const reg=normalizeRegistroFecha({id:res.id,...row});
+      if(esProveedor)state.registrosProveedores.push(reg);else state.registros.push(reg);
+      ok++;
+    }catch(e){fail++;}
+  }
+  saveAndRender();
+  setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+  toast(ok+' registro'+(ok!==1?'s':'')+' importado'+(ok!==1?'s':'')+(fail?' · '+fail+' errores':''),fail>0,ok>0&&!fail);
+}
+/* ========================== */
+
+/* ===== BÚSQUEDA GLOBAL ===== */
+let _busquedaIdx=0;
+function openBusquedaGlobal(){
+  const ov=document.getElementById('busqueda-overlay');
+  if(!ov)return;
+  ov.classList.add('open');
+  const inp=document.getElementById('busqueda-input');
+  inp.value='';
+  document.getElementById('busqueda-results').innerHTML='';
+  setTimeout(()=>inp.focus(),50);
+}
+function closeBusquedaGlobal(){
+  document.getElementById('busqueda-overlay')?.classList.remove('open');
+}
+function onBusquedaInput(q){
+  _busquedaIdx=0;
+  const el=document.getElementById('busqueda-results');
+  const term=q.trim().toLowerCase();
+  if(!term){el.innerHTML='';return;}
+  const todos=[...state.registros,...state.registrosProveedores];
+  const hits=todos.filter(r=>{
+    const hay=[r.proveedor,r.factura,r.concepto,r.tipo,r.fecha].map(x=>String(x||'').toLowerCase()).join(' ');
+    return hay.includes(term);
+  }).slice(0,40);
+  if(!hits.length){el.innerHTML='<div class="busqueda-empty">Sin resultados para "'+esc(q)+'"</div>';return;}
+  el.innerHTML=hits.map((r,i)=>{
+    const esPago=isTipoPago(r);
+    const tipoCls=esPago?'pago':'factura';
+    const tipoLbl=esPago?'Pago':'Factura';
+    const subLbl=[r.fecha?String(r.fecha).substring(0,10):'',r.factura,r.concepto].filter(Boolean).join(' · ');
+    return `<div class="busqueda-item${i===0?' focused':''}" data-idx="${i}" data-prov="${esc(r.proveedor)}" data-escliente="${state.registros.includes(r)?'1':'0'}" onclick="onBusquedaSelect(this)">
+      <span class="busqueda-item-tipo ${tipoCls}">${tipoLbl}</span>
+      <div class="busqueda-item-body"><div class="busqueda-item-title">${esc(r.proveedor)}</div><div class="busqueda-item-sub">${esc(subLbl)}</div></div>
+      <span class="busqueda-item-monto">${fmt(r.monto)}</span>
+    </div>`;
+  }).join('');
+}
+function onBusquedaKey(e){
+  const items=document.querySelectorAll('#busqueda-results .busqueda-item');
+  if(!items.length)return;
+  if(e.key==='ArrowDown'){e.preventDefault();_busquedaIdx=Math.min(_busquedaIdx+1,items.length-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();_busquedaIdx=Math.max(_busquedaIdx-1,0);}
+  else if(e.key==='Enter'){e.preventDefault();if(items[_busquedaIdx])onBusquedaSelect(items[_busquedaIdx]);return;}
+  items.forEach((el,i)=>el.classList.toggle('focused',i===_busquedaIdx));
+  items[_busquedaIdx]?.scrollIntoView({block:'nearest'});
+}
+function onBusquedaSelect(el){
+  const prov=el.dataset.prov,esCliente=el.dataset.escliente==='1';
+  closeBusquedaGlobal();
+  const entidad=esCliente?'cliente':'proveedor';
+  const page=esCliente?'totales':'proveedores';
+  if(!isPageActive(page))showPage(page);
+  setTimeout(()=>{
+    const anchor=document.querySelector('[data-proveedor="'+CSS.escape(prov)+'"]');
+    showDesglosePopup(prov,anchor,entidad);
+  },200);
+}
+/* ========================== */
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function jsQuote(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\r/g,'').replace(/\n/g,'\\n');}
 function escTipoDisplay(tipo){const t=String(tipo||'').toLowerCase();if(t==='proveedor')return 'Cliente';return String(tipo||'');}
@@ -1559,7 +1946,8 @@ function saveAndRender(){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios,
+      _filtroDesde:state._filtroDesde,_filtroHasta:state._filtroHasta
     }));
   }catch(e){console.warn('cache save',e);}
   renderAll();
@@ -1687,7 +2075,25 @@ function getFechaDisplay(l){
   if(l.fecha){if(/GMT|^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(l.fecha)){try{const d=new Date(l.fecha);if(!isNaN(d))return fmtLogFecha(d);}catch{}}return l.fecha+(l.hora?' '+l.hora:'');}
   return '—';
 }
-function toast(msg,error=false,success=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(error?' error':success?' success':'');setTimeout(()=>{el.className='toast';},3500);}
+let _toastTimer=null;
+function toast(msg,error=false,success=false){
+  const el=document.getElementById('toast');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  el.innerHTML='';el.textContent=msg;
+  el.className='toast show'+(error?' error':success?' success':'');
+  _toastTimer=setTimeout(()=>{el.className='toast';},3500);
+}
+function toastUndo(msg,onUndo){
+  const el=document.getElementById('toast');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  el.className='toast show has-action';
+  el.innerHTML='<span>'+msg+'</span>';
+  const btn=document.createElement('button');
+  btn.className='toast-undo-btn';btn.textContent='Deshacer';
+  btn.onclick=()=>{el.className='toast';if(_toastTimer)clearTimeout(_toastTimer);onUndo();};
+  el.appendChild(btn);
+  _toastTimer=setTimeout(()=>{el.className='toast';},5000);
+}
 function toastError(e){toast('Error: '+e.message,true);}
 function badgeClass(t){const x=String(t||'').toLowerCase();return(x==='pago'||x.includes('pago'))?'badge-pago':'badge-factura';}
 function logBadgeClass(tipo){
@@ -1764,12 +2170,23 @@ function buildLogFechaHoraFromInputs(dateVal,timeVal){
     createdAt:dt.toISOString()
   };
 }
+function fmtDateShort(dateVal){
+  if(!dateVal) return '—';
+  const p=dateVal.split('-');
+  if(p.length!==3) return dateVal;
+  const m=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return parseInt(p[2])+' '+m[parseInt(p[1])-1];
+}
 function fmtLogFechaEditInputs(l){
   const lid=esc(l.localId||l.id||'');
   const v=getLogFechaInputValues(l);
+  const ds=fmtDateShort(v.dateVal);
   return '<div class="log-fecha-edit">'+
-    '<input type="date" class="log-inline-input log-inline-date" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
     '<input type="time" class="log-inline-input log-inline-time" value="'+escAttr(v.timeVal)+'" title="Hora (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this)">'+
+    '<div class="log-date-wrap">'+
+      '<span class="log-date-display">'+ds+'</span>'+
+      '<input type="date" class="log-date-hidden" value="'+escAttr(v.dateVal)+'" title="Fecha (México)" onchange="updateLogFechaFromRow(\''+lid+'\',this);this.previousElementSibling.textContent=fmtDateShort(this.value)">'+
+    '</div>'+
     '</div>';
 }
 function fmtLogBitacoraFecha(l){
@@ -1791,6 +2208,148 @@ function toggleLogsExtraCols(){
   if(btn)btn.textContent=logsShowExtraCols?'− Fact / Conc':'+ Fact / Conc';
   renderLogs();
 }
+function toggleLogsDateGrid(){
+  const g=document.querySelector('.logs-filters-grid');
+  const b=document.getElementById('logs-date-toggle');
+  if(!g)return;
+  const open=g.classList.toggle('expanded');
+  if(b)b.textContent=open?'▲ Fecha':'▼ Fecha';
+}
+
+/* ===================== REGISTRO RÁPIDO ===================== */
+function openRegistroRapido(){
+  document.getElementById('modal-registro-rapido').style.display='flex';
+  document.getElementById('rr-texto').value='';
+  document.getElementById('rr-foto-status').textContent='';
+  document.getElementById('rr-preview').style.display='none';
+  document.getElementById('rr-preview').innerHTML='';
+  const inp=document.getElementById('rr-foto-input');
+  if(inp)inp.value='';
+  setTimeout(()=>document.getElementById('rr-texto').focus(),80);
+}
+function closeRegistroRapido(){
+  document.getElementById('modal-registro-rapido').style.display='none';
+}
+function rrOverlayClick(e){
+  if(e.target===document.getElementById('modal-registro-rapido'))closeRegistroRapido();
+}
+function parseRegistroRapido(text){
+  const PRODUCTOS=['ETANOL','NAFTA','REGULAR'];
+  // state.proveedores is an array of strings (plain names), not objects
+  const provList=(state.proveedores||[]).map(p=>String(p||'').trim()).filter(Boolean);
+  const provUpper=provList.map(p=>p.toUpperCase());
+  const lines=text.split(/\r?\n/).map(l=>l.trim().toUpperCase()).filter(Boolean);
+  let fecha='',producto='',litros='',factura='',monto='';
+  const usedIdx=new Set();
+  // Pass 1: detect all non-client fields first, mark their line indices as used
+  lines.forEach((line,i)=>{
+    if(!fecha){const m=line.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(m){const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0'),yy=m[3].length===2?'20'+m[3]:m[3];fecha=yy+'-'+mm+'-'+dd;usedIdx.add(i);return;}}
+    if(!producto&&PRODUCTOS.includes(line)){producto=line.charAt(0)+line.slice(1).toLowerCase();usedIdx.add(i);return;}
+    if(!litros){const lm=line.match(/^LITROS\s+([\d,\.]+)/);if(lm){litros=lm[1].replace(/,(?=\d{3})/g,'').replace(',','.');usedIdx.add(i);return;}}
+    if(!monto&&!litros){const pm=line.match(/^\$?([\d,\.]+)$/);if(pm){const v=parseFloat(pm[1].replace(/,/g,''));if(v>100){monto=String(v);usedIdx.add(i);return;}}}
+    if(!factura&&/^\d{1,6}$/.test(line)){factura=line;usedIdx.add(i);return;}
+  });
+  // Pass 2: find best client match from unused lines
+  // Exact match beats partial; among ties, longer client name wins (more specific)
+  let bestExact=null,bestExactLen=0,bestPartial=null,bestPartialLen=0;
+  lines.forEach((line,i)=>{
+    if(usedIdx.has(i)||line.length<2)return;
+    const exactIdx=provUpper.indexOf(line);
+    if(exactIdx>=0){if(provUpper[exactIdx].length>bestExactLen){bestExactLen=provUpper[exactIdx].length;bestExact=provList[exactIdx];}return;}
+    const partialIdx=provUpper.findIndex(n=>n.includes(line)||line.includes(n));
+    if(partialIdx>=0&&provUpper[partialIdx].length>bestPartialLen){bestPartialLen=provUpper[partialIdx].length;bestPartial=provList[partialIdx];}
+  });
+  const cliente=bestExact||bestPartial||'';
+  return{cliente,fecha,producto,litros,monto,factura};
+}
+function showRrPreview(p){
+  const el=document.getElementById('rr-preview');
+  if(!p){el.style.display='none';return;}
+  const row=(lbl,val,warn)=>'<div><strong>'+lbl+'</strong>'+(val?val:'<span class="rr-no-match">No detectado</span>')+(warn?' <span class="rr-no-match">('+warn+')</span>':'')+'</div>';
+  const clienteWarn=p.cliente&&!(state.proveedores||[]).some(x=>String(x||'')===p.cliente)?'no en lista':'';
+  el.innerHTML=row('Cliente:',p.cliente,clienteWarn)+row('Fecha:',p.fecha)+row('Producto:',p.producto)+row('Litros:',p.litros)+row('Monto:',p.monto)+row('Factura:',p.factura);
+  el.style.display='block';
+}
+function aplicarRegistroRapido(){
+  const text=document.getElementById('rr-texto').value.trim();
+  if(!text){toastError('Pega el texto primero');return;}
+  const p=parseRegistroRapido(text);
+  showRrPreview(p);
+  clearForm();
+  // Entidad = cliente
+  const entBtn=document.querySelector('#f-entidad-group .btn-select[data-val="cliente"]');
+  if(entBtn)setSelectBtn(entBtn,'f-entidad');
+  // Tipo = factura (si hay litros o producto)
+  if(p.litros||p.producto){
+    const tipoBtn=document.querySelector('#f-tipo-group .btn-select[data-val="factura"]');
+    if(tipoBtn)setSelectBtn(tipoBtn,'f-tipo');
+  }
+  // Cliente
+  if(p.cliente){
+    const provBtn=document.querySelector('#f-proveedor-group .btn-select[data-val="'+rrEscAttr(p.cliente)+'"]');
+    if(provBtn)setSelectBtn(provBtn,'f-proveedor');
+    else{
+      // intento case-insensitive
+      const all=document.querySelectorAll('#f-proveedor-group .btn-select');
+      for(const b of all){if((b.dataset.val||'').toUpperCase()===p.cliente){setSelectBtn(b,'f-proveedor');break;}}
+    }
+  }
+  // Fecha
+  if(p.fecha){
+    document.getElementById('f-fecha').value=p.fecha;
+    updateRegistrarFechaPreview();
+  }
+  // Producto
+  if(p.producto){
+    const cap=p.producto.charAt(0).toUpperCase()+p.producto.slice(1).toLowerCase();
+    const prodBtn=document.querySelector('#f-producto-group .btn-select[data-val="'+cap+'"]');
+    if(prodBtn)setSelectBtn(prodBtn,'f-producto');
+  }
+  // Litros
+  if(p.litros){
+    const litEl=document.getElementById('f-litros');
+    litEl.value=p.litros;
+    litEl.dispatchEvent(new Event('input'));
+  }
+  // Monto (si no hay litros)
+  if(p.monto&&!p.litros){
+    document.getElementById('f-monto').value=p.monto;
+    document.getElementById('f-monto').dispatchEvent(new Event('input'));
+  }
+  // Factura
+  if(p.factura)document.getElementById('f-factura').value=p.factura;
+  closeRegistroRapido();
+  // Auto-guardar: intentar guardar de inmediato; si falta algún campo la validación mostrará el error y el form queda pre-llenado
+  setTimeout(()=>guardarRegistro(),80);
+}
+function rrEscAttr(s){return String(s||'').replace(/"/g,'&quot;');}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=e=>resolve(e.target.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+async function onRegistroRapidoFoto(input){
+  const file=input.files[0];
+  if(!file)return;
+  const status=document.getElementById('rr-foto-status');
+  status.textContent='Leyendo…';
+  try{
+    const base64=await fileToBase64(file);
+    const res=await apiPost({action:'ocrImage',base64,mimeType:file.type});
+    if(res&&res.ok&&res.text){
+      document.getElementById('rr-texto').value=res.text.trim();
+      status.textContent='✓ Texto extraído';
+    } else {
+      status.textContent='No se pudo leer la imagen'+(res&&res.error?' ('+res.error+')':'');
+    }
+  }catch(err){
+    status.textContent='Error: '+String(err&&err.message?err.message:err);
+  }
+}
+
 function getLogDayKey(l){
   const d=parseLogDate(l);
   if(!d)return'';
@@ -1935,6 +2494,7 @@ function forceUnlockUi(){
   document.getElementById('sidebar-overlay')?.classList.remove('open');
   document.getElementById('bitacora-rango-overlay')?.classList.remove('open');
   document.getElementById('bitacora-share-overlay')?.classList.remove('open');
+  document.getElementById('captura-filtro-overlay')?.classList.remove('open');
 }
 function scheduleRenderAnalisis(){
   if(analisisHeavyTimer){cancelAnimationFrame(analisisHeavyTimer);analisisHeavyTimer=null;}
@@ -1991,10 +2551,12 @@ async function manualSync(){
   setRefreshSyncing(true);
   setSyncStatus('Sincronizando…',true);
   try{
-    const d=await api('getAll');
+    const d=await api('getAll',{desde:state._filtroDesde||_filtroDesdeDefault(),hasta:state._filtroHasta||_filtroHastaDefault()});
     if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde;state._filtroHasta=d._filtro.hasta;}
     updateStateFromSheetData(d);
     saveAndRender();
+    renderFiltroRangoUI();
     if(!Array.isArray(d.logs))await loadLogsFromSheets();
     sessionStorage.setItem(REFRESH_FLAG_KEY,'1');
     setSyncStatus('Recargando v'+APP_VERSION+'…');
@@ -2110,6 +2672,10 @@ function refreshLogsLitrosFromRegistros(){
 }
 function isTipoPago(r){return String(r.tipo||'').toLowerCase().includes('pago');}
 function isTipoFactura(r){return !isTipoPago(r);}
+function calcDiasVencida(fecha){
+  if(!fecha)return 0;
+  try{const d=new Date(String(fecha).substring(0,10)+'T12:00:00');if(isNaN(d))return 0;return Math.floor((Date.now()-d.getTime())/(1000*60*60*24));}catch{return 0;}
+}
 function getPoolRegs(){
   if(desgloseOpen)return getRegsStore();
   if(isPageActive('registrar'))return isRegistrarProveedor()?(state.registrosProveedores||[]):state.registros;
@@ -2400,13 +2966,15 @@ function logsProveedor(prov){
     return b&&b.proveedor===prov;
   });
 }
-async function syncQuiet(){try{const d=await api('getAll');if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
+async function syncQuiet(){try{const d=await api('getAll',{desde:state._filtroDesde||_filtroDesdeDefault(),hasta:state._filtroHasta||_filtroHastaDefault()});if(d.error){setSyncStatus('Error: '+d.error,true);return;}updateStateFromSheetData(d);saveAndRender();setSyncStatus('Sincronizado · '+fmtTime(new Date()));}catch(e){console.warn(e);setSyncStatus('Sin conexión',true);}}
 async function parseJSON(res){const t=await res.text();try{return JSON.parse(t);}catch{throw new Error('No JSON: '+t.replace(/\s+/g,' ').trim().slice(0,140));}}
-async function api(action){
+async function api(action,params){
   const ctrl=typeof AbortController!=='undefined'?new AbortController():null;
   const tid=ctrl?setTimeout(()=>ctrl.abort(),45000):null;
   try{
-    const r=await fetch(GAS_URL+'?action='+encodeURIComponent(action)+'&'+cacheBustParam(),{cache:'no-store',redirect:'follow',signal:ctrl?ctrl.signal:undefined});
+    let qs='action='+encodeURIComponent(action)+'&'+cacheBustParam();
+    if(params&&typeof params==='object'){Object.keys(params).forEach(k=>{if(params[k])qs+='&'+encodeURIComponent(k)+'='+encodeURIComponent(params[k]);});}
+    const r=await fetch(GAS_URL+'?'+qs,{cache:'no-store',redirect:'follow',signal:ctrl?ctrl.signal:undefined});
     return await parseJSON(r);
   }finally{if(tid)clearTimeout(tid);}
 }
@@ -2420,13 +2988,17 @@ async function loadPreciosFromSheets(){
     if(list.length){state.precios=list;savePreciosLocal(list);saveAndRender();}
   }catch(e){console.warn('precios productos local',e);}
 }
-async function loadAll(){
+async function loadAll(desde,hasta){
   setSyncStatus('Sincronizando…',true);
+  const d0=desde||_filtroDesdeDefault();
+  const d1=hasta||_filtroHastaDefault();
   try{
-    const d=await api('getAll');
+    const d=await api('getAll',{desde:d0,hasta:d1});
     if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde||d0;state._filtroHasta=d._filtro.hasta||d1;}
     updateStateFromSheetData(d);
     saveAndRender();
+    renderFiltroRangoUI();
     if(!Array.isArray(d.logs))loadLogsFromSheets();
     if(!Array.isArray(d.precios)&&!Array.isArray(d.preciosProductos)&&!Array.isArray(d.listaPrecios))loadPreciosFromSheets();
     setSyncStatus('Sincronizado · '+fmtTime(new Date()));
@@ -2438,6 +3010,37 @@ async function loadAll(){
     else setSyncStatus('Caché · sin red');
   }
 }
+async function cargarMas(){
+  const btnEl=document.getElementById('btn-cargar-mas');
+  if(btnEl){btnEl.disabled=true;btnEl.textContent='Cargando…';}
+  const nuevaDesde=new Date(state._filtroDesde||_filtroDesdeDefault());
+  nuevaDesde.setDate(nuevaDesde.getDate()-90);
+  const desdeStr=nuevaDesde.toISOString().substring(0,10);
+  setSyncStatus('Cargando más registros…',true);
+  try{
+    const d=await api('getAll',{desde:desdeStr,hasta:state._filtroHasta||_filtroHastaDefault()});
+    if(d.error)throw new Error(d.error);
+    if(d._filtro){state._filtroDesde=d._filtro.desde||desdeStr;}
+    updateStateFromSheetData(d);
+    saveAndRender();
+    renderFiltroRangoUI();
+    setSyncStatus('Sincronizado · '+fmtTime(new Date()));
+    toast('Registros cargados desde '+fmtFecha(desdeStr));
+  }catch(e){
+    toastError(e);setSyncStatus('Error al cargar');
+    if(btnEl){btnEl.disabled=false;btnEl.textContent='← Cargar 3 meses más';}
+  }
+}
+function renderFiltroRangoUI(){
+  const el=document.getElementById('filtro-rango-info');
+  if(!el)return;
+  const desde=state._filtroDesde;
+  if(!desde){el.style.display='none';return;}
+  el.style.display='flex';
+  const mes=desde.substring(0,7).replace('-','/');
+  el.querySelector('#filtro-rango-texto').textContent='Mostrando desde '+mes;
+}
+function fmtFecha(iso){try{const[y,m,d]=iso.split('-');return d+'/'+m+'/'+y;}catch{return iso;}}
 function setSyncStatus(msg,loading=false){const el=document.getElementById('sync-status');el.innerHTML=loading?'<span class="spinner" style="border-color:#6b6860;border-right-color:transparent"></span>'+msg:msg;}
 
 function setSelectBtn(btn,inputId){
@@ -2692,7 +3295,13 @@ async function guardarRegistro(){
     if(!isNaN(pn)&&pn>0)regData.precioLitro=pn;
     if(!isNaN(ln)&&ln>0)regData.litros=ln;
     const action=isRegistrarProveedor()?'addRegistroProveedor':'addRegistro';
-    const res=await apiPost({action,data:regData});
+    let res=await apiPost({action,data:regData});
+    if(res.duplicado){
+      endBtnSaving(btn,'Guardar registro');
+      if(!confirm('⚠️ '+res.error+'\n\n¿Registrar de todas formas?'))return;
+      beginBtnSaving(btn);
+      res=await apiPost({action,data:{...regData,_forzar:true}});
+    }
     if(res.error)throw new Error(res.error);
     const regItem={id:res.id,...regData};
     if(isRegistrarProveedor())state.registrosProveedores.push(regItem);
@@ -2706,22 +3315,38 @@ async function guardarRegistro(){
 async function eliminarRegistro(id,btn){
   if(!confirm('¿Eliminar este registro?'))return;
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner" style="border-color:#fff;border-right-color:transparent;width:10px;height:10px;margin:0"></span>';}
+  const esProv=isDesgloseProveedor();
   const store=getRegsStore();
   const found=store.find(r=>r.id===id);
   const logsToRemove=found?findLogsForRegistro(found):[];
   const prevRegs=store.slice(),prevLogs=getLogs().slice();
-  if(isDesgloseProveedor())state.registrosProveedores=store.filter(r=>r.id!==id);
+  if(esProv)state.registrosProveedores=store.filter(r=>r.id!==id);
   else state.registros=store.filter(r=>r.id!==id);
   if(found)limpiarAplicaMapRegistros([found]);
   removeLogsLocal_(logsToRemove);
   saveAndRender();refreshDesglosePopup();
+  let eliminadoEnServer=false;
   try{
     const res=await apiPost({action:apiActionRegistro('deleteRegistro'),id});
     if(res.error)throw new Error(res.error);
     await deleteLogsRemote_(logsToRemove);
-    toast('Eliminado');scheduleQuietSync();
+    eliminadoEnServer=true;
+    const label=found?(found.tipo||'Registro')+' · '+(found.proveedor||''):'Registro';
+    toastUndo('Eliminado: '+label,async()=>{
+      if(!found)return;
+      try{
+        const r=await apiPost({action:esProv?'addRegistroProveedor':'addRegistro',data:{...found,_forzar:true}});
+        if(r.error)throw new Error(r.error);
+        found.id=r.id;
+        if(esProv)state.registrosProveedores.push(found);else state.registros.push(found);
+        saveLogs(mergeLogsPreservingDetails(prevLogs));
+        saveAndRender();refreshDesglosePopup();
+        toast('✓ Registro restaurado',false,true);
+      }catch(e){toastError(e);}
+    });
+    scheduleQuietSync();
   }catch(e){
-    if(isDesgloseProveedor())state.registrosProveedores=prevRegs;else state.registros=prevRegs;
+    if(esProv)state.registrosProveedores=prevRegs;else state.registros=prevRegs;
     saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);
   }
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
@@ -2764,8 +3389,15 @@ function renderTotales(){
   let rows='';
   resumen.forEach(r=>{
     const cell=formatSaldoTotalesRow(r.saldo,deudas);
+    const factsCliente=regs.filter(x=>x.proveedor===r.proveedor&&isTipoFactura(x));
+    const pagosCliente=regs.filter(x=>x.proveedor===r.proveedor&&isTipoPago(x));
+    const maxDias=factsCliente.reduce((mx,f)=>{
+      const ab=calcFacturaAbonado(f,pagosCliente),pend=Math.max(0,(parseFloat(f.monto)||0)-ab);
+      return pend>0.001?Math.max(mx,calcDiasVencida(f.fecha)):mx;
+    },0);
+    const alertaVencida=maxDias>=30?'<span title="'+maxDias+' días sin pago" style="margin-left:5px;font-size:10px;background:#fca5a5;color:#7f1d1d;border-radius:4px;padding:1px 4px;font-weight:700">'+maxDias+'d</span>':'';
     rows+='<tr>'+
-      '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+'</td>'+
+      '<td class="totales-nombre-cell">'+formatClienteNombreHtml(r.proveedor)+alertaVencida+'</td>'+
       '<td class="amount" style="'+cell.color+'">'+cell.text+'</td>'+
       '<td class="pct-cell"'+(cell.pctColor?' style="'+cell.pctColor+'"':'')+'>'+cell.pct+'</td>'+
       '<td><button type="button" class="desglose-btn" data-proveedor="'+esc(r.proveedor)+'" data-entidad="cliente" onclick="toggleDesglose(event,\''+esc(r.proveedor)+'\',this,\'cliente\')">Cuenta</button></td>'+
@@ -3434,6 +4066,7 @@ function getBitacoraPresetRange(preset){
   if(preset==='semana')return{desde:startOfWeekMonday(hoy),hasta:endOfDay(hoy)};
   if(preset==='mes')return{desde:new Date(hoy.getFullYear(),hoy.getMonth(),1,0,0,0,0),hasta:endOfDay(hoy)};
   if(preset==='ultimos7')return{desde:addDaysDate(hoy,-6),hasta:endOfDay(hoy)};
+  if(preset==='ayerhoy'){const ay=addDaysDate(hoy,-1);return{desde:ay,hasta:endOfDay(hoy)};}
   return{desde:hoy,hasta:endOfDay(hoy)};
 }
 function getBitacoraCanvasExtra(l){
@@ -3938,6 +4571,121 @@ async function capturarBitacoraFiltrada(btnEl){
     toast('Foto bitácora guardada · Galería o WhatsApp',false,true);
   }catch(e){toastError(e);}
   finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷';}}
+}
+function openCapturaFiltroModal(mode,proveedor){
+  capturaFiltroMode=mode;
+  capturaFiltroProveedor=proveedor||'';
+  const tit=document.getElementById('captura-filtro-title');
+  if(tit){
+    if(mode==='desglose')tit.textContent='Enviar movimientos · '+(proveedor||'');
+    else if(mode==='cliente')tit.textContent='Foto bitácora';
+    else tit.textContent='Saldo + bitácora';
+  }
+  setCapturaFiltroPreset(capturaFiltroPreset||'hoy');
+  document.getElementById('captura-filtro-overlay')?.classList.add('open');
+}
+function closeCapturaFiltroModal(){
+  document.getElementById('captura-filtro-overlay')?.classList.remove('open');
+}
+function setCapturaFiltroPreset(preset){
+  capturaFiltroPreset=preset;
+  document.querySelectorAll('#captura-filtro-presets .bitacora-preset').forEach(b=>b.classList.toggle('active',b.dataset.cpreset===preset));
+}
+async function ejecutarCapturaFiltro(){
+  const r=getBitacoraPresetRange(capturaFiltroPreset);
+  closeCapturaFiltroModal();
+  if(capturaFiltroMode==='duo')await capturarTotalesYBitacoraWhatsappRango(r.desde,r.hasta);
+  else if(capturaFiltroMode==='cliente')await capturarBitacoraRangoClientesWhatsapp(r.desde,r.hasta);
+  else if(capturaFiltroMode==='desglose')await capturarMovimientosCliente(capturaFiltroProveedor,r.desde,r.hasta);
+}
+async function buildBitacoraFotoRango(desde,hasta,provFiltro){
+  let logsRaw;
+  if(provFiltro){
+    logsRaw=filterLogsByRange(logsProveedor(provFiltro),desde,hasta);
+  }else{
+    logsRaw=getLogsBitacoraEnRango(desde,hasta);
+  }
+  if(!logsRaw.length)return null;
+  const logsForInfer=logsRaw.map(l=>({...l}));
+  inferPagoGruposForDisplay(logsForInfer);
+  const logsFoto=collapsePagoGruposForBitacoraFoto(logsForInfer);
+  const canvas=buildBitacoraCanvas(logsFoto,desde,hasta);
+  const blob=await canvasToBlob(canvas,20000);
+  if(!blob)return null;
+  return{blob,name:'bitacora-'+toDateInputValue(desde)+'_'+toDateInputValue(hasta)+'.png',logs:logsFoto};
+}
+async function capturarBitacoraRangoClientesWhatsapp(desde,hasta){
+  const btn=document.getElementById('btn-captura-cliente');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const res=await buildBitacoraFotoRango(desde,hasta);
+    if(!res){toast('Sin movimientos en ese período',true);return;}
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const file=new File([res.blob],res.name,{type:'image/png'});
+    const titulo='Bitácora · '+rangoLabel+' · '+res.logs.length+' mov.';
+    if(navigator.share){
+      try{
+        const payload={files:[file],title:titulo,text:titulo};
+        if(!navigator.canShare||navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp · bitácora '+rangoLabel,false,true);return;}
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(res.blob,res.name);
+    toast('Foto guardada · '+rangoLabel,false,true);
+  }catch(e){toastError(e);}
+  finally{if(btn){btn.disabled=false;btn.textContent=prev||'📷';}}
+}
+async function capturarTotalesYBitacoraWhatsappRango(desde,hasta){
+  const btn=document.getElementById('btn-captura-duo');
+  const panel=document.getElementById('totales-captura');
+  const prev=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  if(panel)panel.classList.add('capture-mode');
+  try{
+    const canvasTot=buildTotalesCanvas();
+    const blobTot=await canvasToBlob(canvasTot);
+    if(!blobTot)throw new Error('No se pudo crear imagen de saldos');
+    const rangoTag=toDateInputValue(desde)+'_'+toDateInputValue(hasta);
+    const fileTot=new File([blobTot],'estado-cuenta-'+rangoTag+'.png',{type:'image/png'});
+    const res=await buildBitacoraFotoRango(desde,hasta);
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const shareLine=buildTotalesWhatsappText();
+    if(!res){
+      if(await shareFilesWhatsapp([fileTot],shareLine,shareLine)){toast('Elige WhatsApp · saldo clientes (sin mov. en ese período)',false,true);return;}
+      downloadBlob(blobTot,fileTot.name);
+      toast('Foto saldo guardada · sin movimientos en ese período',false,true);
+      return;
+    }
+    const fileBit=new File([res.blob],res.name,{type:'image/png'});
+    if(await shareFilesWhatsapp([fileTot,fileBit],shareLine+' · '+rangoLabel,shareLine)){
+      toast('Elige WhatsApp · saldo + bitácora '+rangoLabel,false,true);
+      return;
+    }
+    downloadBlob(blobTot,fileTot.name);
+    downloadBlob(res.blob,res.name);
+    toast('Tu celular no comparte 2 fotos; guardé ambas en Descargas',false,true);
+  }catch(e){toastError(e);}
+  finally{
+    if(panel)panel.classList.remove('capture-mode');
+    if(btn){btn.disabled=false;btn.textContent=prev||'📸';}
+  }
+}
+async function capturarMovimientosCliente(proveedor,desde,hasta){
+  try{
+    const res=await buildBitacoraFotoRango(desde,hasta,proveedor);
+    if(!res){toast('Sin movimientos de '+proveedor+' en ese período',true);return;}
+    const rangoLabel=fmtBitacoraRangoLabel(desde,hasta);
+    const file=new File([res.blob],res.name,{type:'image/png'});
+    const titulo=proveedor+' · '+rangoLabel+' · '+res.logs.length+' mov.';
+    if(navigator.share){
+      try{
+        const payload={files:[file],title:titulo,text:titulo};
+        if(!navigator.canShare||navigator.canShare(payload)){await navigator.share(payload);toast('Elige WhatsApp · movimientos '+proveedor,false,true);return;}
+      }catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    downloadBlob(res.blob,res.name);
+    toast('Foto guardada · '+proveedor+' · '+rangoLabel,false,true);
+  }catch(e){toastError(e);}
 }
 async function generarBitacoraWhatsapp(){
   const btn=document.getElementById('btn-bitacora-generar');
@@ -4587,12 +5335,15 @@ function buildDesgloseFacturasHtml(proveedor,facts,pagos){
     const abVal=formatMontoDisplay(rowAb);
     const pendVal=formatMontoDisplay(rowPend);
     const saldadaCls=rowPend<=0.001?' desglose-row-saldada':'';
+    const diasVencida=rowPend>0.001?calcDiasVencida(f.fecha):0;
     const litTxt=fmtDesgloseLitrosCell(f);
     const plTxt=fmtDesglosePrecioLitroCell(f);
     const abonCell=prov?'':'<td class="col-abon"><input type="text" class="desglose-inline-input monto'+warnCls+'" inputmode="decimal" title="Editar abonado" value="'+abVal+'" oninput="onDesgloseMontoInput(this)" onblur="onDesgloseAbonadoBlur(\''+esc(f.id)+'\',this)"></td>';
     const lcCells=mergeLc?buildProvLitrosControlCellsHtml(proveedor):(prov?buildProvLitrosEmptyCellsHtml():'');
-    rows+='<tr class="desglose-row desglose-row-factura'+(mergeLc?' prov-litros-inline':'')+saldadaCls+'">'+
-      '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtDesgloseFechaCell(f.fecha))+'</span></td>'+
+    const vencidaCls=diasVencida>=30?' desglose-row-vencida':(diasVencida>=15?' desglose-row-proxima':'');
+    const diasBadge=diasVencida>=15&&rowPend>0.001?'<span class="badge-dias-vencida"'+( diasVencida>=30?' style="background:#fca5a5;color:#7f1d1d"':'')+'>'+diasVencida+'d</span>':'';
+    rows+='<tr class="desglose-row desglose-row-factura'+(mergeLc?' prov-litros-inline':'')+saldadaCls+vencidaCls+'">'+
+      '<td class="desglose-cell-fecha col-fecha"><span class="fecha-mini-line">'+esc(fmtDesgloseFechaCell(f.fecha))+'</span>'+diasBadge+'</td>'+
       '<td class="col-ref"><input type="text" class="desglose-inline-input" value="'+refVal+'" placeholder="Ref" onblur="onDesgloseRefBlur(\''+esc(f.id)+'\',this)"></td>'+
       '<td class="col-lit">'+esc(litTxt)+'</td>'+
       '<td class="col-pl">'+esc(plTxt)+'</td>'+
@@ -4675,7 +5426,7 @@ function buildDesgloseBitacoraHtml(proveedor){
     const cls=logBadgeClass(l.tipo);
     rows+='<tr class="'+dayCls+'">'+
       '<td class="log-col-fecha">'+fmtLogFechaCortaDesglose(l)+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+(cls==='badge-pago'?'✓ ':'')+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-desc"><div class="log-desc-inline">'+formatLogDescInline(l)+'</div></td>'+
       '<td class="log-col-act prov-actions"><button type="button" class="btn-del-compact" onclick="eliminarLog(\''+esc(l.localId||l.id||'')+'\')">✕</button></td></tr>';
   });
@@ -4694,7 +5445,7 @@ function buildDesglosePanelHtml(proveedor,regs){
   }
   return '<div id="desglose-popup" class="popup-desglose popup-desglose-prov" data-proveedor="'+esc(proveedor)+'">'+
     '<div class="popup-header"><div style="min-width:0;flex:1"><span class="popup-header-title">'+esc(proveedor)+'</span></div>'+
-    '<div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div>'+
+    '<div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><button type="button" class="popup-header-enviar" onclick="openCapturaFiltroModal(\'desglose\',\''+esc(proveedor)+'\')" title="Enviar movimientos">📤</button><button type="button" class="popup-header-enviar" style="background:rgba(59,130,246,.25);border-color:rgba(59,130,246,.5);" onclick="exportarEstadoCuenta(\''+esc(proveedor)+'\')" title="Exportar estado de cuenta">🖨</button><div class="popup-header-close" onclick="closeDesglosePopup()">✕</div></div></div>'+
     '<div class="prov-kpi-row">'+
       '<div class="prov-kpi saldo"><div class="prov-kpi-lbl">Saldo</div><div class="prov-kpi-val">'+saldoVal+'</div></div>'+
       '<div class="prov-kpi fact"><div class="prov-kpi-lbl">Facturado</div><div class="prov-kpi-val">'+fmt(sumMonto(facts))+'</div></div>'+
@@ -4707,6 +5458,68 @@ function buildDesglosePanelHtml(proveedor,regs){
     '</div>'+
     '<div class="popup-body prov-tab-body">'+body+'</div></div>';
 }
+function exportarEstadoCuenta(proveedor){
+  const regs=getRegsStore().filter(r=>r.proveedor===proveedor);
+  const facts=regs.filter(isTipoFactura),pagos=regs.filter(isTipoPago);
+  const saldo=sumMonto(facts)-sumMonto(pagos);
+  const pend=sumPendienteFacturas(facts,pagos);
+  const sorted=[...facts].sort((a,b)=>String(b.fecha).localeCompare(String(a.fecha)));
+  const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  let filas='';
+  sorted.forEach(f=>{
+    const total=parseFloat(f.monto)||0;
+    const ab=calcFacturaAbonado(f,pagos);
+    const p=Math.max(0,total-ab);
+    const saldada=p<=0.001;
+    filas+=`<tr class="${saldada?'saldada':''}">
+      <td>${esc(fmtDesgloseFechaCell(f.fecha))}</td>
+      <td>${esc(f.factura||'—')}</td>
+      <td>${esc(f.concepto||'—')}</td>
+      <td class="num">$${(total).toFixed(2)}</td>
+      <td class="num">$${(ab).toFixed(2)}</td>
+      <td class="num${saldada?'':' pend'}">$${(p).toFixed(2)}</td>
+    </tr>`;
+  });
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<title>Estado de Cuenta — ${proveedor}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#1a1c2c;padding:24px;}
+h1{font-size:18px;margin-bottom:4px;}
+.sub{color:#666;font-size:11px;margin-bottom:20px;}
+.kpis{display:flex;gap:20px;margin-bottom:20px;}
+.kpi{background:#f3f4f6;padding:10px 16px;border-radius:8px;}
+.kpi-lbl{font-size:10px;text-transform:uppercase;color:#666;margin-bottom:2px;}
+.kpi-val{font-size:16px;font-weight:700;}
+.kpi-val.rojo{color:#b91c1c;}
+table{width:100%;border-collapse:collapse;}
+th{background:#1e3a5f;color:#fff;padding:6px 8px;text-align:left;font-size:11px;}
+td{padding:5px 8px;border-bottom:1px solid #e5e7eb;vertical-align:top;}
+tr.saldada td{color:#9ca3af;}
+td.num{text-align:right;font-variant-numeric:tabular-nums;}
+td.pend{font-weight:700;color:#b91c1c;}
+.footer{margin-top:16px;font-size:10px;color:#aaa;text-align:right;}
+@media print{body{padding:10px;}.no-print{display:none;}}
+</style></head><body>
+<h1>Estado de Cuenta</h1>
+<div class="sub">${esc(proveedor)} &nbsp;·&nbsp; Generado el ${fecha}</div>
+<div class="kpis">
+  <div class="kpi"><div class="kpi-lbl">Facturado</div><div class="kpi-val">$${sumMonto(facts).toFixed(2)}</div></div>
+  <div class="kpi"><div class="kpi-lbl">Pagado</div><div class="kpi-val">$${sumMonto(pagos).toFixed(2)}</div></div>
+  <div class="kpi"><div class="kpi-lbl">Pendiente</div><div class="kpi-val rojo">$${pend.toFixed(2)}</div></div>
+</div>
+<table><thead><tr><th>Fecha</th><th>Factura</th><th>Concepto</th><th style="text-align:right">Total</th><th style="text-align:right">Abonado</th><th style="text-align:right">Pendiente</th></tr></thead>
+<tbody>${filas}</tbody></table>
+<div class="footer">Estado de Cuenta · v${APP_VERSION}</div>
+<div class="no-print" style="margin-top:20px;text-align:center">
+  <button onclick="window.print()" style="padding:8px 24px;background:#1e3a5f;color:#fff;border:none;border-radius:6px;font-size:13px;cursor:pointer;">🖨 Imprimir / Guardar PDF</button>
+</div>
+</body></html>`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else toast('Habilita ventanas emergentes para exportar',true);
+}
+
 function getDesgloseOverlay(){
   let ov=document.getElementById('desglose-overlay');
   if(!ov){
@@ -5094,6 +5907,20 @@ function setLogsFiltroUltimos7(){
   syncLogsFiltroUI();
   renderLogs();
 }
+function setLogsFiltroAyer(){
+  const ayer=startOfDay(addDaysDate(new Date(),-1));
+  logsFiltro.desde=toDateInputValue(ayer);
+  logsFiltro.hasta=toDateInputValue(ayer);
+  syncLogsFiltroUI();
+  renderLogs();
+}
+function setLogsFiltroAyerMas(){
+  const hoy=startOfDay(new Date());
+  logsFiltro.desde=toDateInputValue(addDaysDate(hoy,-1));
+  logsFiltro.hasta=toDateInputValue(hoy);
+  syncLogsFiltroUI();
+  renderLogs();
+}
 function fmtLogPrecioLitroCell(l){
   const d=getLogFacturaDetalle(l);
   if(!d||isNaN(d.precioLitro)||d.precioLitro<=0)return{html:'—',empty:true};
@@ -5124,6 +5951,10 @@ function formatLogDescCell(l){
   if(b&&b.proveedor){
     let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
     if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
+    const d=getLogFacturaDetalle(l);
+    if(d&&d.producto)html+='<span class="log-desc-prod">'+esc(d.producto)+'</span>';
+    const pl=fmtLogPrecioLitroCell(l);
+    if(!pl.empty)html+='<span class="log-desc-pl">P/L: '+pl.html+'</span>';
     html+='</div>';
     if(concepto)html+='<div class="log-desc-conc">'+esc(concepto)+'</div>';
     return html;
@@ -5331,7 +6162,21 @@ async function eliminarLog(localId){
   try{
     await apiPost({action:'deleteLog',localId:target.localId||'',id:target.id||''});
     for(const reg of linked){try{await apiPost({action:'deleteRegistro',id:reg.id});}catch(e){console.warn(e);}}
-    toast(linked.length?'Eliminado de bitácora y cuenta':'Eliminado del log');scheduleQuietSync();
+    const label=String(target.tipo||'')+(target.descripcion?' · '+String(target.descripcion||'').substring(0,30):'');
+    toastUndo((linked.length?'Eliminado de cuenta: ':'Eliminado del log: ')+label,async()=>{
+      try{
+        if(linked.length){
+          for(const reg of linked){
+            try{await apiPost({action:'addRegistro',data:{...reg,_forzar:true}});}catch(e){console.warn(e);}
+            state.registros.push(reg);
+          }
+        }
+        saveLogs(mergeLogsPreservingDetails(prevLogs));
+        saveAndRender();renderLogs();refreshDesglosePopup();
+        toast('✓ Restaurado',false,true);
+      }catch(e){toastError(e);}
+    });
+    scheduleQuietSync();
   }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();renderLogs();refreshDesglosePopup();toastError(e);}
 }
 function renderLogs(){
@@ -5367,7 +6212,7 @@ function renderLogs(){
     const entCls=entLbl==='Proveedor'?' cp-proveedor':entLbl==='Cliente'?' cp-cliente':'';
     tableRows+='<tr class="'+rowCls+'">'+
       '<td class="log-time log-col-fecha">'+dt+'</td>'+
-      '<td class="log-col-tipo"><span class="badge '+cls+'">'+esc(escTipoDisplay(l.tipo))+'</span></td>'+
+      '<td class="log-col-tipo"><span class="badge '+cls+'">'+(cls==='badge-pago'?'✓ ':'')+esc(escTipoDisplay(l.tipo))+'</span></td>'+
       '<td class="log-col-cp'+entCls+'">'+esc(entLbl)+'</td>'+
       '<td class="log-col-fact">'+(factura||'—')+'</td>'+
       '<td class="log-col-pl'+(plCell.empty?' log-empty':'')+'">'+plCell.html+'</td>'+
@@ -5775,11 +6620,11 @@ async function eliminarProveedor(nombre){
   if(!n)return;
   const regsCliente=state.registros.filter(r=>nombreClienteMatch(r.proveedor,n));
   const nMovs=regsCliente.length;
-  if(!confirm('¿Eliminar cliente "'+n+'"? (1 de 2)'))return;
-  const msg2=nMovs
-    ?'Se borrarán '+nMovs+' movimiento'+(nMovs!==1?'s':'')+' (facturas y pagos) de la base de datos.\n\nEsta acción NO se puede deshacer.\n\n¿Confirmar eliminación? (2 de 2)'
-    :'Se eliminará el cliente de la lista.\n\n¿Confirmar eliminación? (2 de 2)';
-  if(!confirm(msg2))return;
+  const nFacts=regsCliente.filter(isTipoFactura).length;
+  const nPagos=regsCliente.filter(isTipoPago).length;
+  const saldo=sumMonto(regsCliente.filter(isTipoFactura))-sumMonto(regsCliente.filter(isTipoPago));
+  const confirmado=await showConfirmEliminarCliente(n,nMovs,nFacts,nPagos,saldo);
+  if(!confirmado)return;
   const prevR=state.registros.slice(),prevP=state.proveedores.slice(),prevPrecios=(state.precios||[]).slice(),prevLogs=getLogs().slice();
   const logsToRemove=findLogsForCliente(n);
   state.proveedores=state.proveedores.filter(p=>!nombreClienteMatch(p,n));
@@ -5842,7 +6687,7 @@ function buildPreciosFilasHtml(lista,tipo){
       const found=getPrecioProducto(prov,prod);
       const val=found?formatPrecioLitroDisplay(found.precio):'';
       const id=precioInputId(prov,prod,tipo);
-      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><div class="precio-edit-wrap"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" data-original="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"><button type="button" class="btn btn-primary precio-mini-save" title="Guardar" onclick="guardarPrecioMini(\''+esc(prov)+'\',\''+esc(prod)+'\',this,\''+tipo+'\')">✓</button></div></div>';
+      html+='<div class="precio-cell" data-label="'+esc(prod)+'"><div class="precio-edit-wrap"><input id="'+id+'" class="precio-input" type="text" inputmode="decimal" value="'+esc(val)+'" data-original="'+esc(val)+'" placeholder="" oninput="onPrecioListaInput(this)"><button type="button" class="btn btn-primary precio-mini-save" title="Guardar" onclick="guardarPrecioMini(\''+esc(prov)+'\',\''+esc(prod)+'\',this,\''+tipo+'\')">✓</button><button type="button" class="precio-hist-btn" title="Ver historial de precios" onclick="verHistorialPrecio(\''+esc(prov)+'\',\''+esc(prod)+'\')">🕐</button></div></div>';
     });
     html+='</div>';
   });
@@ -5886,7 +6731,8 @@ async function guardarPrecioMini(prov,producto,btn,tipo){
     localStorage.setItem(CACHE_KEY,JSON.stringify({
       registros:state.registros,proveedores:state.proveedores,
       catalogoProveedores:state.catalogoProveedores,registrosProveedores:state.registrosProveedores,
-      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios
+      provLitrosCobrados:state.provLitrosCobrados,precios:state.precios,
+      _filtroDesde:state._filtroDesde,_filtroHasta:state._filtroHasta
     }));
     el.dataset.original=String(el.value||'').trim();
     el.dataset.dirty='false';
