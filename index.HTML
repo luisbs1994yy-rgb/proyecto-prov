@@ -1275,6 +1275,8 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
             <div class="logs-filters-quick">
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroUltimos7()">7 días</button>
               <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroHoy()">Hoy</button>
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroAyer()">Ayer</button>
+              <button type="button" class="logs-filtro-chip" onclick="setLogsFiltroAyerMas()">Ayer+</button>
               <button type="button" class="logs-date-toggle" id="logs-date-toggle" onclick="toggleLogsDateGrid()">▼ Fecha</button>
             </div>
             <span class="logs-filter-count" id="logs-filter-count"></span>
@@ -5123,6 +5125,20 @@ function setLogsFiltroHoy(){
 function setLogsFiltroUltimos7(){
   const hoy=startOfDay(new Date());
   logsFiltro.desde=toDateInputValue(addDaysDate(hoy,-6));
+  logsFiltro.hasta=toDateInputValue(hoy);
+  syncLogsFiltroUI();
+  renderLogs();
+}
+function setLogsFiltroAyer(){
+  const ayer=startOfDay(addDaysDate(new Date(),-1));
+  logsFiltro.desde=toDateInputValue(ayer);
+  logsFiltro.hasta=toDateInputValue(ayer);
+  syncLogsFiltroUI();
+  renderLogs();
+}
+function setLogsFiltroAyerMas(){
+  const hoy=startOfDay(new Date());
+  logsFiltro.desde=toDateInputValue(addDaysDate(hoy,-1));
   logsFiltro.hasta=toDateInputValue(hoy);
   syncLogsFiltroUI();
   renderLogs();
