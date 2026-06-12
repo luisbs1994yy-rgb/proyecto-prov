@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.79">
+<html lang="es" data-app-version="3.80">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -194,6 +194,9 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--navy);color:#f8fafc;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:500;opacity:0;transform:translateY(10px);transition:all .22s;pointer-events:none;z-index:999;max-width:min(400px,calc(100vw - 2rem));word-break:break-word;box-shadow:var(--shadow-md);border:1px solid rgba(255,255,255,.1);}
 .toast.show{opacity:1;transform:translateY(0);}
+.toast.show.has-action{pointer-events:auto;display:flex;align-items:center;gap:12px;}
+.toast-undo-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;font-size:12px;font-weight:600;padding:4px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.toast-undo-btn:hover{background:rgba(255,255,255,.3);}
 .toast.error{background:linear-gradient(135deg,#b91c1c,#991b1b);} .toast.success{background:linear-gradient(135deg,#0d7a3e,#059669);}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:1.5rem;width:100%;max-width:100%;}
 .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;box-shadow:var(--shadow-sm);border-left:4px solid var(--kpi-color,var(--blue));transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;min-width:0;max-width:100%;}
@@ -1825,7 +1828,25 @@ function getFechaDisplay(l){
   if(l.fecha){if(/GMT|^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(l.fecha)){try{const d=new Date(l.fecha);if(!isNaN(d))return fmtLogFecha(d);}catch{}}return l.fecha+(l.hora?' '+l.hora:'');}
   return '—';
 }
-function toast(msg,error=false,success=false){const el=document.getElementById('toast');el.textContent=msg;el.className='toast show'+(error?' error':success?' success':'');setTimeout(()=>{el.className='toast';},3500);}
+let _toastTimer=null;
+function toast(msg,error=false,success=false){
+  const el=document.getElementById('toast');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  el.innerHTML='';el.textContent=msg;
+  el.className='toast show'+(error?' error':success?' success':'');
+  _toastTimer=setTimeout(()=>{el.className='toast';},3500);
+}
+function toastUndo(msg,onUndo){
+  const el=document.getElementById('toast');
+  if(_toastTimer)clearTimeout(_toastTimer);
+  el.className='toast show has-action';
+  el.innerHTML='<span>'+msg+'</span>';
+  const btn=document.createElement('button');
+  btn.className='toast-undo-btn';btn.textContent='Deshacer';
+  btn.onclick=()=>{el.className='toast';if(_toastTimer)clearTimeout(_toastTimer);onUndo();};
+  el.appendChild(btn);
+  _toastTimer=setTimeout(()=>{el.className='toast';},5000);
+}
 function toastError(e){toast('Error: '+e.message,true);}
 function badgeClass(t){const x=String(t||'').toLowerCase();return(x==='pago'||x.includes('pago'))?'badge-pago':'badge-factura';}
 function logBadgeClass(tipo){
@@ -3043,22 +3064,38 @@ async function guardarRegistro(){
 async function eliminarRegistro(id,btn){
   if(!confirm('¿Eliminar este registro?'))return;
   if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner" style="border-color:#fff;border-right-color:transparent;width:10px;height:10px;margin:0"></span>';}
+  const esProv=isDesgloseProveedor();
   const store=getRegsStore();
   const found=store.find(r=>r.id===id);
   const logsToRemove=found?findLogsForRegistro(found):[];
   const prevRegs=store.slice(),prevLogs=getLogs().slice();
-  if(isDesgloseProveedor())state.registrosProveedores=store.filter(r=>r.id!==id);
+  if(esProv)state.registrosProveedores=store.filter(r=>r.id!==id);
   else state.registros=store.filter(r=>r.id!==id);
   if(found)limpiarAplicaMapRegistros([found]);
   removeLogsLocal_(logsToRemove);
   saveAndRender();refreshDesglosePopup();
+  let eliminadoEnServer=false;
   try{
     const res=await apiPost({action:apiActionRegistro('deleteRegistro'),id});
     if(res.error)throw new Error(res.error);
     await deleteLogsRemote_(logsToRemove);
-    toast('Eliminado');scheduleQuietSync();
+    eliminadoEnServer=true;
+    const label=found?(found.tipo||'Registro')+' · '+(found.proveedor||''):'Registro';
+    toastUndo('Eliminado: '+label,async()=>{
+      if(!found)return;
+      try{
+        const r=await apiPost({action:esProv?'addRegistroProveedor':'addRegistro',data:{...found,_forzar:true}});
+        if(r.error)throw new Error(r.error);
+        found.id=r.id;
+        if(esProv)state.registrosProveedores.push(found);else state.registros.push(found);
+        saveLogs(mergeLogsPreservingDetails(prevLogs));
+        saveAndRender();refreshDesglosePopup();
+        toast('✓ Registro restaurado',false,true);
+      }catch(e){toastError(e);}
+    });
+    scheduleQuietSync();
   }catch(e){
-    if(isDesgloseProveedor())state.registrosProveedores=prevRegs;else state.registros=prevRegs;
+    if(esProv)state.registrosProveedores=prevRegs;else state.registros=prevRegs;
     saveLogs(prevLogs);saveAndRender();refreshDesglosePopup();toastError(e);
   }
   finally{if(btn){btn.disabled=false;btn.innerHTML='✕';}}
@@ -5802,7 +5839,21 @@ async function eliminarLog(localId){
   try{
     await apiPost({action:'deleteLog',localId:target.localId||'',id:target.id||''});
     for(const reg of linked){try{await apiPost({action:'deleteRegistro',id:reg.id});}catch(e){console.warn(e);}}
-    toast(linked.length?'Eliminado de bitácora y cuenta':'Eliminado del log');scheduleQuietSync();
+    const label=String(target.tipo||'')+(target.descripcion?' · '+String(target.descripcion||'').substring(0,30):'');
+    toastUndo((linked.length?'Eliminado de cuenta: ':'Eliminado del log: ')+label,async()=>{
+      try{
+        if(linked.length){
+          for(const reg of linked){
+            try{await apiPost({action:'addRegistro',data:{...reg,_forzar:true}});}catch(e){console.warn(e);}
+            state.registros.push(reg);
+          }
+        }
+        saveLogs(mergeLogsPreservingDetails(prevLogs));
+        saveAndRender();renderLogs();refreshDesglosePopup();
+        toast('✓ Restaurado',false,true);
+      }catch(e){toastError(e);}
+    });
+    scheduleQuietSync();
   }catch(e){state.registros=prevRegs;saveLogs(prevLogs);saveAndRender();renderLogs();refreshDesglosePopup();toastError(e);}
 }
 function renderLogs(){
