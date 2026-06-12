@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.73">
+<html lang="es" data-app-version="3.74">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -172,6 +172,10 @@ textarea{resize:vertical;min-height:60px;}
 .btn-select{padding:9px 16px;font-size:13px;font-family:var(--font);border-radius:10px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-weight:500;transition:all .18s;user-select:none;}
 .btn-select:hover{background:var(--blue-soft);border-color:rgba(58,134,255,.3);color:var(--blue-text);}
 .btn-select.active{background:linear-gradient(135deg,#3a86ff,#00b4d8);color:#fff;border-color:transparent;box-shadow:0 4px 12px rgba(58,134,255,.3);}
+/* Entidad: Cliente=azul(default), Proveedor=ámbar */
+#f-entidad-group .btn-select[data-val="proveedor"].active{background:linear-gradient(135deg,#d97706,#b45309);box-shadow:0 4px 12px rgba(180,83,9,.3);}
+/* Tipo: Factura=azul(default), Pago=verde */
+#f-tipo-group .btn-select[data-val="pago"].active{background:linear-gradient(135deg,#0d9488,#0d7a3e);box-shadow:0 4px 12px rgba(13,122,62,.3);}
 .table-wrap{overflow-x:auto;border-radius:0 0 var(--r) var(--r);}
 table{width:100%;border-collapse:collapse;font-size:13px;}
 th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#fff;padding:11px 14px;text-align:left;white-space:nowrap;background:linear-gradient(135deg,#3a86ff 0%,#2563eb 100%);border:none;}
@@ -1928,7 +1932,8 @@ function rrOverlayClick(e){
 }
 function parseRegistroRapido(text){
   const PRODUCTOS=['ETANOL','NAFTA','REGULAR'];
-  const proveedores=(state.proveedores||[]).map(p=>String(p.nombre||'').toUpperCase().trim());
+  const provList=state.proveedores||[];
+  const provUpper=provList.map(p=>String(p.nombre||'').toUpperCase().trim());
   const lines=text.split(/\r?\n/).map(l=>l.trim().toUpperCase()).filter(Boolean);
   let cliente='',fecha='',producto='',litros='',factura='',monto='';
   for(const line of lines){
@@ -1957,10 +1962,11 @@ function parseRegistroRapido(text){
       factura=line;continue;
     }
     if(!cliente){
-      const exact=proveedores.find(n=>n===line);
-      if(exact){cliente=exact;continue;}
-      const partial=proveedores.find(n=>n.includes(line)||line.includes(n));
-      if(partial){cliente=partial;continue;}
+      // Guardar el nombre ORIGINAL (capitalización real) para que empate con data-val del botón
+      const exactIdx=provUpper.indexOf(line);
+      if(exactIdx>=0){cliente=provList[exactIdx].nombre;continue;}
+      const partialIdx=provUpper.findIndex(n=>n.includes(line)||line.includes(n));
+      if(partialIdx>=0){cliente=provList[partialIdx].nombre;continue;}
     }
   }
   return{cliente,fecha,producto,litros,monto,factura};
@@ -1969,7 +1975,7 @@ function showRrPreview(p){
   const el=document.getElementById('rr-preview');
   if(!p){el.style.display='none';return;}
   const row=(lbl,val,warn)=>'<div><strong>'+lbl+'</strong>'+(val?val:'<span class="rr-no-match">No detectado</span>')+(warn?' <span class="rr-no-match">('+warn+')</span>':'')+'</div>';
-  const clienteWarn=p.cliente&&!(state.proveedores||[]).find(x=>x.nombre.toUpperCase()===p.cliente)?'no en lista':'';
+  const clienteWarn=p.cliente&&!(state.proveedores||[]).find(x=>x.nombre===p.cliente)?'no en lista':'';
   el.innerHTML=row('Cliente:',p.cliente,clienteWarn)+row('Fecha:',p.fecha)+row('Producto:',p.producto)+row('Litros:',p.litros)+row('Monto:',p.monto)+row('Factura:',p.factura);
   el.style.display='block';
 }
@@ -2022,7 +2028,8 @@ function aplicarRegistroRapido(){
   // Factura
   if(p.factura)document.getElementById('f-factura').value=p.factura;
   closeRegistroRapido();
-  toast('Registro rápido aplicado — revisa y guarda',false,true);
+  // Auto-guardar: intentar guardar de inmediato; si falta algún campo la validación mostrará el error y el form queda pre-llenado
+  setTimeout(()=>guardarRegistro(),80);
 }
 function rrEscAttr(s){return String(s||'').replace(/"/g,'&quot;');}
 function fileToBase64(file){
