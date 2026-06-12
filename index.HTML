@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.74">
+<html lang="es" data-app-version="3.75">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1932,50 +1932,38 @@ function rrOverlayClick(e){
 }
 function parseRegistroRapido(text){
   const PRODUCTOS=['ETANOL','NAFTA','REGULAR'];
-  const provList=state.proveedores||[];
-  const provUpper=provList.map(p=>String(p.nombre||'').toUpperCase().trim());
+  // state.proveedores is an array of strings (plain names), not objects
+  const provList=(state.proveedores||[]).map(p=>String(p||'').trim()).filter(Boolean);
+  const provUpper=provList.map(p=>p.toUpperCase());
   const lines=text.split(/\r?\n/).map(l=>l.trim().toUpperCase()).filter(Boolean);
-  let cliente='',fecha='',producto='',litros='',factura='',monto='';
-  for(const line of lines){
-    if(!fecha){
-      const m=line.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-      if(m){
-        const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0');
-        const yy=m[3].length===2?'20'+m[3]:m[3];
-        fecha=yy+'-'+mm+'-'+dd;
-        continue;
-      }
-    }
-    if(!producto&&PRODUCTOS.includes(line)){
-      producto=line.charAt(0)+line.slice(1).toLowerCase();
-      continue;
-    }
-    if(!litros){
-      const lm=line.match(/^LITROS\s+([\d,\.]+)/);
-      if(lm){litros=lm[1].replace(/,(?=\d{3})/g,'').replace(',','.');continue;}
-    }
-    if(!monto&&!litros){
-      const pm=line.match(/^\$?([\d,\.]+)$/);
-      if(pm){const v=parseFloat(pm[1].replace(/,/g,''));if(v>100){monto=String(v);continue;}}
-    }
-    if(!factura&&/^\d{1,6}$/.test(line)&&line!==fecha.replace(/-/g,'').slice(-2)){
-      factura=line;continue;
-    }
-    if(!cliente){
-      // Guardar el nombre ORIGINAL (capitalización real) para que empate con data-val del botón
-      const exactIdx=provUpper.indexOf(line);
-      if(exactIdx>=0){cliente=provList[exactIdx].nombre;continue;}
-      const partialIdx=provUpper.findIndex(n=>n.includes(line)||line.includes(n));
-      if(partialIdx>=0){cliente=provList[partialIdx].nombre;continue;}
-    }
-  }
+  let fecha='',producto='',litros='',factura='',monto='';
+  const usedIdx=new Set();
+  // Pass 1: detect all non-client fields first, mark their line indices as used
+  lines.forEach((line,i)=>{
+    if(!fecha){const m=line.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(m){const dd=m[1].padStart(2,'0'),mm=m[2].padStart(2,'0'),yy=m[3].length===2?'20'+m[3]:m[3];fecha=yy+'-'+mm+'-'+dd;usedIdx.add(i);return;}}
+    if(!producto&&PRODUCTOS.includes(line)){producto=line.charAt(0)+line.slice(1).toLowerCase();usedIdx.add(i);return;}
+    if(!litros){const lm=line.match(/^LITROS\s+([\d,\.]+)/);if(lm){litros=lm[1].replace(/,(?=\d{3})/g,'').replace(',','.');usedIdx.add(i);return;}}
+    if(!monto&&!litros){const pm=line.match(/^\$?([\d,\.]+)$/);if(pm){const v=parseFloat(pm[1].replace(/,/g,''));if(v>100){monto=String(v);usedIdx.add(i);return;}}}
+    if(!factura&&/^\d{1,6}$/.test(line)){factura=line;usedIdx.add(i);return;}
+  });
+  // Pass 2: find best client match from unused lines
+  // Exact match beats partial; among ties, longer client name wins (more specific)
+  let bestExact=null,bestExactLen=0,bestPartial=null,bestPartialLen=0;
+  lines.forEach((line,i)=>{
+    if(usedIdx.has(i)||line.length<2)return;
+    const exactIdx=provUpper.indexOf(line);
+    if(exactIdx>=0){if(provUpper[exactIdx].length>bestExactLen){bestExactLen=provUpper[exactIdx].length;bestExact=provList[exactIdx];}return;}
+    const partialIdx=provUpper.findIndex(n=>n.includes(line)||line.includes(n));
+    if(partialIdx>=0&&provUpper[partialIdx].length>bestPartialLen){bestPartialLen=provUpper[partialIdx].length;bestPartial=provList[partialIdx];}
+  });
+  const cliente=bestExact||bestPartial||'';
   return{cliente,fecha,producto,litros,monto,factura};
 }
 function showRrPreview(p){
   const el=document.getElementById('rr-preview');
   if(!p){el.style.display='none';return;}
   const row=(lbl,val,warn)=>'<div><strong>'+lbl+'</strong>'+(val?val:'<span class="rr-no-match">No detectado</span>')+(warn?' <span class="rr-no-match">('+warn+')</span>':'')+'</div>';
-  const clienteWarn=p.cliente&&!(state.proveedores||[]).find(x=>x.nombre===p.cliente)?'no en lista':'';
+  const clienteWarn=p.cliente&&!(state.proveedores||[]).some(x=>String(x||'')===p.cliente)?'no en lista':'';
   el.innerHTML=row('Cliente:',p.cliente,clienteWarn)+row('Fecha:',p.fecha)+row('Producto:',p.producto)+row('Litros:',p.litros)+row('Monto:',p.monto)+row('Factura:',p.factura);
   el.style.display='block';
 }
