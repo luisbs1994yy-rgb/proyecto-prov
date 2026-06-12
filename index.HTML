@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.82">
+<html lang="es" data-app-version="3.83">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2949,8 +2949,9 @@ function updateRegistrarEntidadUI(){
   renderProvSelect();
 }
 function isAjusteManualPago(p){return isTipoPago(p)&&/ajuste\s*manual/i.test(String(p.concepto||''));}
-function calcFacturaAbonado(fact,pagos,excluirId){
-  const fid=String(fact.id||''), ref=String(fact.factura||'').trim();
+// Base abonado: only explicit (aplicaFacturaId) + implicit (ref match) links
+function _calcAbonadoBase(fact,pagos,excluirId){
+  const fid=String(fact.id||''),ref=String(fact.factura||'').trim();
   const skip=excluirId?String(excluirId):'';
   let ab=0;
   pagos.forEach(p=>{
@@ -2959,6 +2960,48 @@ function calcFacturaAbonado(fact,pagos,excluirId){
     if(String(p.aplicaFacturaId||'')===fid)ab+=m;
     else if(!p.aplicaFacturaId&&ref&&p.factura&&String(p.factura).trim()===ref)ab+=m;
   });
+  return ab;
+}
+// FIFO auto-alloc: unlinked payments → oldest invoices first
+const _autoAllocWeakCache=typeof WeakMap!=='undefined'?new WeakMap():null;
+function _buildAutoAllocMap(prov,pagos){
+  const facts=registrosProveedor(prov).filter(r=>!isTipoPago(r))
+    .sort((a,b)=>parseRegistroDateMs(a.fecha)-parseRegistroDateMs(b.fecha));
+  if(!facts.length)return{};
+  const allRefs=new Set(facts.map(f=>String(f.factura||'').trim()).filter(Boolean));
+  const unlinked=pagos.filter(p=>{
+    if(p.aplicaFacturaId)return false;
+    const pRef=String(p.factura||'').trim();
+    return!(pRef&&allRefs.has(pRef));
+  });
+  if(!unlinked.length)return{};
+  let pool=Math.round(unlinked.reduce((s,p)=>s+(parseFloat(p.monto)||0),0)*100)/100;
+  if(pool<=0.001)return{};
+  const alloc={};
+  for(const f of facts){
+    if(pool<=0.001)break;
+    const baseAb=_calcAbonadoBase(f,pagos,'');
+    const basePend=Math.max(0,Math.round(((parseFloat(f.monto)||0)-baseAb)*100)/100);
+    if(basePend<=0.001)continue;
+    const apply=Math.min(pool,basePend);
+    alloc[String(f.id)]=Math.round(((alloc[String(f.id)]||0)+apply)*100)/100;
+    pool=Math.round((pool-apply)*100)/100;
+  }
+  return alloc;
+}
+function _getAutoAllocMap(prov,pagos){
+  if(!_autoAllocWeakCache)return _buildAutoAllocMap(prov,pagos);
+  if(!_autoAllocWeakCache.has(pagos))_autoAllocWeakCache.set(pagos,{});
+  const c=_autoAllocWeakCache.get(pagos);
+  if(!c[prov])c[prov]=_buildAutoAllocMap(prov,pagos);
+  return c[prov];
+}
+function calcFacturaAbonado(fact,pagos,excluirId){
+  let ab=_calcAbonadoBase(fact,pagos,excluirId);
+  if(!excluirId){
+    const prov=String(fact.proveedor||'').trim();
+    if(prov)ab+=(_getAutoAllocMap(prov,pagos)[String(fact.id||'')]||0);
+  }
   return ab;
 }
 function calcFacturaAbonadoSinAjuste(fact,pagos,excluirId){
