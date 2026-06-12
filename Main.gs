@@ -84,6 +84,9 @@ function route_(action, payload) {
     case 'setPreciosProductos':
       return setPreciosProductos_(payload.data || {});
 
+    case 'ocrImage':
+      return ocrImage_(payload.base64, payload.mimeType);
+
     default:
       return { ok: false, error: 'Acción no soportada: ' + action };
   }
