@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.75">
+<html lang="es" data-app-version="3.76">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -264,6 +264,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .log-desc-prov{font-weight:600;font-size:9px;color:var(--navy);line-height:1.2;word-break:break-word;}
 .log-desc-monto{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);line-height:1.2;}
 .log-desc-pl{font-family:var(--mono);font-size:8px;color:var(--text-muted);line-height:1.2;}
+.log-desc-prod{font-size:8px;font-weight:600;color:var(--blue-text);line-height:1.2;}
 .log-desc-conc{font-size:8px;color:var(--text-faint);margin-top:2px;line-height:1.15;word-break:break-word;}
 #logs-list .logs-table th{font-size:9px;padding:6px 4px;}
 #logs-list .logs-table td{padding:6px 4px;font-size:10px;vertical-align:top;line-height:1.3;border-bottom:1px solid #e8ecf4;min-height:30px;}
@@ -5394,6 +5395,8 @@ function formatLogDescCell(l){
   if(b&&b.proveedor){
     let html='<div class="log-desc-stack"><span class="log-desc-prov">'+esc(b.proveedor)+'</span>';
     if(!isNaN(b.monto))html+='<span class="log-desc-monto">'+esc(fmt(b.monto))+'</span>';
+    const d=getLogFacturaDetalle(l);
+    if(d&&d.producto)html+='<span class="log-desc-prod">'+esc(d.producto)+'</span>';
     const pl=fmtLogPrecioLitroCell(l);
     if(!pl.empty)html+='<span class="log-desc-pl">P/L: '+pl.html+'</span>';
     html+='</div>';
