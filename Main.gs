@@ -50,6 +50,8 @@ function route_(action, payload) {
       return { logs: getLogs_() };
     case 'getPreciosProductos':
       return getPreciosProductos_();
+    case 'getHistorialPrecios':
+      return { ok: true, historial: getHistorialPrecios_(payload.cliente, payload.producto) };
 
     case 'addRegistro':
       return addRegistro_(payload.data || {});

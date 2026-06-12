@@ -68,6 +68,10 @@ function setPrecioProducto_(data) {
   }
 
   if (rowNum > 0) {
+    const prevPrecio = toNum_(sh.getRange(rowNum, map['precio']).getValue());
+    if (!isNaN(prevPrecio) && prevPrecio !== precio) {
+      appendHistorialPrecio_(cliente, producto, prevPrecio);
+    }
     Object.keys(payload).forEach((k) => {
       const col = map[k.toLowerCase()];
       if (col) sh.getRange(rowNum, col).setValue(payload[k]);
@@ -93,6 +97,38 @@ function setPreciosProductos_(data) {
   });
 
   return { ok: true, precios: getPreciosProductos_().precios, saved: saved.length };
+}
+
+function getHistorialPrecios_(cliente, producto) {
+  const sh = sheet_(SHEET_HISTORIAL_PRECIOS);
+  if (!sh) return [];
+  const map = ensureHeaders_(sh, ['cliente', 'producto', 'precio', 'changedAt']);
+  const rows = readData_(sh, 2);
+  const clUp = str_(cliente).toUpperCase();
+  const prod = normalizeProducto_(producto);
+  return rows
+    .filter((row) => {
+      return cell_(row, map, 'cliente').toUpperCase() === clUp &&
+             normalizeProducto_(cell_(row, map, 'producto')) === prod;
+    })
+    .map((row) => ({
+      cliente: cell_(row, map, 'cliente'),
+      producto: cell_(row, map, 'producto'),
+      precio: toNum_(cell_(row, map, 'precio')),
+      changedAt: cell_(row, map, 'changedAt')
+    }))
+    .reverse();
+}
+
+function appendHistorialPrecio_(cliente, producto, precio) {
+  const sh = sheet_(SHEET_HISTORIAL_PRECIOS);
+  const map = ensureHeaders_(sh, ['cliente', 'producto', 'precio', 'changedAt']);
+  appendByMap_(sh, map, {
+    cliente: str_(cliente).toUpperCase(),
+    producto: normalizeProducto_(producto),
+    precio: precio,
+    changedAt: new Date().toISOString()
+  });
 }
 
 function normalizeProducto_(producto) {
