@@ -1,6 +1,6 @@
 /**
- * ESTADO DE CUENTA  |  Versión 3.71
- * Compatible con index.HTML v3.71+
+ * ESTADO DE CUENTA  |  Versión 3.72
+ * Compatible con index.HTML v3.72+
  *
  * Clientes (quienes te deben): hoja Proveedores + Registros (campo proveedor = cliente)
  * Proveedores (a quienes les debes): hoja CatalogoProveedores + RegistrosProveedores
@@ -14,7 +14,7 @@
  * - PreciosProductos
  */
 
-const APP_VERSION = '3.71';
+const APP_VERSION = '3.72';
 
 const SHEET_REGISTROS         = 'Registros';
 const SHEET_PROVEEDORES       = 'Proveedores';
