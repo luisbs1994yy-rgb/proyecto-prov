@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.97">
+<html lang="es" data-app-version="3.98">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2746,8 +2746,11 @@ function sumPendSeleccionadas(excludeCb){
   let s=0;
   list.querySelectorAll('input[type=checkbox]:checked').forEach(cb=>{
     if(cb===excludeCb)return;
-    s+=_getPend(cb);
+    const p=_getPend(cb);
+    console.log('[PEND] cb.value=',cb.value,'map=',_registrarFactPendMap[cb.value],'data-pend=',cb.dataset.pend,'→',p);
+    s+=p;
   });
+  console.log('[SUM_PEND] total=',Math.round(s*100)/100,'mapKeys=',Object.keys(_registrarFactPendMap));
   return Math.round(s*100)/100;
 }
 function enforceRegistrarFacturaSelection(showToast){
@@ -2779,12 +2782,14 @@ function syncRegistrarFacturaCheckboxes(){
     return;
   }
   const totalSel=sumPendSeleccionadas(null);
+  console.log('[SYNC_CB] totalSel=',totalSel,'montoNum=',montoNum,'prov=',prov);
   if(totalSel<=0){
     cbs.forEach(cb=>{cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');});
     return;
   }
   // Las facturas ya marcadas cubren el monto → deshabilita las NO marcadas.
   const cubierto=totalSel>=montoNum-0.001;
+  console.log('[SYNC_CB] cubierto=',cubierto);
   cbs.forEach(cb=>{
     if(cb.checked){cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');return;}
     cb.disabled=cubierto;
