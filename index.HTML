@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.87">
+<html lang="es" data-app-version="3.88">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2787,6 +2787,7 @@ function updateRegistrarAplicaResumen(){
     syncRegistrarFacturaCheckboxes();
     return;
   }
+  if(!isNaN(montoNum)&&montoNum>0) enforceRegistrarFacturaSelection(false);
   const ids=getRegistrarFacturasSeleccionadas();
   if(!ids.length){
     resumen.innerHTML='<span class="hint-text">Opcional: marca facturas para aplicar el pago antes de guardar.</span>';
