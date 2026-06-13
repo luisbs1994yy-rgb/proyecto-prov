@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="4.02">
+<html lang="es" data-app-version="4.03">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1230,7 +1230,6 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
       <div class="card">
         <div class="card-header">
           <span class="card-title">Registro</span>
-          <label class="btn-registro-rapido" style="cursor:pointer;" title="Importar CSV (fecha,proveedor,tipo,monto,factura,concepto)">📥 CSV<input type="file" accept=".csv,text/csv" style="display:none" onchange="importarCSV(this)"></label>
           <button class="btn-registro-rapido" id="btn-registro-rapido" onclick="openRegistroRapido()">⚡ Registro Rápido</button>
         </div>
         <div class="reg-card-body">
@@ -1795,58 +1794,6 @@ function showConfirmEliminarCliente(nombre,nMovs,nFacts,nPagos,saldo){
 }
 /* ============================================ */
 
-/* ===== IMPORTACIÓN CSV ===== */
-async function importarCSV(input){
-  const file=input.files[0];
-  input.value='';
-  if(!file)return;
-  const text=await file.text();
-  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  if(!lines.length){toast('CSV vacío',true);return;}
-  const headers=lines[0].toLowerCase().split(',').map(h=>h.trim().replace(/"/g,''));
-  const idx={
-    fecha:headers.indexOf('fecha'),
-    proveedor:headers.findIndex(h=>h==='proveedor'||h==='cliente'),
-    tipo:headers.indexOf('tipo'),
-    monto:headers.indexOf('monto'),
-    factura:headers.findIndex(h=>h==='factura'||h==='num_factura'||h==='numero'),
-    concepto:headers.indexOf('concepto'),
-    producto:headers.indexOf('producto')
-  };
-  if(idx.fecha<0||idx.proveedor<0||idx.tipo<0||idx.monto<0){
-    toast('El CSV debe tener columnas: fecha, proveedor/cliente, tipo, monto',true);return;
-  }
-  const rows=lines.slice(1).map(l=>{
-    const cols=l.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
-    return{
-      fecha:cols[idx.fecha]||'',
-      proveedor:cols[idx.proveedor]||'',
-      tipo:cols[idx.tipo]||'',
-      monto:parseFloat((cols[idx.monto]||'').replace(/[$, ]/g,''))||0,
-      factura:idx.factura>=0?cols[idx.factura]||'':'',
-      concepto:idx.concepto>=0?cols[idx.concepto]||'':'',
-      producto:idx.producto>=0?cols[idx.producto]||'':''
-    };
-  }).filter(r=>r.proveedor&&r.tipo&&r.fecha&&r.monto);
-  if(!rows.length){toast('Sin filas válidas en el CSV',true);return;}
-  const esProveedor=document.getElementById('f-entidad')?.value==='proveedor';
-  const action=esProveedor?'addRegistroProveedor':'addRegistro';
-  let ok=0,fail=0;
-  setSyncStatus('Importando '+rows.length+' registros…',true);
-  for(const row of rows){
-    try{
-      const res=await apiPost({action,data:{...row,_forzar:true}});
-      if(res.error){fail++;continue;}
-      const reg=normalizeRegistroFecha({id:res.id,...row});
-      if(esProveedor)state.registrosProveedores.push(reg);else state.registros.push(reg);
-      ok++;
-    }catch(e){fail++;}
-  }
-  saveAndRender();
-  setSyncStatus('Sincronizado · '+fmtTime(new Date()));
-  toast(ok+' registro'+(ok!==1?'s':'')+' importado'+(ok!==1?'s':'')+(fail?' · '+fail+' errores':''),fail>0,ok>0&&!fail);
-}
-/* ========================== */
 
 /* ===== BÚSQUEDA GLOBAL ===== */
 let _busquedaIdx=0;
