@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.99">
+<html lang="es" data-app-version="4.00">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2805,13 +2805,12 @@ function syncRegistrarFacturaCheckboxes(){
   });
 }
 function onRegistrarFacturaSelChange(changedCb){
-  if(changedCb.closest('.registrar-fact-item-disabled')){changedCb.checked=false;return;}
-  // Candado duro: si se intenta MARCAR una factura y las ya seleccionadas
-  // (sin contar esta) ya cubren el monto, se rechaza la selección al instante.
-  // Usa data-pend de cada casilla (no depende de buscar registros por id).
+  // iOS: el evento puede dispararse aunque el checkbox sea disabled.
+  // Chequear el candado AQUI, independientemente de la clase CSS.
   if(changedCb.checked){
+    const prov=document.getElementById('f-proveedor')?.value;
     const montoNum=parseMonto(document.getElementById('f-monto').value);
-    if(!isNaN(montoNum)&&montoNum>0){
+    if(prov&&!isNaN(montoNum)&&montoNum>0){
       const otrosPend=sumPendSeleccionadas(changedCb);
       if(otrosPend>=montoNum-0.001){
         changedCb.checked=false;
@@ -2974,6 +2973,8 @@ function updateRegistrarAplicaUI(){
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
   updateRegistrarLitrosUI();
+  // Forzar sincronización de checkboxes disabled DESPUÉS del DOM render
+  setTimeout(syncRegistrarFacturaCheckboxes,0);
 }
 function regsProveedor(prov){return getRegsStore().filter(r=>r.proveedor===prov);}
 function updateRegistrarEntidadUI(){
