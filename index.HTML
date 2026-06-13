@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.89">
+<html lang="es" data-app-version="3.90">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -426,7 +426,7 @@ tr:last-child td{border-bottom:none;} tbody tr:hover td{background:#f8fafc;}
 .registrar-fact-item:hover{background:var(--blue-soft);}
 .registrar-fact-item.registrar-fact-item-disabled{opacity:.5;cursor:not-allowed;pointer-events:none;}
 .registrar-fact-item.registrar-fact-item-disabled:hover{background:transparent;}
-.registrar-fact-item.registrar-fact-item-disabled input[type=checkbox]{cursor:not-allowed;}
+.registrar-fact-item.registrar-fact-item-disabled input[type=checkbox]{cursor:not-allowed;pointer-events:none;}
 .registrar-fact-item input[type=checkbox]{margin-top:3px;flex-shrink:0;width:16px;height:16px;cursor:pointer;}
 .registrar-fact-item .registrar-fact-meta{font-family:var(--mono);font-size:11px;color:var(--text-muted);line-height:1.35;}
 .registrar-aplica-resumen{margin-top:10px;font-size:12px;}
@@ -2761,6 +2761,7 @@ function syncRegistrarFacturaCheckboxes(){
   });
 }
 function onRegistrarFacturaSelChange(changedCb){
+  if(changedCb.closest('.registrar-fact-item-disabled')){changedCb.checked=false;return;}
   enforceRegistrarFacturaSelection(true);
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
