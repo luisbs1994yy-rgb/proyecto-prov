@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.94">
+<html lang="es" data-app-version="3.95">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2695,14 +2695,16 @@ function facturasAbiertasProveedor(prov){
   return facts.slice().sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
 }
 function fmtFechaDiaSemana(fecha){
-  const raw=String(fecha||'').trim();
-  if(!raw)return'—';
-  let d;
-  if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw.slice(0,10)+'T12:00:00');
-  else d=new Date(raw);
-  if(isNaN(d.getTime()))return raw.length>10?raw.slice(0,10):raw;
-  const mes=MESES_ES[d.getMonth()];
-  return LOG_DIAS_ES[d.getDay()]+' '+d.getDate()+' '+mes.charAt(0).toUpperCase()+mes.slice(1);
+  try{
+    const raw=String(fecha||'').trim();
+    if(!raw)return'—';
+    let d;
+    if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw.slice(0,10)+'T12:00:00');
+    else d=new Date(raw);
+    if(isNaN(d.getTime()))return fmtFechaCorta(fecha);
+    const mes=MESES_ES[d.getMonth()];
+    return LOG_DIAS_ES[d.getDay()]+' '+d.getDate()+' '+mes.charAt(0).toUpperCase()+mes.slice(1);
+  }catch{return fmtFechaCorta(fecha);}
 }
 function facturaOptionLabel(f,pagos){
   const total=parseFloat(f.monto)||0,pend=Math.max(0,total-_calcAbonadoBase(f,pagos,''));
