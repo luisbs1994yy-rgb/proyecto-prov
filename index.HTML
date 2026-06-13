@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.95">
+<html lang="es" data-app-version="3.93">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1307,7 +1307,7 @@ const PRODUCTOS   = ["Etanol","Nafta","Regular"];
                   <div id="f-aplica-facturas-list" class="registrar-fact-list"></div>
                   <div id="f-aplica-resumen" class="registrar-aplica-resumen"></div>
                 </div>
-                <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas para aplicar el pago · sin marcar = abono sin factura (préstamo/anticipo, en verde +).</span>
+                <span id="f-factura-hint" class="hint-text" style="display:none;margin-top:6px">Marca facturas pendientes o deja todo sin marcar para un abono sin factura (préstamo, anticipo). El abono aparece en verde con + y resta del saldo total. Si el pago excede lo seleccionado, confirma dos veces al guardar.</span>
               </div>
             </div>
           </div>
@@ -2694,22 +2694,10 @@ function facturasAbiertasProveedor(prov){
   if(abiertas.length)return abiertas;
   return facts.slice().sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
 }
-function fmtFechaDiaSemana(fecha){
-  try{
-    const raw=String(fecha||'').trim();
-    if(!raw)return'—';
-    let d;
-    if(/^\d{4}-\d{2}-\d{2}/.test(raw))d=new Date(raw.slice(0,10)+'T12:00:00');
-    else d=new Date(raw);
-    if(isNaN(d.getTime()))return fmtFechaCorta(fecha);
-    const mes=MESES_ES[d.getMonth()];
-    return LOG_DIAS_ES[d.getDay()]+' '+d.getDate()+' '+mes.charAt(0).toUpperCase()+mes.slice(1);
-  }catch{return fmtFechaCorta(fecha);}
-}
 function facturaOptionLabel(f,pagos){
   const total=parseFloat(f.monto)||0,pend=Math.max(0,total-_calcAbonadoBase(f,pagos,''));
   const pendTxt=pend>0.001?(' · pend. '+fmt(pend)):' · saldada';
-  return (f.factura?'#'+f.factura+' · ':'')+fmtFechaDiaSemana(f.fecha)+pendTxt;
+  return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+pendTxt;
 }
 function getRegistrarFacturasSeleccionadas(){
   const list=document.getElementById('f-aplica-facturas-list');
@@ -2845,8 +2833,8 @@ function updateRegistrarAplicaResumen(){
   }
   const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
   if(!parts.length){
-    resumen.innerHTML='';
-    if(btn)btn.classList.remove('btn-locked');
+    resumen.innerHTML='<span class="hint-text" style="color:var(--red-text)">Las facturas seleccionadas ya están saldadas.</span>';
+    if(btn)btn.classList.add('btn-locked');
     syncRegistrarFacturaCheckboxes();
     return;
   }
