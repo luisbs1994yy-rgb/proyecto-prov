@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.85">
+<html lang="es" data-app-version="3.86">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2721,6 +2721,22 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
   });
   return{parts,remanente:resto>0.001?resto:0};
 }
+function enforceRegistrarFacturaSelection(showToast){
+  const list=document.getElementById('f-aplica-facturas-list');
+  if(!list)return 0;
+  const prov=document.getElementById('f-proveedor').value;
+  const montoNum=parseMonto(document.getElementById('f-monto').value);
+  if(!prov||isNaN(montoNum)||montoNum<=0)return 0;
+  const cbs=[...list.querySelectorAll('input[type=checkbox]')];
+  const ids=cbs.filter(cb=>cb.checked).map(cb=>String(cb.value||'').trim()).filter(Boolean);
+  if(!ids.length)return 0;
+  const{parts}=calcAllocacionPago(prov,montoNum,ids);
+  const cubiertas=new Set(parts.map(p=>p.facturaId));
+  let quitadas=0;
+  cbs.forEach(cb=>{if(cb.checked&&!cubiertas.has(String(cb.value||'').trim())){cb.checked=false;quitadas++;}});
+  if(quitadas&&showToast)toast('El pago ya se distribuyó · se quitaron '+quitadas+' factura(s) que no alcanzaba a cubrir',true);
+  return quitadas;
+}
 function syncRegistrarFacturaCheckboxes(){
   const list=document.getElementById('f-aplica-facturas-list');
   if(!list)return;
@@ -2738,47 +2754,14 @@ function syncRegistrarFacturaCheckboxes(){
   }
   const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
   const cubierto=!!parts.length&&remanente<=0.001;
-  const pagosSync=ids.length&&!cubierto&&remanente>0.001?registrosProveedor(prov).filter(isTipoPago):null;
   cbs.forEach(cb=>{
     if(cb.checked){cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');return;}
-    let dis=cubierto;
-    if(!dis&&pagosSync){
-      const f=getPoolRegs().find(r=>r.id===String(cb.value||'').trim());
-      if(f){const pend=pendienteFacturaBase(f,pagosSync);dis=pend>remanente+0.001;}
-    }
-    cb.disabled=dis;
-    cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',dis);
+    cb.disabled=cubierto;
+    cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',cubierto);
   });
 }
 function onRegistrarFacturaSelChange(changedCb){
-  const prov=document.getElementById('f-proveedor').value;
-  const montoNum=parseMonto(document.getElementById('f-monto').value);
-  if(changedCb&&changedCb.checked&&prov&&!isNaN(montoNum)&&montoNum>0){
-    const list=document.getElementById('f-aplica-facturas-list');
-    const ids=list?[...list.querySelectorAll('input[type=checkbox]:checked')].filter(cb=>cb!==changedCb).map(cb=>String(cb.value||'').trim()).filter(Boolean):[];
-    if(ids.length){
-      const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
-      if(parts.length&&remanente<=0.001){
-        changedCb.checked=false;
-        toast('El monto ya queda cubierto con las facturas marcadas',true);
-        syncRegistrarFacturaCheckboxes();
-        return;
-      }
-      if(remanente>0.001){
-        const nuevaFact=getPoolRegs().find(r=>r.id===String(changedCb.value||'').trim());
-        if(nuevaFact){
-          const pagos=registrosProveedor(prov).filter(isTipoPago);
-          const pend=pendienteFacturaBase(nuevaFact,pagos);
-          if(pend>remanente+0.001){
-            changedCb.checked=false;
-            toast('Solo quedan '+fmt(remanente)+' disponibles · esta factura tiene '+fmt(pend)+' pendiente',true);
-            syncRegistrarFacturaCheckboxes();
-            return;
-          }
-        }
-      }
-    }
-  }
+  enforceRegistrarFacturaSelection(true);
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
   syncRegistrarFacturaCheckboxes();
@@ -2823,22 +2806,6 @@ function updateRegistrarAplicaResumen(){
     if(btn)btn.classList.add('btn-locked');
     syncRegistrarFacturaCheckboxes();
     return;
-  }
-  // Bloquear si hay más de una factura y alguna recibiría pago parcial
-  if(parts.length>1&&remanente<=0.001){
-    const pagosChk=registrosProveedor(prov).filter(isTipoPago);
-    const parcial=parts.find(p=>{
-      const f=getPoolRegs().find(r=>r.id===p.facturaId);
-      return f&&p.monto<pendienteFacturaBase(f,pagosChk)-0.001;
-    });
-    if(parcial){
-      const fParcial=getPoolRegs().find(r=>r.id===parcial.facturaId);
-      const totalPend=fParcial?pendienteFacturaBase(fParcial,pagosChk):parcial.monto;
-      resumen.innerHTML='<div class="registrar-alloc-alert">🔒 La factura '+(parcial.factura?'#'+esc(parcial.factura):'')+' solo recibiría '+fmt(parcial.monto)+' de '+fmt(totalPend)+' pendiente · deselecciónala o ajusta el monto</div>';
-      if(btn)btn.classList.add('btn-locked');
-      syncRegistrarFacturaCheckboxes();
-      return;
-    }
   }
   let html='';
   if(remanente>0.001){
@@ -2939,6 +2906,7 @@ function updateRegistrarAplicaUI(){
         '<span class="registrar-fact-meta">'+esc(facturaOptionLabel(f,pagos))+'</span></label>';
     }).join('');
   }
+  enforceRegistrarFacturaSelection(false);
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
   updateRegistrarLitrosUI();
@@ -3173,7 +3141,7 @@ function applyPrecioProductoDefault(overwrite=true){
   }
 }
 function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
-function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();}
+function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);syncLitrosPrecioMonto('monto');enforceRegistrarFacturaSelection(true);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
 const LITROS_AVISO_MIN=10000;
 const LITROS_MAX_ENTEROS=6;
 const PROV_LC_RECIBIDOS_LABEL='Litros recibidos';
