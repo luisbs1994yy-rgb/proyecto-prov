@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.86">
+<html lang="es" data-app-version="3.87">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3140,8 +3140,19 @@ function applyPrecioProductoDefault(overwrite=true){
     syncLitrosPrecioMonto('precio');
   }
 }
-function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
-function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);syncLitrosPrecioMonto('monto');enforceRegistrarFacturaSelection(true);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
+let _enforceMontoTimer=null;
+function scheduleEnforceFacturaSelection(){
+  if(_enforceMontoTimer)clearTimeout(_enforceMontoTimer);
+  _enforceMontoTimer=setTimeout(()=>{
+    _enforceMontoTimer=null;
+    enforceRegistrarFacturaSelection(true);
+    syncRegistrarFacturaRefs();
+    updateRegistrarAplicaResumen();
+    syncRegistrarFacturaCheckboxes();
+  },500);
+}
+function onMontoInput(){const el=document.getElementById('f-monto');el.value=sanitizeMontoTyping(el.value);syncLitrosPrecioMonto('monto');updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();scheduleEnforceFacturaSelection();}
+function onMontoBlur(){const el=document.getElementById('f-monto'),n=parseMonto(el.value);if(_enforceMontoTimer){clearTimeout(_enforceMontoTimer);_enforceMontoTimer=null;}if(!isNaN(n)&&el.value.trim())el.value=formatMontoDisplay(n);syncLitrosPrecioMonto('monto');enforceRegistrarFacturaSelection(true);updateRegistrarAplicaResumen();syncRegistrarFacturaCheckboxes();}
 const LITROS_AVISO_MIN=10000;
 const LITROS_MAX_ENTEROS=6;
 const PROV_LC_RECIBIDOS_LABEL='Litros recibidos';
