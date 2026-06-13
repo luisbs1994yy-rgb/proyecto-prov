@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.84">
+<html lang="es" data-app-version="3.85">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2823,6 +2823,22 @@ function updateRegistrarAplicaResumen(){
     if(btn)btn.classList.add('btn-locked');
     syncRegistrarFacturaCheckboxes();
     return;
+  }
+  // Bloquear si hay más de una factura y alguna recibiría pago parcial
+  if(parts.length>1&&remanente<=0.001){
+    const pagosChk=registrosProveedor(prov).filter(isTipoPago);
+    const parcial=parts.find(p=>{
+      const f=getPoolRegs().find(r=>r.id===p.facturaId);
+      return f&&p.monto<pendienteFacturaBase(f,pagosChk)-0.001;
+    });
+    if(parcial){
+      const fParcial=getPoolRegs().find(r=>r.id===parcial.facturaId);
+      const totalPend=fParcial?pendienteFacturaBase(fParcial,pagosChk):parcial.monto;
+      resumen.innerHTML='<div class="registrar-alloc-alert">🔒 La factura '+(parcial.factura?'#'+esc(parcial.factura):'')+' solo recibiría '+fmt(parcial.monto)+' de '+fmt(totalPend)+' pendiente · deselecciónala o ajusta el monto</div>';
+      if(btn)btn.classList.add('btn-locked');
+      syncRegistrarFacturaCheckboxes();
+      return;
+    }
   }
   let html='';
   if(remanente>0.001){
