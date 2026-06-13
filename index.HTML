@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.90">
+<html lang="es" data-app-version="3.91">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2762,6 +2762,25 @@ function syncRegistrarFacturaCheckboxes(){
 }
 function onRegistrarFacturaSelChange(changedCb){
   if(changedCb.closest('.registrar-fact-item-disabled')){changedCb.checked=false;return;}
+  // Candado duro: si se intenta MARCAR una factura y las ya seleccionadas
+  // (sin contar esta) ya cubren el monto, se rechaza la selección al instante.
+  if(changedCb.checked){
+    const prov=document.getElementById('f-proveedor').value;
+    const montoNum=parseMonto(document.getElementById('f-monto').value);
+    if(prov&&!isNaN(montoNum)&&montoNum>0){
+      const thisId=String(changedCb.value||'').trim();
+      const otros=getRegistrarFacturasSeleccionadas().filter(id=>id!==thisId);
+      if(otros.length){
+        const{parts,remanente}=calcAllocacionPago(prov,montoNum,otros);
+        if(parts.length&&remanente<=0.001){
+          changedCb.checked=false;
+          toast('El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas',true);
+          syncRegistrarFacturaCheckboxes();
+          return;
+        }
+      }
+    }
+  }
   enforceRegistrarFacturaSelection(true);
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
