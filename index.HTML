@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.96">
+<html lang="es" data-app-version="3.97">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2733,15 +2733,20 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
   });
   return{parts,remanente:resto>0.001?resto:0};
 }
-// Suma el pendiente (data-pend) de las casillas MARCADAS, opcionalmente excluyendo una.
-// No depende de getPoolRegs().find(): el pendiente queda fijado en cada casilla al dibujarla.
+// Mapa id→pendiente construido en updateRegistrarAplicaUI. Respaldo ante data-pend.
+let _registrarFactPendMap={};
+function _getPend(cb){
+  const id=String(cb.value||'').trim();
+  if(id&&_registrarFactPendMap.hasOwnProperty(id))return _registrarFactPendMap[id];
+  return parseFloat(cb.dataset.pend)||0;
+}
 function sumPendSeleccionadas(excludeCb){
   const list=document.getElementById('f-aplica-facturas-list');
   if(!list)return 0;
   let s=0;
   list.querySelectorAll('input[type=checkbox]:checked').forEach(cb=>{
     if(cb===excludeCb)return;
-    s+=parseFloat(cb.dataset.pend)||0;
+    s+=_getPend(cb);
   });
   return Math.round(s*100)/100;
 }
@@ -2758,7 +2763,7 @@ function enforceRegistrarFacturaSelection(showToast){
   cbs.forEach(cb=>{
     if(!cb.checked)return;
     if(acc>=montoNum-0.001){cb.checked=false;quitadas++;return;}
-    acc=Math.round((acc+(parseFloat(cb.dataset.pend)||0))*100)/100;
+    acc=Math.round((acc+_getPend(cb))*100)/100;
   });
   if(quitadas&&showToast)toast('🔒 El pago de '+fmt(montoNum)+' solo alcanza para las primeras factura(s) · se desmarcó '+quitadas+' que ya no se cubría');
   return quitadas;
@@ -2943,9 +2948,11 @@ function updateRegistrarAplicaUI(){
   if(!facts.length){
     list.innerHTML='<div class="registrar-fact-item" style="cursor:default;color:var(--text-muted)">Este cliente no tiene facturas con saldo pendiente.</div>';
   }else{
+    _registrarFactPendMap={};
     list.innerHTML=facts.map(f=>{
       const checked=prevSel.has(f.id)?' checked':'';
       const pend=pendienteFacturaBase(f,pagos);
+      _registrarFactPendMap[String(f.id)]=pend;
       let meta='';try{meta=esc(facturaOptionLabel(f,pagos));}catch{meta=esc((f.factura?'#'+f.factura+' · ':'')+String(f.fecha||'').slice(0,10)+' · pend. '+fmt(pend));}
       return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'" data-pend="'+pend+'"'+checked+' onchange="onRegistrarFacturaSelChange(this)"><span class="registrar-fact-meta">'+meta+'</span></label>';
     }).join('');
