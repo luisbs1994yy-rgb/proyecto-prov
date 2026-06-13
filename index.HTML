@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="4.00">
+<html lang="es" data-app-version="4.01">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2804,26 +2804,30 @@ function syncRegistrarFacturaCheckboxes(){
     cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',cubierto);
   });
 }
-function onRegistrarFacturaSelChange(changedCb){
-  // iOS: el evento puede dispararse aunque el checkbox sea disabled.
-  // Chequear el candado AQUI, independientemente de la clase CSS.
-  if(changedCb.checked){
+function onRegistrarFacturaLabelClick(event,label){
+  // Tomamos control total del toggle para bloquear en iOS antes de cualquier cambio.
+  event.preventDefault();
+  const cb=label.querySelector('input[type=checkbox]');
+  if(!cb)return false;
+  const willCheck=!cb.checked;
+  if(willCheck){
     const prov=document.getElementById('f-proveedor')?.value;
     const montoNum=parseMonto(document.getElementById('f-monto').value);
     if(prov&&!isNaN(montoNum)&&montoNum>0){
-      const otrosPend=sumPendSeleccionadas(changedCb);
+      const otrosPend=sumPendSeleccionadas(cb);
       if(otrosPend>=montoNum-0.001){
-        changedCb.checked=false;
         toast('🔒 El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas');
         syncRegistrarFacturaCheckboxes();
-        return;
+        return false;
       }
     }
   }
+  cb.checked=willCheck;
   enforceRegistrarFacturaSelection(true);
   syncRegistrarFacturaRefs();
   updateRegistrarAplicaResumen();
   syncRegistrarFacturaCheckboxes();
+  return false;
 }
 function syncRegistrarFacturaRefs(){
   const inp=document.getElementById('f-factura');
@@ -2966,7 +2970,7 @@ function updateRegistrarAplicaUI(){
       const checked=prevSel.has(f.id)?' checked':'';
       const pend=_registrarFactPendMap[String(f.id)]||0;
       let meta='';try{meta=esc(facturaOptionLabel(f,pagos));}catch{meta=esc((f.factura?'#'+f.factura+' · ':'')+String(f.fecha||'').slice(0,10)+' · pend. '+fmt(pend));}
-      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'" data-pend="'+pend+'"'+checked+' onchange="onRegistrarFacturaSelChange(this)"><span class="registrar-fact-meta">'+meta+'</span></label>';
+      return '<label class="registrar-fact-item" onclick="return onRegistrarFacturaLabelClick(event,this)"><input type="checkbox" value="'+esc(f.id)+'" data-pend="'+pend+'"'+checked+'><span class="registrar-fact-meta">'+meta+'</span></label>';
     }).join('');
   }
   enforceRegistrarFacturaSelection(false);
