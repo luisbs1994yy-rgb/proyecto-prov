@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.91">
+<html lang="es" data-app-version="3.92">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2734,7 +2734,7 @@ function enforceRegistrarFacturaSelection(showToast){
   const cubiertas=new Set(parts.map(p=>p.facturaId));
   let quitadas=0;
   cbs.forEach(cb=>{if(cb.checked&&!cubiertas.has(String(cb.value||'').trim())){cb.checked=false;quitadas++;}});
-  if(quitadas&&showToast)toast('El pago ya se distribuyó · se quitaron '+quitadas+' factura(s) que no alcanzaba a cubrir',true);
+  if(quitadas&&showToast)toast('🔒 El pago de '+fmt(montoNum)+' solo alcanza para las primeras factura(s) · se desmarcó '+quitadas+' que ya no se cubría');
   return quitadas;
 }
 function syncRegistrarFacturaCheckboxes(){
@@ -2774,7 +2774,7 @@ function onRegistrarFacturaSelChange(changedCb){
         const{parts,remanente}=calcAllocacionPago(prov,montoNum,otros);
         if(parts.length&&remanente<=0.001){
           changedCb.checked=false;
-          toast('El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas',true);
+          toast('🔒 El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas');
           syncRegistrarFacturaCheckboxes();
           return;
         }
