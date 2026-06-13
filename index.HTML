@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.92">
+<html lang="es" data-app-version="3.93">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2721,19 +2721,33 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
   });
   return{parts,remanente:resto>0.001?resto:0};
 }
+// Suma el pendiente (data-pend) de las casillas MARCADAS, opcionalmente excluyendo una.
+// No depende de getPoolRegs().find(): el pendiente queda fijado en cada casilla al dibujarla.
+function sumPendSeleccionadas(excludeCb){
+  const list=document.getElementById('f-aplica-facturas-list');
+  if(!list)return 0;
+  let s=0;
+  list.querySelectorAll('input[type=checkbox]:checked').forEach(cb=>{
+    if(cb===excludeCb)return;
+    s+=parseFloat(cb.dataset.pend)||0;
+  });
+  return Math.round(s*100)/100;
+}
 function enforceRegistrarFacturaSelection(showToast){
   const list=document.getElementById('f-aplica-facturas-list');
   if(!list)return 0;
-  const prov=document.getElementById('f-proveedor').value;
   const montoNum=parseMonto(document.getElementById('f-monto').value);
-  if(!prov||isNaN(montoNum)||montoNum<=0)return 0;
+  if(isNaN(montoNum)||montoNum<=0)return 0;
   const cbs=[...list.querySelectorAll('input[type=checkbox]')];
-  const ids=cbs.filter(cb=>cb.checked).map(cb=>String(cb.value||'').trim()).filter(Boolean);
-  if(!ids.length)return 0;
-  const{parts}=calcAllocacionPago(prov,montoNum,ids);
-  const cubiertas=new Set(parts.map(p=>p.facturaId));
-  let quitadas=0;
-  cbs.forEach(cb=>{if(cb.checked&&!cubiertas.has(String(cb.value||'').trim())){cb.checked=false;quitadas++;}});
+  if(!cbs.some(cb=>cb.checked))return 0;
+  // Recorre las casillas en orden y mantiene marcadas las que el monto va cubriendo.
+  // En cuanto el acumulado ya alcanzó el monto, desmarca las siguientes (sobran).
+  let acc=0,quitadas=0;
+  cbs.forEach(cb=>{
+    if(!cb.checked)return;
+    if(acc>=montoNum-0.001){cb.checked=false;quitadas++;return;}
+    acc=Math.round((acc+(parseFloat(cb.dataset.pend)||0))*100)/100;
+  });
   if(quitadas&&showToast)toast('🔒 El pago de '+fmt(montoNum)+' solo alcanza para las primeras factura(s) · se desmarcó '+quitadas+' que ya no se cubría');
   return quitadas;
 }
@@ -2747,13 +2761,13 @@ function syncRegistrarFacturaCheckboxes(){
     cbs.forEach(cb=>{cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');});
     return;
   }
-  const ids=getRegistrarFacturasSeleccionadas();
-  if(!ids.length){
+  const totalSel=sumPendSeleccionadas(null);
+  if(totalSel<=0){
     cbs.forEach(cb=>{cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');});
     return;
   }
-  const{parts,remanente}=calcAllocacionPago(prov,montoNum,ids);
-  const cubierto=!!parts.length&&remanente<=0.001;
+  // Las facturas ya marcadas cubren el monto → deshabilita las NO marcadas.
+  const cubierto=totalSel>=montoNum-0.001;
   cbs.forEach(cb=>{
     if(cb.checked){cb.disabled=false;cb.closest('.registrar-fact-item')?.classList.remove('registrar-fact-item-disabled');return;}
     cb.disabled=cubierto;
@@ -2764,20 +2778,16 @@ function onRegistrarFacturaSelChange(changedCb){
   if(changedCb.closest('.registrar-fact-item-disabled')){changedCb.checked=false;return;}
   // Candado duro: si se intenta MARCAR una factura y las ya seleccionadas
   // (sin contar esta) ya cubren el monto, se rechaza la selección al instante.
+  // Usa data-pend de cada casilla (no depende de buscar registros por id).
   if(changedCb.checked){
-    const prov=document.getElementById('f-proveedor').value;
     const montoNum=parseMonto(document.getElementById('f-monto').value);
-    if(prov&&!isNaN(montoNum)&&montoNum>0){
-      const thisId=String(changedCb.value||'').trim();
-      const otros=getRegistrarFacturasSeleccionadas().filter(id=>id!==thisId);
-      if(otros.length){
-        const{parts,remanente}=calcAllocacionPago(prov,montoNum,otros);
-        if(parts.length&&remanente<=0.001){
-          changedCb.checked=false;
-          toast('🔒 El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas');
-          syncRegistrarFacturaCheckboxes();
-          return;
-        }
+    if(!isNaN(montoNum)&&montoNum>0){
+      const otrosPend=sumPendSeleccionadas(changedCb);
+      if(otrosPend>=montoNum-0.001){
+        changedCb.checked=false;
+        toast('🔒 El monto de '+fmt(montoNum)+' ya está cubierto por las facturas seleccionadas');
+        syncRegistrarFacturaCheckboxes();
+        return;
       }
     }
   }
@@ -2923,7 +2933,8 @@ function updateRegistrarAplicaUI(){
   }else{
     list.innerHTML=facts.map(f=>{
       const checked=prevSel.has(f.id)?' checked':'';
-      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'"'+checked+' onchange="onRegistrarFacturaSelChange(this)">'+
+      const pend=pendienteFacturaBase(f,pagos);
+      return '<label class="registrar-fact-item"><input type="checkbox" value="'+esc(f.id)+'" data-pend="'+pend+'"'+checked+' onchange="onRegistrarFacturaSelChange(this)">'+
         '<span class="registrar-fact-meta">'+esc(facturaOptionLabel(f,pagos))+'</span></label>';
     }).join('');
   }
