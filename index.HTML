@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- ESTADO DE CUENTA | Versión ÚNICA: busca data-app-version en la etiqueta <html> (una sola vez) -->
-<html lang="es" data-app-version="3.83">
+<html lang="es" data-app-version="3.84">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2695,7 +2695,7 @@ function facturasAbiertasProveedor(prov){
   return facts.slice().sort((a,b)=>parseRegistroDateMs(b.fecha)-parseRegistroDateMs(a.fecha));
 }
 function facturaOptionLabel(f,pagos){
-  const total=parseFloat(f.monto)||0,pend=Math.max(0,total-calcFacturaAbonado(f,pagos));
+  const total=parseFloat(f.monto)||0,pend=Math.max(0,total-_calcAbonadoBase(f,pagos,''));
   const pendTxt=pend>0.001?(' · pend. '+fmt(pend)):' · saldada';
   return (f.factura?'#'+f.factura+' · ':'')+fmtFechaCorta(f.fecha)+pendTxt;
 }
@@ -2712,7 +2712,7 @@ function calcAllocacionPago(prov,montoTotal,facturaIds){
     .sort((a,b)=>parseRegistroDateMs(a.fecha)-parseRegistroDateMs(b.fecha));
   facts.forEach(f=>{
     if(resto<=0.001)return;
-    const pend=pendienteFactura(f,pagos);
+    const pend=pendienteFacturaBase(f,pagos);
     if(pend<=0.001)return;
     const apl=Math.min(resto,pend);
     const m=Math.round(apl*100)/100;
@@ -2744,7 +2744,7 @@ function syncRegistrarFacturaCheckboxes(){
     let dis=cubierto;
     if(!dis&&pagosSync){
       const f=getPoolRegs().find(r=>r.id===String(cb.value||'').trim());
-      if(f){const pend=pendienteFactura(f,pagosSync);dis=pend>remanente+0.001;}
+      if(f){const pend=pendienteFacturaBase(f,pagosSync);dis=pend>remanente+0.001;}
     }
     cb.disabled=dis;
     cb.closest('.registrar-fact-item')?.classList.toggle('registrar-fact-item-disabled',dis);
@@ -2768,7 +2768,7 @@ function onRegistrarFacturaSelChange(changedCb){
         const nuevaFact=getPoolRegs().find(r=>r.id===String(changedCb.value||'').trim());
         if(nuevaFact){
           const pagos=registrosProveedor(prov).filter(isTipoPago);
-          const pend=pendienteFactura(nuevaFact,pagos);
+          const pend=pendienteFacturaBase(nuevaFact,pagos);
           if(pend>remanente+0.001){
             changedCb.checked=false;
             toast('Solo quedan '+fmt(remanente)+' disponibles · esta factura tiene '+fmt(pend)+' pendiente',true);
@@ -2913,7 +2913,7 @@ function updateRegistrarAplicaUI(){
   }
   lbl.textContent='Facturas pendientes';
   const pagos=registrosProveedor(prov).filter(isTipoPago);
-  const facts=facturasAbiertasProveedor(prov).filter(f=>pendienteFactura(f,pagos)>0.001);
+  const facts=facturasAbiertasProveedor(prov).filter(f=>pendienteFacturaBase(f,pagos)>0.001);
   if(!facts.length){
     list.innerHTML='<div class="registrar-fact-item" style="cursor:default;color:var(--text-muted)">Este cliente no tiene facturas con saldo pendiente.</div>';
   }else{
@@ -2961,6 +2961,9 @@ function _calcAbonadoBase(fact,pagos,excluirId){
     else if(!p.aplicaFacturaId&&ref&&p.factura&&String(p.factura).trim()===ref)ab+=m;
   });
   return ab;
+}
+function pendienteFacturaBase(fact,pagos){
+  return Math.max(0,(parseFloat(fact.monto)||0)-_calcAbonadoBase(fact,pagos,''));
 }
 // FIFO auto-alloc: unlinked payments → oldest invoices first
 const _autoAllocWeakCache=typeof WeakMap!=='undefined'?new WeakMap():null;
